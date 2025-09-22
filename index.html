@@ -94,7 +94,15 @@
         }
         
         // Load content when page loads
-        document.addEventListener('DOMContentLoaded', updatePortfolioDisplay);
+        document.addEventListener('DOMContentLoaded', function() {
+            // Small delay to ensure content.js is fully loaded
+            setTimeout(updatePortfolioDisplay, 100);
+        });
+        
+        // Also update display when returning from admin panel
+        window.addEventListener('focus', function() {
+            updatePortfolioDisplay();
+        });
     </script>
 </body>
 </html>
