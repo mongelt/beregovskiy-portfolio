@@ -21,13 +21,80 @@
     <main>
         <section id="home">
             <h2>Welcome to My Portfolio</h2>
-            <p>This is where your amazing content will live!</p>
-            <p>Your website is working perfectly! 🎉</p>
+            <p>Discover my latest work and creative projects below.</p>
+        </section>
+
+        <section id="portfolio">
+            <h2>My Work</h2>
+            <div id="contentContainer">
+                <p>Loading content...</p>
+            </div>
+        </section>
+
+        <section id="about">
+            <h2>About Me</h2>
+            <p>Professional portfolio showcasing my creative work and expertise.</p>
+            <p><a href="admin.html" style="color: #3498db; font-size: 14px;">Admin Access</a></p>
         </section>
     </main>
 
     <footer>
         <p>&copy; 2024 Beregovskiy Portfolio. All rights reserved.</p>
     </footer>
+
+    <script src="content.js"></script>
+    <script>
+        // Function to display portfolio content
+        function updatePortfolioDisplay() {
+            const container = document.getElementById('contentContainer');
+            const content = getAllContent();
+            
+            if (content.length === 0) {
+                container.innerHTML = '<p>No content published yet. <a href="admin.html">Add some content</a> to get started!</p>';
+                return;
+            }
+            
+            let html = '';
+            
+            content.forEach(item => {
+                html += `
+                    <article class="content-item">
+                        <h3>${item.title}</h3>
+                        <div class="content-meta">
+                            <span class="content-type">${item.type.toUpperCase()}</span>
+                            <span class="content-date">${item.dateCreated}</span>
+                        </div>
+                        
+                        ${item.type === 'image' && item.mediaUrl ? 
+                            `<img src="${item.mediaUrl}" alt="${item.title}" class="content-media">` : ''}
+                        
+                        ${item.type === 'video' && item.mediaUrl ? 
+                            generateVideoHTML(item.mediaUrl) : ''}
+                        
+                        <div class="content-body">
+                            ${item.content}
+                        </div>
+                    </article>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        // Function to generate video HTML
+        function generateVideoHTML(url) {
+            if (url.includes('youtube.com') || url.includes('youtu.be')) {
+                const videoId = url.includes('youtu.be') ? 
+                    url.split('/').pop() : 
+                    url.split('v=')[1]?.split('&')[0];
+                return `<iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen class="content-media"></iframe>`;
+            } else {
+                return `<video controls class="content-media"><source src="${url}"></video>`;
+            }
+        }
+        
+        // Load content when page loads
+        document.addEventListener('DOMContentLoaded', updatePortfolioDisplay);
+    </script>
 </body>
 </html>
