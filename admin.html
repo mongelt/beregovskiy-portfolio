@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portfolio Admin Panel</title>
+    <title>Portfolio Admin Panel - Enhanced</title>
     <style>
         * {
             margin: 0;
@@ -19,7 +19,7 @@
         }
         
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             background: white;
             border-radius: 10px;
@@ -44,8 +44,53 @@
             padding: 20px;
         }
         
+        .admin-tabs {
+            display: flex;
+            border-bottom: 2px solid #eee;
+            margin-bottom: 20px;
+        }
+        
+        .tab {
+            padding: 15px 25px;
+            background: #f8f9fa;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            border-top-left-radius: 5px;
+            border-top-right-radius: 5px;
+            margin-right: 2px;
+            transition: background 0.3s;
+        }
+        
+        .tab.active {
+            background: #3498db;
+            color: white;
+        }
+        
+        .tab:hover {
+            background: #5dade2;
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
         .form-group {
             margin-bottom: 20px;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .form-row .form-group {
+            flex: 1;
         }
         
         label {
@@ -84,6 +129,14 @@
             background: #2980b9;
         }
         
+        button.secondary {
+            background: #95a5a6;
+        }
+        
+        button.secondary:hover {
+            background: #7f8c8d;
+        }
+        
         .content-preview {
             background: #f8f9fa;
             padding: 20px;
@@ -100,13 +153,35 @@
             margin: 20px 0;
             display: none;
         }
+        
+        .category-list {
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 15px;
+            background: #f8f9fa;
+        }
+        
+        .category-item {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            font-weight: bold;
+        }
+        
+        .subcategory-item {
+            padding: 5px 20px;
+            border-bottom: 1px dotted #ccc;
+            font-size: 14px;
+            color: #666;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>🎨 Portfolio Admin Panel</h1>
-            <p>Manage your portfolio content with ease</p>
+            <p>Enhanced with Category Management</p>
         </div>
         
         <!-- Login Section -->
@@ -117,87 +192,256 @@
             </div>
             <button onclick="login()">Access Admin Panel</button>
             <p style="margin-top: 20px; color: #666; font-size: 14px;">
-                Password: <strong>portfolio2024</strong> (You can change this later)
+                Password: <strong>portfolio2024</strong>
             </p>
         </div>
         
         <!-- Admin Panel Section -->
         <div class="admin-section" id="adminSection">
-            <h2>Add New Content</h2>
-            
-            <div class="form-group">
-                <label for="contentType">Content Type:</label>
-                <select id="contentType" onchange="updateForm()">
-                    <option value="article">Article with Text & Images</option>
-                    <option value="image">Standalone Image</option>
-                    <option value="video">Video Content</option>
-                </select>
+            <!-- Tab Navigation -->
+            <div class="admin-tabs">
+                <button class="tab active" onclick="showTab('content')">Add Content</button>
+                <button class="tab" onclick="showTab('categories')">Manage Categories</button>
             </div>
             
-            <div class="form-group">
-                <label for="title">Title:</label>
-                <input type="text" id="title" placeholder="Enter content title">
+            <!-- Add Content Tab -->
+            <div class="tab-content active" id="contentTab">
+                <h2>Add New Content</h2>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="contentType">Content Type:</label>
+                        <select id="contentType">
+                            <option value="article">Article</option>
+                            <option value="image">Image</option>
+                            <option value="video">Video</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="category">Category:</label>
+                        <select id="category" onchange="updateSubcategories()">
+                            <option value="">Select Category</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="subcategory">Subcategory:</label>
+                        <select id="subcategory">
+                            <option value="">Select Subcategory</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="title">Title:</label>
+                    <input type="text" id="title" placeholder="Enter content title">
+                </div>
+                
+                <div class="form-group">
+                    <label for="content">Content:</label>
+                    <textarea id="content" placeholder="Write your content here. You can include basic HTML tags."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="mediaUrl">Media URL (optional):</label>
+                    <input type="url" id="mediaUrl" placeholder="Paste image or video URL here">
+                </div>
+                
+                <div class="form-group">
+                    <label for="orderInCategory">Order in Category:</label>
+                    <input type="number" id="orderInCategory" placeholder="1 = shows first, 2 = shows second, etc." min="1">
+                    <small style="color: #666;">Leave blank to add at the end</small>
+                </div>
+                
+                <button onclick="previewContent()">Preview Content</button>
+                <button onclick="publishContent()">Publish to Website</button>
+                
+                <div class="success" id="successMessage">
+                    ✅ Content published successfully!
+                </div>
+                
+                <div class="content-preview" id="previewArea" style="display: none;">
+                    <h3>Preview:</h3>
+                    <div id="previewContent"></div>
+                </div>
             </div>
             
-            <div class="form-group" id="contentGroup">
-                <label for="content">Article Content:</label>
-                <textarea id="content" placeholder="Write your article here. You can include basic HTML tags like &lt;h3&gt;, &lt;p&gt;, &lt;strong&gt;, etc."></textarea>
-            </div>
-            
-            <div class="form-group" id="mediaGroup">
-                <label for="mediaUrl">Media URL:</label>
-                <input type="url" id="mediaUrl" placeholder="Paste image or video URL here">
-                <small style="color: #666; font-size: 14px;">
-                    For now, upload images/videos to a free service like ImgBB, YouTube, or Google Drive (public link)
-                </small>
-            </div>
-            
-            <button onclick="previewContent()">Preview Content</button>
-            <button onclick="publishContent()">Publish to Website</button>
-            
-            <div class="success" id="successMessage">
-                ✅ Content published successfully! Your website has been updated.
-            </div>
-            
-            <div class="content-preview" id="previewArea" style="display: none;">
-                <h3>Preview:</h3>
-                <div id="previewContent"></div>
+            <!-- Manage Categories Tab -->
+            <div class="tab-content" id="categoriesTab">
+                <h2>Manage Categories</h2>
+                
+                <div style="display: flex; gap: 40px;">
+                    <div style="flex: 1;">
+                        <h3>Add New Category</h3>
+                        <div class="form-group">
+                            <label for="newCategoryName">Category Name:</label>
+                            <input type="text" id="newCategoryName" placeholder="e.g., Writing, Reporting">
+                        </div>
+                        <div class="form-group">
+                            <label for="newSubcategories">Subcategories (one per line):</label>
+                            <textarea id="newSubcategories" placeholder="Blog Posts&#10;White Papers&#10;One-Pagers" style="height: 120px;"></textarea>
+                        </div>
+                        <button onclick="addNewCategory()">Add Category</button>
+                        
+                        <h3 style="margin-top: 30px;">Add Subcategory</h3>
+                        <div class="form-group">
+                            <label for="existingCategory">Existing Category:</label>
+                            <select id="existingCategory">
+                                <option value="">Select Category</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="newSubcategoryName">New Subcategory:</label>
+                            <input type="text" id="newSubcategoryName" placeholder="e.g., Press Releases">
+                        </div>
+                        <button onclick="addNewSubcategory()">Add Subcategory</button>
+                    </div>
+                    
+                    <div style="flex: 1;">
+                        <h3>Current Categories</h3>
+                        <div class="category-list" id="categoryList">
+                            Loading categories...
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
     
     <script src="content.js"></script>
     <script>
-        // Simple password protection
+        // Tab management
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            event.target.classList.add('active');
+            
+            if (tabName === 'categories') {
+                loadCategories();
+            } else if (tabName === 'content') {
+                loadContentFormCategories();
+            }
+        }
+        
+        // Load categories into dropdowns
+        function loadContentFormCategories() {
+            const categories = getStoredCategories();
+            const categorySelect = document.getElementById('category');
+            
+            categorySelect.innerHTML = '<option value="">Select Category</option>';
+            
+            Object.keys(categories)
+                .sort((a, b) => categories[a].order - categories[b].order)
+                .forEach(catName => {
+                    categorySelect.innerHTML += `<option value="${catName}">${catName}</option>`;
+                });
+        }
+        
+        // Update subcategories when category is selected
+        function updateSubcategories() {
+            const categoryName = document.getElementById('category').value;
+            const subcategorySelect = document.getElementById('subcategory');
+            
+            subcategorySelect.innerHTML = '<option value="">Select Subcategory</option>';
+            
+            if (categoryName) {
+                const categories = getStoredCategories();
+                const subcats = categories[categoryName].subcategories;
+                
+                Object.keys(subcats)
+                    .sort((a, b) => subcats[a].order - subcats[b].order)
+                    .forEach(subName => {
+                        subcategorySelect.innerHTML += `<option value="${subName}">${subName}</option>`;
+                    });
+            }
+        }
+        
+        // Load and display categories
+        function loadCategories() {
+            const categories = getStoredCategories();
+            const categoryList = document.getElementById('categoryList');
+            const existingCategorySelect = document.getElementById('existingCategory');
+            
+            let html = '';
+            existingCategorySelect.innerHTML = '<option value="">Select Category</option>';
+            
+            Object.keys(categories)
+                .sort((a, b) => categories[a].order - categories[b].order)
+                .forEach(catName => {
+                    html += `<div class="category-item">${catName}</div>`;
+                    existingCategorySelect.innerHTML += `<option value="${catName}">${catName}</option>`;
+                    
+                    Object.keys(categories[catName].subcategories)
+                        .sort((a, b) => categories[catName].subcategories[a].order - categories[catName].subcategories[b].order)
+                        .forEach(subName => {
+                            html += `<div class="subcategory-item">└ ${subName}</div>`;
+                        });
+                });
+            
+            categoryList.innerHTML = html || 'No categories yet.';
+        }
+        
+        // Add new category
+        function addNewCategory() {
+            const categoryName = document.getElementById('newCategoryName').value.trim();
+            const subcategoriesText = document.getElementById('newSubcategories').value.trim();
+            
+            if (!categoryName) {
+                alert('Please enter a category name.');
+                return;
+            }
+            
+            const subcategories = subcategoriesText ? subcategoriesText.split('\n').map(s => s.trim()).filter(s => s) : [];
+            
+            addCategory(categoryName, subcategories);
+            
+            document.getElementById('newCategoryName').value = '';
+            document.getElementById('newSubcategories').value = '';
+            
+            loadCategories();
+            alert(`Category "${categoryName}" added successfully!`);
+        }
+        
+        // Add new subcategory
+        function addNewSubcategory() {
+            const categoryName = document.getElementById('existingCategory').value;
+            const subcategoryName = document.getElementById('newSubcategoryName').value.trim();
+            
+            if (!categoryName || !subcategoryName) {
+                alert('Please select a category and enter a subcategory name.');
+                return;
+            }
+            
+            addSubcategory(categoryName, subcategoryName);
+            
+            document.getElementById('newSubcategoryName').value = '';
+            
+            loadCategories();
+            alert(`Subcategory "${subcategoryName}" added to "${categoryName}"!`);
+        }
+        
+        // Login function
         function login() {
             const password = document.getElementById('passwordInput').value;
             if (password === 'portfolio2024') {
                 document.getElementById('loginSection').style.display = 'none';
                 document.getElementById('adminSection').style.display = 'block';
+                loadContentFormCategories();
             } else {
-                alert('Incorrect password! Try: portfolio2024');
+                alert('Incorrect password!');
             }
         }
         
-        // Update form based on content type
-        function updateForm() {
-            const contentType = document.getElementById('contentType').value;
-            const contentGroup = document.getElementById('contentGroup');
-            const contentTextarea = document.getElementById('content');
-            
-            if (contentType === 'article') {
-                contentGroup.style.display = 'block';
-                contentTextarea.placeholder = 'Write your article here. You can include basic HTML tags like <h3>, <p>, <strong>, etc.';
-            } else if (contentType === 'image') {
-                contentGroup.style.display = 'block';
-                contentTextarea.placeholder = 'Enter description or caption for this image...';
-            } else if (contentType === 'video') {
-                contentGroup.style.display = 'block';
-                contentTextarea.placeholder = 'Enter description or transcript for this video...';
-            }
-        }
-        
-        // Preview content before publishing
+        // Preview content
         function previewContent() {
             const title = document.getElementById('title').value;
             const content = document.getElementById('content').value;
@@ -225,30 +469,39 @@
             document.getElementById('previewArea').style.display = 'block';
         }
         
-        // Publish content to the live website
+        // Publish content
         function publishContent() {
-            const title = document.getElementById('title').value;
-            const content = document.getElementById('content').value;
-            const mediaUrl = document.getElementById('mediaUrl').value;
+            const title = document.getElementById('title').value.trim();
+            const content = document.getElementById('content').value.trim();
+            const category = document.getElementById('category').value;
+            const subcategory = document.getElementById('subcategory').value;
             const contentType = document.getElementById('contentType').value;
+            const mediaUrl = document.getElementById('mediaUrl').value.trim();
+            const orderInCategory = document.getElementById('orderInCategory').value;
             
             if (!title) {
-                alert('Please enter a title!');
+                alert('Please enter a title.');
                 return;
             }
             
-            // Create content object
+            if (!category || !subcategory) {
+                alert('Please select both category and subcategory.');
+                return;
+            }
+            
             const newContent = {
                 title: title,
                 content: content,
                 mediaUrl: mediaUrl,
-                type: contentType
+                type: contentType,
+                category: category,
+                subcategory: subcategory,
+                orderInCategory: orderInCategory ? parseInt(orderInCategory) : undefined
             };
             
-            // Add content to storage and update website
             addContent(newContent);
             
-            // Show success message
+            // Show success and clear form
             document.getElementById('successMessage').style.display = 'block';
             setTimeout(() => {
                 document.getElementById('successMessage').style.display = 'none';
@@ -258,12 +511,15 @@
             document.getElementById('title').value = '';
             document.getElementById('content').value = '';
             document.getElementById('mediaUrl').value = '';
+            document.getElementById('orderInCategory').value = '';
+            document.getElementById('category').value = '';
+            document.getElementById('subcategory').value = '';
             document.getElementById('previewArea').style.display = 'none';
             
-            alert('Content published! Visit your main website to see the new content.');
+            alert('Content published successfully!');
         }
         
-        // Allow Enter key to login
+        // Enter key for login
         document.getElementById('passwordInput').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 login();
