@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Card Management - Portfolio Admin</title>
+    <link rel="stylesheet" href="shared-styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>👤 Business Card Management</h1>
+            <p>Customize your professional profile header</p>
+        </div>
+        
+        <div class="navigation">
+            <a href="index.html" class="nav-button">Add Content</a>
+            <a href="categories.html" class="nav-button">Manage Categories</a>
+            <a href="profile.html" class="nav-button active">Business Card</a>
+            <a href="../index.html" class="nav-button secondary">View Website</a>
+        </div>
+        
+        <!-- Login Section -->
+        <div class="login-section" id="loginSection">
+            <h2>Admin Login</h2>
+            <div class="form-group">
+                <input type="password" id="passwordInput" placeholder="Enter admin password" style="max-width: 300px; margin: 20px auto;">
+            </div>
+            <button onclick="login()">Access Profile Management</button>
+            <p style="margin-top: 20px; color: #666; font-size: 14px;">
+                Password: <strong>portfolio2024</strong>
+            </p>
+        </div>
+        
+        <!-- Profile Management Section -->
+        <div class="admin-section" id="adminSection">
+            <div style="display: flex; gap: 40px;">
+                <!-- Left Column: Personal Info -->
+                <div style="flex: 1;">
+                    <h2>Personal Information</h2>
+                    
+                    <div class="form-group">
+                        <label for="fullName">Full Name:</label>
+                        <input type="text" id="fullName" placeholder="Your Full Name">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="jobTitle">Job Title:</label>
+                        <input type="text" id="jobTitle" placeholder="Reporter & Content Creator">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="currentEmployer">Current Employer:</label>
+                        <input type="text" id="currentEmployer" placeholder="Your Media Company">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="location">Location:</label>
+                        <input type="text" id="location" placeholder="City, State">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="profileImage">Profile Image URL:</label>
+                        <input type="url" id="profileImage" placeholder="https://example.com/your-photo.jpg">
+                        <small style="color: #666; display: block; margin-top: 5px;">
+                            Upload your photo to ImgBB, Google Drive (public), or similar service, then paste URL here
+                        </small>
+                    </div>
+                    
+                    <h3 style="margin-top: 30px; color: #2c3e50;">Contact Information</h3>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="email">Email:</label>
+                            <input type="email" id="email" placeholder="your.email@example.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="phone">Phone:</label>
+                            <input type="tel" id="phone" placeholder="+1 (555) 123-4567">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="website">Personal Website:</label>
+                            <input type="url" id="website" placeholder="https://yourwebsite.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="linkedin">LinkedIn Profile:</label>
+                            <input type="url" id="linkedin" placeholder="https://linkedin.com/in/yourname">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="twitter">Twitter/X Profile:</label>
+                        <input type="url" id="twitter" placeholder="https://twitter.com/yourhandle">
+                    </div>
+                    
+                    <button onclick="savePersonalInfo()">Save Personal Information</button>
+                </div>
+                
+                <!-- Right Column: Bio & Settings -->
+                <div style="flex: 1;">
+                    <h2>Professional Bio</h2>
+                    
+                    <div class="form-group">
+                        <label for="shortBio">Short Bio (collapsed header):</label>
+                        <textarea id="shortBio" style="height: 100px;" placeholder="Brief professional summary that appears when the header is collapsed..."></textarea>
+                        <small style="color: #666; display: block; margin-top: 5px;">
+                            Keep this concise - 1-2 sentences that capture your expertise
+                        </small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="fullBio">Full Bio (expanded header):</label>
+                        <textarea id="fullBio" placeholder="Detailed professional biography that appears when header is expanded. You can use HTML tags like &lt;h3&gt;, &lt;p&gt;, &lt;ul&gt;, &lt;strong&gt;..."></textarea>
+                        <small style="color: #666; display: block; margin-top: 5px;">
+                            This can be longer and include achievements, experience, etc.
+                        </small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="skills">Skills (comma-separated):</label>
+                        <input type="text" id="skills" placeholder="Investigative Reporting, Breaking News, Video Production, Social Media">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="languages">Languages (comma-separated):</label>
+                        <input type="text" id="languages" placeholder="English (Native), Spanish (Fluent), French (Conversational)">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="education">Education:</label>
+                        <input type="text" id="education" placeholder="Bachelor's in Journalism, Master's in Communications">
+                    </div>
+                    
+                    <h3 style="margin-top: 30px; color: #2c3e50;">Display Settings</h3>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="headerHeight">Header Height (% of screen):</label>
+                            <input type="number" id="headerHeight" min="20" max="60" value="40">
+                            <small style="color: #666; display: block; margin-top: 5px;">20-60%</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="expandedHeight">Expanded Height (% of screen):</label>
+                            <input type="number" id="expandedHeight" min="60" max="95" value="80">
+                            <small style="color: #666; display: block; margin-top: 5px;">60-95%</small>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Contact Display Options:</label>
+                        <div style="display: flex; gap: 20px; margin-top: 10px; flex-wrap: wrap;">
+                            <label style="font-weight: normal; display: flex; align-items: center; gap: 5px;">
+                                <input type="checkbox" id="showEmail"> Show Email
+                            </label>
+                            <label style="font-weight: normal; display: flex; align-items: center; gap: 5px;">
+                                <input type="checkbox" id="showPhone"> Show Phone
+                            </label>
+                            <label style="font-weight: normal; display: flex; align-items: center; gap: 5px;">
+                                <input type="checkbox" id="showSocialMedia"> Show Social Media
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <button onclick="saveBioAndSettings()">Save Bio & Settings</button>
+                    <button onclick="previewBusinessCard()" class="secondary">Preview Business Card</button>
+                </div>
+            </div>
+            
+            <div class="success" id="successMessage">
+                ✅ Profile information saved successfully!
+            </div>
+        </div>
+    </div>
+    
+    <script src="../content.js"></script>
+    <script>
+        // Login function
+        function login() {
+            const password = document.getElementById('passwordInput').value;
+            if (password === 'portfolio2024') {
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('adminSection').style.display = 'block';
+                loadProfileData();
+            } else {
+                alert('Incorrect password! Try: portfolio2024');
+            }
+        }
+        
+        // Load existing profile data into form
+        function loadProfileData() {
+            const profile = getProfileData();
+            
+            // Load personal information
+            if (profile.personalInfo) {
+                document.getElementById('fullName').value = profile.personalInfo.fullName || '';
+                document.getElementById('jobTitle').value = profile.personalInfo.jobTitle || '';
+                document.getElementById('currentEmployer').value = profile.personalInfo.currentEmployer || '';
+                document.getElementById('location').value = profile.personalInfo.location || '';
+                document.getElementById('profileImage').value = profile.personalInfo.profileImage || '';
+                document.getElementById('email').value = profile.personalInfo.email || '';
+                document.getElementById('phone').value = profile.personalInfo.phone || '';
+                document.getElementById('website').value = profile.personalInfo.website || '';
+                document.getElementById('linkedin').value = profile.personalInfo.linkedin || '';
+                document.getElementById('twitter').value = profile.personalInfo.twitter || '';
+            }
+            
+            // Load bio information
+            if (profile.bioInfo) {
+                document.getElementById('shortBio').value = profile.bioInfo.shortBio || '';
+                document.getElementById('fullBio').value = profile.bioInfo.fullBio || '';
+                document.getElementById('skills').value = profile.bioInfo.skills ? profile.bioInfo.skills.join(', ') : '';
+                document.getElementById('languages').value = profile.bioInfo.languages ? profile.bioInfo.languages.join(', ') : '';
+                document.getElementById('education').value = profile.bioInfo.education || '';
+            }
+            
+            // Load display settings
+            if (profile.displaySettings) {
+                document.getElementById('headerHeight').value = profile.displaySettings.headerHeight || 40;
+                document.getElementById('expandedHeight').value = profile.displaySettings.expandedHeight || 80;
+                document.getElementById('showEmail').checked = profile.displaySettings.showEmail !== false;
+                document.getElementById('showPhone').checked = profile.displaySettings.showPhone !== false;
+                document.getElementById('showSocialMedia').checked = profile.displaySettings.showSocialMedia !== false;
+            }
+        }
+        
+        // Save personal information
+        function savePersonalInfo() {
+            const personalInfo = {
+                fullName: document.getElementById('fullName').value.trim(),
+                jobTitle: document.getElementById('jobTitle').value.trim(),
+                currentEmployer: document.getElementById('currentEmployer').value.trim(),
+                location: document.getElementById('location').value.trim(),
+                profileImage: document.getElementById('profileImage').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                phone: document.getElementById('phone').value.trim(),
+                website: document.getElementById('website').value.trim(),
+                linkedin: document.getElementById('linkedin').value.trim(),
+                twitter: document.getElementById('twitter').value.trim()
+            };
+            
+            updateProfile('personalInfo', personalInfo);
+            showSuccess('Personal information saved successfully!');
+        }
+        
+        // Save bio and display settings
+        function saveBioAndSettings() {
+            const bioInfo = {
+                shortBio: document.getElementById('shortBio').value.trim(),
+                fullBio: document.getElementById('fullBio').value.trim(),
+                skills: document.getElementById('skills').value ? 
+                    document.getElementById('skills').value.split(',').map(s => s.trim()).filter(s => s) : [],
+                languages: document.getElementById('languages').value ? 
+                    document.getElementById('languages').value.split(',').map(s => s.trim()).filter(s => s) : [],
+                education: document.getElementById('education').value.trim()
+            };
+            
+            const displaySettings = {
+                headerHeight: parseInt(document.getElementById('headerHeight').value),
+                expandedHeight: parseInt(document.getElementById('expandedHeight').value),
+                showEmail: document.getElementById('showEmail').checked,
+                showPhone: document.getElementById('showPhone').checked,
+                showSocialMedia: document.getElementById('showSocialMedia').checked
+            };
+            
+            updateProfile('bioInfo', bioInfo);
+            updateProfile('displaySettings', displaySettings);
+            showSuccess('Bio and settings saved successfully!');
+        }
+        
+        // Preview business card (simple text preview for now)
+        function previewBusinessCard() {
+            const profile = getProfileData();
+            let preview = 'Business Card Preview:\n\n';
+            
+            preview += `Name: ${profile.personalInfo?.fullName || 'Not set'}\n`;
+            preview += `Title: ${profile.personalInfo?.jobTitle || 'Not set'}\n`;
+            preview += `Employer: ${profile.personalInfo?.currentEmployer || 'Not set'}\n`;
+            preview += `Location: ${profile.personalInfo?.location || 'Not set'}\n\n`;
+            preview += `Short Bio: ${profile.bioInfo?.shortBio || 'Not set'}\n\n`;
+            
+            if (profile.displaySettings) {
+                preview += `Header Height: ${profile.displaySettings.headerHeight || 40}%\n`;
+                preview += `Expanded Height: ${profile.displaySettings.expandedHeight || 80}%\n`;
+            }
+            
+            alert(preview);
+        }
+        
+        // Show success message
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = '✅ ' + message;
+            successDiv.style.display = 'block';
+            setTimeout(() => {
+                successDiv.style.display = 'none';
+            }, 4000);
+        }
+        
+        // Enter key to login
+        document.getElementById('passwordInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                login();
+            }
+        });
+    </script>
+</body>
+</html>

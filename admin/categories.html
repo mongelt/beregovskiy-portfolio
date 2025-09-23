@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Category Management - Portfolio Admin</title>
+    <link rel="stylesheet" href="shared-styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📁 Category Management</h1>
+            <p>Organize your portfolio structure</p>
+        </div>
+        
+        <div class="navigation">
+            <a href="index.html" class="nav-button">Add Content</a>
+            <a href="categories.html" class="nav-button active">Manage Categories</a>
+            <a href="profile.html" class="nav-button">Business Card</a>
+            <a href="../index.html" class="nav-button secondary">View Website</a>
+        </div>
+        
+        <!-- Login Section -->
+        <div class="login-section" id="loginSection">
+            <h2>Admin Login</h2>
+            <div class="form-group">
+                <input type="password" id="passwordInput" placeholder="Enter admin password" style="max-width: 300px; margin: 20px auto;">
+            </div>
+            <button onclick="login()">Access Category Management</button>
+            <p style="margin-top: 20px; color: #666; font-size: 14px;">
+                Password: <strong>portfolio2024</strong>
+            </p>
+        </div>
+        
+        <!-- Category Management Section -->
+        <div class="admin-section" id="adminSection">
+            <div style="display: flex; gap: 40px;">
+                <!-- Left Column: Add Categories -->
+                <div style="flex: 1;">
+                    <h2>Add New Category</h2>
+                    
+                    <div class="form-group">
+                        <label for="newCategoryName">Category Name:</label>
+                        <input type="text" id="newCategoryName" placeholder="e.g., Writing, Reporting, Media">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="newSubcategories">Subcategories (one per line):</label>
+                        <textarea id="newSubcategories" placeholder="Blog Posts&#10;White Papers&#10;One-Pagers&#10;Press Releases" style="height: 120px;"></textarea>
+                        <small style="color: #666; display: block; margin-top: 5px;">
+                            Type each subcategory on a new line. You can add more later.
+                        </small>
+                    </div>
+                    
+                    <button onclick="addNewCategory()">Add Category</button>
+                    
+                    <hr style="margin: 30px 0; border: 1px solid #ddd;">
+                    
+                    <h2>Add Subcategory to Existing Category</h2>
+                    
+                    <div class="form-group">
+                        <label for="existingCategory">Choose Existing Category:</label>
+                        <select id="existingCategory">
+                            <option value="">Select Category</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="newSubcategoryName">New Subcategory Name:</label>
+                        <input type="text" id="newSubcategoryName" placeholder="e.g., Press Releases, Feature Stories">
+                    </div>
+                    
+                    <button onclick="addNewSubcategory()">Add Subcategory</button>
+                </div>
+                
+                <!-- Right Column: Current Categories -->
+                <div style="flex: 1;">
+                    <h2>Current Categories</h2>
+                    <div class="category-list" id="categoryList">
+                        Loading categories...
+                    </div>
+                    
+                    <button onclick="refreshCategories()" class="secondary" style="margin-top: 15px;">Refresh List</button>
+                </div>
+            </div>
+            
+            <div class="success" id="successMessage">
+                ✅ Category updated successfully!
+            </div>
+        </div>
+    </div>
+    
+    <script src="../content.js"></script>
+    <script>
+        // Login function
+        function login() {
+            const password = document.getElementById('passwordInput').value;
+            if (password === 'portfolio2024') {
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('adminSection').style.display = 'block';
+                loadCategories();
+            } else {
+                alert('Incorrect password! Try: portfolio2024');
+            }
+        }
+        
+        // Load and display current categories
+        function loadCategories() {
+            const categories = getStoredCategories();
+            const categoryList = document.getElementById('categoryList');
+            const existingCategorySelect = document.getElementById('existingCategory');
+            
+            let html = '';
+            existingCategorySelect.innerHTML = '<option value="">Select Category</option>';
+            
+            if (Object.keys(categories).length === 0) {
+                html = '<p style="color: #666; font-style: italic;">No categories created yet. Add your first category!</p>';
+            } else {
+                Object.keys(categories)
+                    .sort((a, b) => categories[a].order - categories[b].order)
+                    .forEach(catName => {
+                        html += `<div class="category-item">${catName}</div>`;
+                        existingCategorySelect.innerHTML += `<option value="${catName}">${catName}</option>`;
+                        
+                        const subcats = categories[catName].subcategories;
+                        if (subcats && Object.keys(subcats).length > 0) {
+                            Object.keys(subcats)
+                                .sort((a, b) => subcats[a].order - subcats[b].order)
+                                .forEach(subName => {
+                                    html += `<div class="subcategory-item">└ ${subName}</div>`;
+                                });
+                        } else {
+                            html += `<div class="subcategory-item" style="color: #999;">└ No subcategories yet</div>`;
+                        }
+                    });
+            }
+            
+            categoryList.innerHTML = html;
+        }
+        
+        // Add new category with subcategories
+        function addNewCategory() {
+            const categoryName = document.getElementById('newCategoryName').value.trim();
+            const subcategoriesText = document.getElementById('newSubcategories').value.trim();
+            
+            if (!categoryName) {
+                alert('Please enter a category name.');
+                return;
+            }
+            
+            // Check if category already exists
+            const existingCategories = getStoredCategories();
+            if (existingCategories[categoryName]) {
+                alert('Category already exists! Choose a different name or add subcategories to the existing category.');
+                return;
+            }
+            
+            const subcategories = subcategoriesText ? 
+                subcategoriesText.split('\n').map(s => s.trim()).filter(s => s) : [];
+            
+            addCategory(categoryName, subcategories);
+            
+            // Clear form
+            document.getElementById('newCategoryName').value = '';
+            document.getElementById('newSubcategories').value = '';
+            
+            // Refresh display
+            loadCategories();
+            showSuccess(`Category "${categoryName}" added successfully with ${subcategories.length} subcategories!`);
+        }
+        
+        // Add subcategory to existing category
+        function addNewSubcategory() {
+            const categoryName = document.getElementById('existingCategory').value;
+            const subcategoryName = document.getElementById('newSubcategoryName').value.trim();
+            
+            if (!categoryName) {
+                alert('Please select a category.');
+                return;
+            }
+            
+            if (!subcategoryName) {
+                alert('Please enter a subcategory name.');
+                return;
+            }
+            
+            // Check if subcategory already exists
+            const categories = getStoredCategories();
+            if (categories[categoryName].subcategories[subcategoryName]) {
+                alert('Subcategory already exists in this category!');
+                return;
+            }
+            
+            addSubcategory(categoryName, subcategoryName);
+            
+            // Clear form
+            document.getElementById('newSubcategoryName').value = '';
+            document.getElementById('existingCategory').value = '';
+            
+            // Refresh display
+            loadCategories();
+            showSuccess(`Subcategory "${subcategoryName}" added to "${categoryName}"!`);
+        }
+        
+        // Refresh categories display
+        function refreshCategories() {
+            loadCategories();
+            showSuccess('Categories refreshed!');
+        }
+        
+        // Show success message
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = '✅ ' + message;
+            successDiv.style.display = 'block';
+            setTimeout(() => {
+                successDiv.style.display = 'none';
+            }, 4000);
+        }
+        
+        // Enter key to login
+        document.getElementById('passwordInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                login();
+            }
+        });
+    </script>
+</body>
+</html>
