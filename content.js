@@ -174,6 +174,76 @@ function addSubcategory(categoryName, subcategoryName) {
         saveCategories(categories);
     }
 }
+// Profile/Business Card Management
+function initializeProfile() {
+    if (!localStorage.getItem('portfolioProfile')) {
+        const initialProfile = {
+            personalInfo: {
+                fullName: "Your Name",
+                jobTitle: "Reporter & Content Creator",
+                currentEmployer: "Your Media Company",
+                location: "Your City, State",
+                profileImage: "", // URL to profile image
+                email: "your.email@example.com",
+                phone: "+1 (555) 123-4567",
+                website: "https://beregovskiy.com",
+                linkedin: "https://linkedin.com/in/yourname",
+                twitter: "https://twitter.com/yourhandle"
+            },
+            bioInfo: {
+                shortBio: "Award-winning reporter with 10+ years of experience covering breaking news, investigations, and feature stories. Passionate about accurate, compelling storytelling.",
+                fullBio: `<p>Professional journalist with extensive experience in digital media, print journalism, and broadcast reporting. Specializes in investigative reporting, breaking news coverage, and feature storytelling.</p>
+                
+                <h3>Experience Highlights</h3>
+                <ul>
+                <li>10+ years in professional journalism</li>
+                <li>Award-winning investigative pieces</li>
+                <li>Expert in multimedia storytelling</li>
+                <li>Fluent in multiple languages</li>
+                </ul>
+                
+                <h3>Notable Achievements</h3>
+                <ul>
+                <li>Excellence in Journalism Award 2023</li>
+                <li>Best Investigative Series 2022</li>
+                <li>Featured speaker at journalism conferences</li>
+                </ul>`,
+                skills: ["Investigative Reporting", "Breaking News", "Feature Writing", "Video Production", "Social Media", "Data Analysis"],
+                languages: ["English (Native)", "Spanish (Fluent)", "French (Conversational)"],
+                education: "Bachelor's in Journalism, Master's in Communications"
+            },
+            displaySettings: {
+                showEmail: true,
+                showPhone: true,
+                showSocialMedia: true,
+                headerHeight: 40, // percentage of screen height
+                expandedHeight: 80,
+                primaryColor: "#2c3e50",
+                secondaryColor: "#3498db"
+            }
+        };
+        localStorage.setItem('portfolioProfile', JSON.stringify(initialProfile));
+    }
+}
 
+// Get profile data
+function getProfileData() {
+    const stored = localStorage.getItem('portfolioProfile');
+    return stored ? JSON.parse(stored) : {};
+}
+
+// Save profile data
+function saveProfileData(profileData) {
+    localStorage.setItem('portfolioProfile', JSON.stringify(profileData));
+}
+
+// Update profile section
+function updateProfile(section, data) {
+    const profile = getProfileData();
+    profile[section] = { ...profile[section], ...data };
+    saveProfileData(profile);
+}
+// Initialize everything when script loads
 // Initialize everything when script loads
 initializeContent();
+initializeProfile();
