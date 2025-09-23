@@ -5,70 +5,307 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Beregovskiy Portfolio</title>
     <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
-    <header>
-        <nav>
-            <h1>Beregovskiy Portfolio</h1>
-            <ul>
-                <li><a href="#home">Home</a></li>
-                <li><a href="#portfolio">Portfolio</a></li>
-                <li><a href="#about">About</a></li>
-            </ul>
-        </nav>
+    <!-- Expandable Business Card Header -->
+    <header id="businessCard" class="business-card collapsed">
+        <div class="business-card-content">
+            <div class="profile-section">
+                <div class="profile-image-container">
+                    <img id="profileImage" src="" alt="Profile" class="profile-image">
+                    <div class="profile-image-placeholder">
+                        <i class="fas fa-user"></i>
+                    </div>
+                </div>
+                
+                <div class="profile-info">
+                    <h1 id="fullName" class="profile-name">Loading...</h1>
+                    <p id="jobTitle" class="profile-title">Loading...</p>
+                    <p id="currentEmployer" class="profile-employer">Loading...</p>
+                    <p id="location" class="profile-location">
+                        <i class="fas fa-map-marker-alt"></i> <span>Loading...</span>
+                    </p>
+                </div>
+            </div>
+            
+            <div class="profile-summary">
+                <p id="shortBio" class="short-bio">Loading...</p>
+            </div>
+            
+            <div class="contact-info">
+                <div class="contact-item" id="emailContact" style="display: none;">
+                    <i class="fas fa-envelope"></i>
+                    <a id="emailLink" href="">email</a>
+                </div>
+                <div class="contact-item" id="phoneContact" style="display: none;">
+                    <i class="fas fa-phone"></i>
+                    <span id="phoneNumber">phone</span>
+                </div>
+                <div class="contact-item" id="websiteContact" style="display: none;">
+                    <i class="fas fa-globe"></i>
+                    <a id="websiteLink" href="" target="_blank">website</a>
+                </div>
+                <div class="contact-item" id="linkedinContact" style="display: none;">
+                    <i class="fab fa-linkedin"></i>
+                    <a id="linkedinLink" href="" target="_blank">LinkedIn</a>
+                </div>
+                <div class="contact-item" id="twitterContact" style="display: none;">
+                    <i class="fab fa-twitter"></i>
+                    <a id="twitterLink" href="" target="_blank">Twitter</a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Expanded Content (hidden initially) -->
+        <div class="expanded-content" id="expandedContent" style="display: none;">
+            <div class="full-bio" id="fullBio">
+                Loading full bio...
+            </div>
+            
+            <div class="professional-details">
+                <div class="detail-section">
+                    <h3>Skills</h3>
+                    <div id="skillsList" class="skills-list">Loading...</div>
+                </div>
+                
+                <div class="detail-section">
+                    <h3>Languages</h3>
+                    <div id="languagesList" class="languages-list">Loading...</div>
+                </div>
+                
+                <div class="detail-section">
+                    <h3>Education</h3>
+                    <p id="educationInfo">Loading...</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Expand/Collapse Button -->
+        <button class="expand-button" id="expandButton" onclick="toggleBusinessCard()">
+            <i class="fas fa-chevron-down"></i>
+            <span class="expand-text">More Info</span>
+        </button>
     </header>
-
-    <main>
-        <section id="home">
-            <h2>Welcome to My Portfolio</h2>
-            <p>Discover my latest work and creative projects below.</p>
-        </section>
-
-        <section id="portfolio">
-            <h2>My Work</h2>
-            <div id="contentContainer">
-                <p>Loading content...</p>
+    
+    <!-- Main Content Area -->
+    <main class="main-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>Portfolio</h2>
+                <a href="admin/" class="admin-link">
+                    <i class="fas fa-cog"></i>
+                </a>
+            </div>
+            
+            <nav class="category-navigation" id="categoryNav">
+                <div class="loading">Loading categories...</div>
+            </nav>
+        </aside>
+        
+        <!-- Content Display Area -->
+        <section class="content-area">
+            <div class="content-header">
+                <h2 id="contentTitle">Welcome to My Portfolio</h2>
+                <p id="contentSubtitle">Select a category from the sidebar to view my work</p>
+            </div>
+            
+            <div class="content-container" id="contentContainer">
+                <div class="welcome-message">
+                    <h3>Professional Portfolio</h3>
+                    <p>Browse through my work using the categories on the left, or expand my business card above to learn more about my background and experience.</p>
+                    <p>This portfolio showcases my expertise in journalism, reporting, and content creation across multiple media formats.</p>
+                </div>
             </div>
         </section>
-
-        <section id="about">
-            <h2>About Me</h2>
-            <p>Professional portfolio showcasing my creative work and expertise.</p>
-            <p><a href="admin.html" style="color: #3498db; font-size: 14px;">Admin Access</a></p>
-        </section>
     </main>
-
-    <footer>
-        <p>&copy; 2024 Beregovskiy Portfolio. All rights reserved.</p>
-    </footer>
-
+    
     <script src="content.js"></script>
     <script>
-        // Function to display portfolio content
-        function updatePortfolioDisplay() {
-            const container = document.getElementById('contentContainer');
-            const content = getAllContent();
+        // Business card expansion functionality
+        function toggleBusinessCard() {
+            const businessCard = document.getElementById('businessCard');
+            const expandButton = document.getElementById('expandButton');
+            const expandedContent = document.getElementById('expandedContent');
+            const expandText = expandButton.querySelector('.expand-text');
+            const chevron = expandButton.querySelector('i');
             
-            if (content.length === 0) {
-                container.innerHTML = '<p>No content published yet. <a href="admin.html">Add some content</a> to get started!</p>';
+            if (businessCard.classList.contains('collapsed')) {
+                // Expand
+                businessCard.classList.remove('collapsed');
+                businessCard.classList.add('expanded');
+                expandedContent.style.display = 'block';
+                expandText.textContent = 'Less Info';
+                chevron.className = 'fas fa-chevron-up';
+            } else {
+                // Collapse
+                businessCard.classList.remove('expanded');
+                businessCard.classList.add('collapsed');
+                expandedContent.style.display = 'none';
+                expandText.textContent = 'More Info';
+                chevron.className = 'fas fa-chevron-down';
+            }
+        }
+        
+        // Load profile data into business card
+        function loadBusinessCardData() {
+            const profile = getProfileData();
+            
+            if (profile.personalInfo) {
+                const info = profile.personalInfo;
+                
+                // Basic info
+                document.getElementById('fullName').textContent = info.fullName || 'Your Name';
+                document.getElementById('jobTitle').textContent = info.jobTitle || 'Your Title';
+                document.getElementById('currentEmployer').textContent = info.currentEmployer || 'Your Company';
+                document.getElementById('location').querySelector('span').textContent = info.location || 'Your Location';
+                
+                // Profile image
+                const profileImg = document.getElementById('profileImage');
+                const placeholder = document.querySelector('.profile-image-placeholder');
+                
+                if (info.profileImage) {
+                    profileImg.src = info.profileImage;
+                    profileImg.style.display = 'block';
+                    placeholder.style.display = 'none';
+                } else {
+                    profileImg.style.display = 'none';
+                    placeholder.style.display = 'flex';
+                }
+                
+                // Contact information
+                if (profile.displaySettings?.showEmail && info.email) {
+                    document.getElementById('emailContact').style.display = 'flex';
+                    document.getElementById('emailLink').href = `mailto:${info.email}`;
+                    document.getElementById('emailLink').textContent = info.email;
+                }
+                
+                if (profile.displaySettings?.showPhone && info.phone) {
+                    document.getElementById('phoneContact').style.display = 'flex';
+                    document.getElementById('phoneNumber').textContent = info.phone;
+                }
+                
+                if (profile.displaySettings?.showSocialMedia) {
+                    if (info.website) {
+                        document.getElementById('websiteContact').style.display = 'flex';
+                        document.getElementById('websiteLink').href = info.website;
+                    }
+                    
+                    if (info.linkedin) {
+                        document.getElementById('linkedinContact').style.display = 'flex';
+                        document.getElementById('linkedinLink').href = info.linkedin;
+                    }
+                    
+                    if (info.twitter) {
+                        document.getElementById('twitterContact').style.display = 'flex';
+                        document.getElementById('twitterLink').href = info.twitter;
+                    }
+                }
+            }
+            
+            if (profile.bioInfo) {
+                const bio = profile.bioInfo;
+                
+                // Bios
+                document.getElementById('shortBio').textContent = bio.shortBio || 'Professional summary coming soon...';
+                document.getElementById('fullBio').innerHTML = bio.fullBio || '<p>Detailed bio coming soon...</p>';
+                
+                // Skills
+                if (bio.skills && bio.skills.length > 0) {
+                    document.getElementById('skillsList').innerHTML = bio.skills.map(skill => 
+                        `<span class="skill-tag">${skill}</span>`
+                    ).join('');
+                } else {
+                    document.getElementById('skillsList').textContent = 'Skills coming soon...';
+                }
+                
+                // Languages
+                if (bio.languages && bio.languages.length > 0) {
+                    document.getElementById('languagesList').innerHTML = bio.languages.map(lang => 
+                        `<span class="language-tag">${lang}</span>`
+                    ).join('');
+                } else {
+                    document.getElementById('languagesList').textContent = 'Languages coming soon...';
+                }
+                
+                // Education
+                document.getElementById('educationInfo').textContent = bio.education || 'Education info coming soon...';
+            }
+        }
+        
+        // Load categories into sidebar
+        function loadCategorySidebar() {
+            const categories = getStoredCategories();
+            const categoryNav = document.getElementById('categoryNav');
+            
+            if (Object.keys(categories).length === 0) {
+                categoryNav.innerHTML = '<div class="no-categories">No categories yet. <a href="admin/">Add some content</a> to get started!</div>';
                 return;
             }
             
             let html = '';
             
+            Object.keys(categories)
+                .sort((a, b) => categories[a].order - categories[b].order)
+                .forEach(catName => {
+                    html += `<div class="category-group">`;
+                    html += `<h3 class="category-title">${catName}</h3>`;
+                    html += `<div class="subcategory-list">`;
+                    
+                    const subcats = categories[catName].subcategories;
+                    Object.keys(subcats)
+                        .sort((a, b) => subcats[a].order - subcats[b].order)
+                        .forEach(subName => {
+                            html += `<button class="subcategory-btn" onclick="showCategoryContent('${catName}', '${subName}')">
+                                ${subName}
+                            </button>`;
+                        });
+                    
+                    html += `</div></div>`;
+                });
+            
+            categoryNav.innerHTML = html;
+        }
+        
+        // Show content for selected category/subcategory
+        function showCategoryContent(category, subcategory) {
+            const content = getContentByCategory(category, subcategory);
+            const container = document.getElementById('contentContainer');
+            const title = document.getElementById('contentTitle');
+            const subtitle = document.getElementById('contentSubtitle');
+            
+            title.textContent = subcategory;
+            subtitle.textContent = `${category} • ${content.length} items`;
+            
+            if (content.length === 0) {
+                container.innerHTML = `
+                    <div class="no-content">
+                        <h3>No content in this category yet</h3>
+                        <p>Use the <a href="admin/">admin panel</a> to add content to "${subcategory}"</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
             content.forEach(item => {
                 html += `
                     <article class="content-item">
-                        <h3>${item.title}</h3>
-                        <div class="content-meta">
-                            <span class="content-type">${item.type.toUpperCase()}</span>
-                            <span class="content-date">${item.dateCreated}</span>
-                        </div>
+                        <header class="content-item-header">
+                            <h3>${item.title}</h3>
+                            <div class="content-meta">
+                                <span class="content-type">${item.type.toUpperCase()}</span>
+                                <span class="content-date">${item.dateCreated}</span>
+                            </div>
+                        </header>
                         
-                        ${item.type === 'image' && item.mediaUrl ? 
-                            `<img src="${item.mediaUrl}" alt="${item.title}" class="content-media">` : ''}
+                        ${item.mediaUrl && item.type === 'image' ? 
+                            `<div class="content-media">
+                                <img src="${item.mediaUrl}" alt="${item.title}">
+                            </div>` : ''}
                         
-                        ${item.type === 'video' && item.mediaUrl ? 
+                        ${item.mediaUrl && item.type === 'video' ? 
                             generateVideoHTML(item.mediaUrl) : ''}
                         
                         <div class="content-body">
@@ -79,29 +316,35 @@
             });
             
             container.innerHTML = html;
+            
+            // Highlight selected category
+            document.querySelectorAll('.subcategory-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            event.target.classList.add('active');
         }
         
-        // Function to generate video HTML
+        // Generate video HTML
         function generateVideoHTML(url) {
             if (url.includes('youtube.com') || url.includes('youtu.be')) {
                 const videoId = url.includes('youtu.be') ? 
                     url.split('/').pop() : 
                     url.split('v=')[1]?.split('&')[0];
-                return `<iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen class="content-media"></iframe>`;
+                return `<div class="content-media">
+                    <iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>
+                </div>`;
             } else {
-                return `<video controls class="content-media"><source src="${url}"></video>`;
+                return `<div class="content-media">
+                    <video controls><source src="${url}"></video>
+                </div>`;
             }
         }
         
-        // Load content when page loads
+        // Initialize everything when page loads
         document.addEventListener('DOMContentLoaded', function() {
-            // Small delay to ensure content.js is fully loaded
-            setTimeout(updatePortfolioDisplay, 100);
-        });
-        
-        // Also update display when returning from admin panel
-        window.addEventListener('focus', function() {
-            updatePortfolioDisplay();
+            loadBusinessCardData();
+            loadCategorySidebar();
         });
     </script>
 </body>

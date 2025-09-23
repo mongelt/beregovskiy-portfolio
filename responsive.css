@@ -1,0 +1,517 @@
+/* Responsive Design - Mobile & Tablet Optimization */
+
+/* Large Tablets (iPad Pro, etc.) */
+@media screen and (max-width: 1200px) {
+    .business-card-content {
+        padding: 1.5rem 2rem;
+    }
+    
+    .profile-name {
+        font-size: 2.2rem;
+    }
+    
+    .content-area {
+        padding: 1.5rem 2rem;
+    }
+    
+    .professional-details {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+    }
+}
+
+/* Standard Tablets (iPad, etc.) */
+@media screen and (max-width: 1024px) {
+    /* Business Card Adjustments */
+    .business-card.collapsed {
+        height: 35vh;
+    }
+    
+    .business-card.expanded {
+        height: 75vh;
+    }
+    
+    .main-container {
+        margin-top: 35vh;
+        min-height: 65vh;
+    }
+    
+    .business-card.expanded ~ .main-container {
+        margin-top: 75vh;
+        min-height: 25vh;
+    }
+    
+    .profile-section {
+        gap: 1.5rem;
+    }
+    
+    .profile-image-container {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .profile-name {
+        font-size: 2rem;
+    }
+    
+    .profile-title {
+        font-size: 1.2rem;
+    }
+    
+    .contact-info {
+        gap: 1.5rem;
+    }
+    
+    /* Layout Adjustments */
+    .sidebar {
+        width: 35%;
+        padding: 1.5rem 0;
+    }
+    
+    .content-area {
+        width: 65%;
+        padding: 1.5rem 2rem;
+    }
+    
+    .category-group {
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .category-title {
+        font-size: 1.1rem;
+    }
+    
+    .subcategory-btn {
+        padding: 0.7rem 1rem;
+        font-size: 0.9rem;
+    }
+    
+    .content-item {
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .content-item-header h3 {
+        font-size: 1.4rem;
+    }
+}
+
+/* Large Mobile Devices (iPhone Plus, etc.) */
+@media screen and (max-width: 768px) {
+    /* Switch to vertical layout */
+    .main-container {
+        flex-direction: column;
+        margin-top: 30vh;
+    }
+    
+    .business-card.collapsed {
+        height: 30vh;
+    }
+    
+    .business-card.expanded {
+        height: 70vh;
+    }
+    
+    .business-card.expanded ~ .main-container {
+        margin-top: 70vh;
+    }
+    
+    /* Business Card Mobile Layout */
+    .business-card-content {
+        padding: 1rem 1.5rem;
+    }
+    
+    .profile-section {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .profile-image-container {
+        width: 80px;
+        height: 80px;
+        align-self: center;
+    }
+    
+    .profile-name {
+        font-size: 1.8rem;
+    }
+    
+    .profile-title {
+        font-size: 1.1rem;
+    }
+    
+    .profile-employer,
+    .profile-location {
+        font-size: 1rem;
+    }
+    
+    .short-bio {
+        font-size: 1rem;
+        padding: 0.8rem 1rem;
+        text-align: center;
+    }
+    
+    .contact-info {
+        justify-content: center;
+        gap: 1rem;
+    }
+    
+    .contact-item {
+        font-size: 0.85rem;
+    }
+    
+    .expanded-content {
+        padding-top: 1rem;
+    }
+    
+    .full-bio {
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .professional-details {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    /* Sidebar becomes full width on top */
+    .sidebar {
+        width: 100%;
+        min-height: auto;
+        padding: 1.5rem 0;
+        position: static;
+        border-right: none;
+        border-bottom: 3px solid #34495e;
+    }
+    
+    .sidebar-header {
+        padding: 0 1.5rem 1rem;
+    }
+    
+    .sidebar-header h2 {
+        font-size: 1.5rem;
+    }
+    
+    .category-navigation {
+        padding: 0 1rem;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+    }
+    
+    .category-group {
+        margin-bottom: 0;
+    }
+    
+    /* Content area takes full width below sidebar */
+    .content-area {
+        width: 100%;
+        padding: 1.5rem;
+    }
+    
+    .content-header h2 {
+        font-size: 1.8rem;
+    }
+    
+    .content-item {
+        padding: 1.2rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .content-media iframe {
+        height: 250px;
+    }
+    
+    /* Tables scroll horizontally on mobile */
+    .content-body table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+    
+    .content-body th,
+    .content-body td {
+        padding: 0.8rem;
+        font-size: 0.9rem;
+    }
+}
+
+/* Standard Mobile Devices */
+@media screen and (max-width: 480px) {
+    /* Further compress business card */
+    .business-card.collapsed {
+        height: 25vh;
+    }
+    
+    .business-card.expanded {
+        height: 65vh;
+    }
+    
+    .main-container {
+        margin-top: 25vh;
+    }
+    
+    .business-card.expanded ~ .main-container {
+        margin-top: 65vh;
+    }
+    
+    .business-card-content {
+        padding: 0.8rem 1rem;
+    }
+    
+    .profile-name {
+        font-size: 1.5rem;
+    }
+    
+    .profile-title {
+        font-size: 1rem;
+    }
+    
+    .profile-employer,
+    .profile-location {
+        font-size: 0.9rem;
+    }
+    
+    .short-bio {
+        font-size: 0.9rem;
+        padding: 0.6rem 0.8rem;
+    }
+    
+    .contact-info {
+        flex-wrap: wrap;
+        gap: 0.8rem;
+    }
+    
+    .contact-item {
+        font-size: 0.8rem;
+    }
+    
+    /* Sidebar adjustments */
+    .sidebar-header {
+        padding: 0 1rem 0.8rem;
+    }
+    
+    .sidebar-header h2 {
+        font-size: 1.3rem;
+    }
+    
+    .admin-link {
+        width: 35px;
+        height: 35px;
+    }
+    
+    .category-navigation {
+        grid-template-columns: 1fr;
+    }
+    
+    .category-group {
+        padding: 0.8rem;
+    }
+    
+    .category-title {
+        font-size: 1rem;
+    }
+    
+    .subcategory-btn {
+        padding: 0.6rem 0.8rem;
+        font-size: 0.85rem;
+    }
+    
+    /* Content area */
+    .content-area {
+        padding: 1rem;
+    }
+    
+    .content-header h2 {
+        font-size: 1.5rem;
+    }
+    
+    .content-header p {
+        font-size: 1rem;
+    }
+    
+    .content-item {
+        padding: 1rem;
+        margin-bottom: 1.2rem;
+    }
+    
+    .content-item-header h3 {
+        font-size: 1.2rem;
+    }
+    
+    .content-body {
+        font-size: 1rem;
+    }
+    
+    .content-body h1 { font-size: 1.5rem; }
+    .content-body h2 { font-size: 1.3rem; }
+    .content-body h3 { font-size: 1.2rem; }
+    .content-body h4 { font-size: 1.1rem; }
+    
+    .content-media iframe {
+        height: 200px;
+    }
+    
+    .expand-button {
+        padding: 0.6rem 1.5rem;
+        font-size: 0.8rem;
+    }
+}
+
+/* Very Small Mobile Devices */
+@media screen and (max-width: 360px) {
+    .business-card.collapsed {
+        height: 22vh;
+    }
+    
+    .main-container {
+        margin-top: 22vh;
+    }
+    
+    .profile-name {
+        font-size: 1.3rem;
+    }
+    
+    .content-header h2 {
+        font-size: 1.3rem;
+    }
+    
+    .content-item-header h3 {
+        font-size: 1.1rem;
+    }
+    
+    .content-area,
+    .sidebar {
+        padding: 0.8rem;
+    }
+    
+    .content-media iframe {
+        height: 180px;
+    }
+}
+
+/* Landscape Mobile Orientation */
+@media screen and (max-height: 500px) and (orientation: landscape) {
+    .business-card.collapsed {
+        height: 60vh;
+    }
+    
+    .business-card.expanded {
+        height: 90vh;
+    }
+    
+    .main-container {
+        margin-top: 60vh;
+    }
+    
+    .business-card.expanded ~ .main-container {
+        margin-top: 90vh;
+    }
+    
+    .profile-section {
+        flex-direction: row;
+        text-align: left;
+    }
+    
+    .main-container {
+        flex-direction: row;
+    }
+    
+    .sidebar {
+        width: 40%;
+        border-right: 3px solid #34495e;
+        border-bottom: none;
+    }
+    
+    .content-area {
+        width: 60%;
+    }
+    
+    .category-navigation {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* High DPI Displays */
+@media screen and (-webkit-min-device-pixel-ratio: 2),
+       screen and (min-resolution: 192dpi) {
+    .profile-image {
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: crisp-edges;
+    }
+    
+    .content-media img {
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: crisp-edges;
+    }
+}
+
+/* Touch Device Optimizations */
+@media (hover: none) and (pointer: coarse) {
+    .subcategory-btn {
+        padding: 1rem;
+        font-size: 1rem;
+    }
+    
+    .expand-button {
+        padding: 1rem 2rem;
+    }
+    
+    .admin-link {
+        width: 45px;
+        height: 45px;
+    }
+    
+    /* Remove hover effects on touch devices */
+    .content-item:hover {
+        transform: none;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    }
+    
+    .content-item:hover::before {
+        left: -100%;
+    }
+    
+    .category-group:hover {
+        transform: none;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .business-card {
+        position: static !important;
+        height: auto !important;
+        box-shadow: none;
+    }
+    
+    .expand-button,
+    .admin-link {
+        display: none !important;
+    }
+    
+    .sidebar {
+        display: none !important;
+    }
+    
+    .main-container {
+        flex-direction: column;
+        margin-top: 0;
+    }
+    
+    .content-area {
+        width: 100% !important;
+        padding: 0;
+    }
+    
+    .content-item {
+        break-inside: avoid;
+        page-break-inside: avoid;
+        margin-bottom: 1rem;
+        box-shadow: none;
+        border: 1px solid #ccc;
+    }
+}
