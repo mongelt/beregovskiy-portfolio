@@ -1,29 +1,31 @@
-/* Main Layout - Sidebar & Content Area */
+/* Main Layout - Sidebar & Content Area with Independent Scrolling */
 
 .main-container {
     display: flex;
     margin-top: 40vh; /* Space for collapsed business card */
-    min-height: 60vh;
-    transition: margin-top 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    height: 60vh; /* Fixed height for independent scrolling */
+    transition: margin-top 0.4s cubic-bezier(0.4, 0, 0.2, 1), height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Adjust margin when business card is expanded */
+/* Adjust margin and height when business card is expanded */
 .business-card.expanded ~ .main-container {
     margin-top: 80vh;
-    min-height: 20vh;
+    height: 20vh;
 }
 
 /* Sidebar Navigation */
 .sidebar {
     width: 33.333%;
     background: linear-gradient(135deg, #ecf0f1 0%, #bdc3c7 100%);
-    min-height: 60vh;
+    height: 100%; /* Take full height of container */
     padding: 2rem 0;
     border-right: 3px solid #34495e;
-    position: sticky;
-    top: 0;
-    overflow-y: auto;
+    /* Removed position: sticky and top: 0 for independent scrolling */
+    overflow-y: auto; /* Independent scrolling */
+    overflow-x: hidden;
     box-shadow: 4px 0 15px rgba(0, 0, 0, 0.1);
+    /* Ensure consistent scrolling behavior */
+    scrollbar-width: thin;
 }
 
 .sidebar-header {
@@ -31,8 +33,13 @@
     border-bottom: 2px solid #34495e;
     margin-bottom: 2rem;
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
+    /* Prevent header from scrolling away */
+    position: sticky;
+    top: 0;
+    background: linear-gradient(135deg, #ecf0f1 0%, #bdc3c7 100%);
+    z-index: 10;
 }
 
 .sidebar-header h2 {
@@ -45,32 +52,9 @@
     margin: 0;
 }
 
-.admin-link {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    background: #34495e;
-    color: white;
-    border-radius: 50%;
-    transition: all 0.3s ease;
-    text-decoration: none;
-}
-
-.admin-link:hover {
-    background: #2c3e50;
-    transform: rotate(90deg);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-.admin-link i {
-    font-size: 1.1rem;
-}
-
 /* Category Navigation */
 .category-navigation {
-    padding: 0 1rem;
+    padding: 0 1rem 2rem; /* Add bottom padding for last items */
 }
 
 .no-categories {
@@ -169,16 +153,26 @@
 /* Content Area */
 .content-area {
     width: 66.667%;
-    padding: 2rem 3rem;
+    height: 100%; /* Take full height of container */
     background: #ffffff;
-    min-height: 60vh;
+    /* Independent scrolling */
     overflow-y: auto;
+    overflow-x: hidden;
+    /* Ensure consistent scrolling behavior */
+    scrollbar-width: thin;
 }
 
 .content-header {
-    margin-bottom: 2rem;
-    padding-bottom: 1.5rem;
+    /* Make header sticky so it stays visible while scrolling */
+    position: sticky;
+    top: 0;
+    background: #ffffff;
+    z-index: 10;
+    padding: 2rem 3rem 1.5rem;
+    margin-bottom: 0;
     border-bottom: 3px solid #34495e;
+    /* Add subtle shadow when scrolled */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .content-header h2 {
@@ -201,6 +195,7 @@
 /* Content Container */
 .content-container {
     line-height: 1.7;
+    padding: 2rem 3rem 3rem; /* Extra bottom padding */
 }
 
 /* Newspaper-style column layout for long content */
@@ -225,36 +220,40 @@
     font-size: 1.2rem;
 }
 
-/* Scrollbar Styling for Sidebar */
+/* Enhanced Scrollbar Styling for Sidebar */
 .sidebar::-webkit-scrollbar {
     width: 6px;
 }
 
 .sidebar::-webkit-scrollbar-track {
     background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
 }
 
 .sidebar::-webkit-scrollbar-thumb {
     background: rgba(52, 73, 94, 0.3);
     border-radius: 3px;
+    transition: background 0.3s ease;
 }
 
 .sidebar::-webkit-scrollbar-thumb:hover {
-    background: rgba(52, 73, 94, 0.5);
+    background: rgba(52, 73, 94, 0.6);
 }
 
-/* Content Area Scrollbar */
+/* Enhanced Content Area Scrollbar */
 .content-area::-webkit-scrollbar {
     width: 8px;
 }
 
 .content-area::-webkit-scrollbar-track {
     background: #f8f9fa;
+    border-radius: 4px;
 }
 
 .content-area::-webkit-scrollbar-thumb {
     background: #bdc3c7;
     border-radius: 4px;
+    transition: background 0.3s ease;
 }
 
 .content-area::-webkit-scrollbar-thumb:hover {
@@ -283,7 +282,20 @@
     outline-offset: 2px;
 }
 
-.admin-link:focus {
-    outline: 3px solid #3498db;
-    outline-offset: 3px;
+/* Ensure smooth scrolling behavior */
+.sidebar,
+.content-area {
+    scroll-behavior: smooth;
+}
+
+/* Add subtle visual separation between scroll areas */
+.sidebar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: -1px;
+    bottom: 0;
+    width: 1px;
+    background: linear-gradient(to bottom, transparent, #34495e, transparent);
+    pointer-events: none;
 }

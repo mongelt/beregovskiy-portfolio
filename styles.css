@@ -5,6 +5,7 @@
 @import url('layout.css');
 @import url('content-display.css');
 @import url('responsive.css');
+@import url('sidebar-hierarchy.css');
 
 /* Base Reset & Typography */
 * {

@@ -94,9 +94,6 @@
         <aside class="sidebar">
             <div class="sidebar-header">
                 <h2>Portfolio</h2>
-                <a href="admin/" class="admin-link">
-                    <i class="fas fa-cog"></i>
-                </a>
             </div>
             
             <nav class="category-navigation" id="categoryNav">
@@ -122,6 +119,7 @@
     </main>
     
     <script src="content.js"></script>
+    <script src="sidebar-navigation.js"></script>
     <script>
         // Business card expansion functionality
         function toggleBusinessCard() {
@@ -234,95 +232,10 @@
             }
         }
         
-        // Load categories into sidebar
+        // Load categories into sidebar (now handled by sidebar-navigation.js)
         function loadCategorySidebar() {
-            const categories = getStoredCategories();
-            const categoryNav = document.getElementById('categoryNav');
-            
-            if (Object.keys(categories).length === 0) {
-                categoryNav.innerHTML = '<div class="no-categories">No categories yet. <a href="admin/">Add some content</a> to get started!</div>';
-                return;
-            }
-            
-            let html = '';
-            
-            Object.keys(categories)
-                .sort((a, b) => categories[a].order - categories[b].order)
-                .forEach(catName => {
-                    html += `<div class="category-group">`;
-                    html += `<h3 class="category-title">${catName}</h3>`;
-                    html += `<div class="subcategory-list">`;
-                    
-                    const subcats = categories[catName].subcategories;
-                    Object.keys(subcats)
-                        .sort((a, b) => subcats[a].order - subcats[b].order)
-                        .forEach(subName => {
-                            html += `<button class="subcategory-btn" onclick="showCategoryContent('${catName}', '${subName}')">
-                                ${subName}
-                            </button>`;
-                        });
-                    
-                    html += `</div></div>`;
-                });
-            
-            categoryNav.innerHTML = html;
-        }
-        
-        // Show content for selected category/subcategory
-        function showCategoryContent(category, subcategory) {
-            const content = getContentByCategory(category, subcategory);
-            const container = document.getElementById('contentContainer');
-            const title = document.getElementById('contentTitle');
-            const subtitle = document.getElementById('contentSubtitle');
-            
-            title.textContent = subcategory;
-            subtitle.textContent = `${category} • ${content.length} items`;
-            
-            if (content.length === 0) {
-                container.innerHTML = `
-                    <div class="no-content">
-                        <h3>No content in this category yet</h3>
-                        <p>Use the <a href="admin/">admin panel</a> to add content to "${subcategory}"</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            let html = '';
-            content.forEach(item => {
-                html += `
-                    <article class="content-item">
-                        <header class="content-item-header">
-                            <h3>${item.title}</h3>
-                            <div class="content-meta">
-                                <span class="content-type">${item.type.toUpperCase()}</span>
-                                <span class="content-date">${item.dateCreated}</span>
-                            </div>
-                        </header>
-                        
-                        ${item.mediaUrl && item.type === 'image' ? 
-                            `<div class="content-media">
-                                <img src="${item.mediaUrl}" alt="${item.title}">
-                            </div>` : ''}
-                        
-                        ${item.mediaUrl && item.type === 'video' ? 
-                            generateVideoHTML(item.mediaUrl) : ''}
-                        
-                        <div class="content-body">
-                            ${item.content}
-                        </div>
-                    </article>
-                `;
-            });
-            
-            container.innerHTML = html;
-            
-            // Highlight selected category
-            document.querySelectorAll('.subcategory-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            
-            event.target.classList.add('active');
+            initializeEnhancedSidebar();
+            autoSelectFirstContent();
         }
         
         // Generate video HTML
