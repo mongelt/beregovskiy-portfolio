@@ -5,16 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Content Management - Portfolio Admin</title>
     <link rel="stylesheet" href="shared-styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>📝 Content Management</h1>
-            <p>Add and manage your portfolio content</p>
+            <p>Add, edit, and manage your portfolio content</p>
         </div>
         
         <div class="navigation">
-            <a href="index.html" class="nav-button active">Add Content</a>
+            <a href="index.html" class="nav-button active">Content Management</a>
             <a href="categories.html" class="nav-button">Manage Categories</a>
             <a href="profile.html" class="nav-button">Business Card</a>
             <a href="../index.html" class="nav-button secondary">View Website</a>
@@ -34,91 +35,119 @@
         
         <!-- Content Management Section -->
         <div class="admin-section" id="adminSection">
-            <h2>Add New Content</h2>
             
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="contentType">Content Type:</label>
-                    <select id="contentType">
-                        <option value="article">Article</option>
-                        <option value="image">Image</option>
-                        <option value="video">Video</option>
-                    </select>
+            <!-- Content Form -->
+            <form id="contentForm" onsubmit="handleContentSubmission(event)">
+                <h2>Content Editor</h2>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="contentType">Content Type:</label>
+                        <select id="contentType" name="type">
+                            <option value="article">Article</option>
+                            <option value="image">Image</option>
+                            <option value="video">Video</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="contentCategory">Category:</label>
+                        <select id="contentCategory" name="category" onchange="updateSubcategoryOptions()">
+                            <option value="">Select Category</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="contentSubcategory">Subcategory:</label>
+                        <select id="contentSubcategory" name="subcategory">
+                            <option value="">Select Subcategory</option>
+                        </select>
+                    </div>
                 </div>
                 
                 <div class="form-group">
-                    <label for="category">Category:</label>
-                    <select id="category" onchange="updateSubcategories()">
-                        <option value="">Select Category</option>
-                    </select>
+                    <label for="contentTitle">Title:</label>
+                    <input type="text" id="contentTitle" name="title" placeholder="Enter content title">
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="sidebarTitle">Sidebar Title (optional):</label>
+                        <input type="text" id="sidebarTitle" name="sidebarTitle" placeholder="Different title for sidebar">
+                        <small>Leave blank to use main title</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="sidebarSubtitle">Sidebar Subtitle (optional):</label>
+                        <input type="text" id="sidebarSubtitle" name="sidebarSubtitle" placeholder="Brief subtitle for sidebar">
+                    </div>
                 </div>
                 
                 <div class="form-group">
-                    <label for="subcategory">Subcategory:</label>
-                    <select id="subcategory">
-                        <option value="">Select Subcategory</option>
-                    </select>
+                    <label for="richTextEditor">Content:</label>
+                    <div id="richTextEditor" class="rich-text-editor"></div>
                 </div>
+                
+                <div class="form-group">
+                    <label for="mediaUrl">Media URL (optional):</label>
+                    <input type="url" id="mediaUrl" name="mediaUrl" placeholder="Paste image or video URL here">
+                    <small>Upload to ImgBB, YouTube, etc. and paste URL here</small>
+                </div>
+                
+                <div style="display: flex; gap: 10px; align-items: center; margin: 20px 0;">
+                    <button type="submit" class="add-btn">
+                        <i class="fas fa-plus"></i> Add Content
+                    </button>
+                    <button type="button" id="cancelEditBtn" onclick="cancelEdit()" style="display: none;">
+                        <i class="fas fa-times"></i> Cancel Edit
+                    </button>
+                </div>
+            </form>
+            
+            <hr style="margin: 40px 0; border: 1px solid #ddd;">
+            
+            <!-- Content Management List -->
+            <h2>Manage Existing Content</h2>
+            <div id="contentList">
+                <div class="loading">Loading content...</div>
             </div>
             
-            <div class="form-group">
-                <label for="title">Title:</label>
-                <input type="text" id="title" placeholder="Enter content title">
-            </div>
-            
-            <div class="form-group">
-                <label for="content">Content:</label>
-                <textarea id="content" placeholder="Write your content here. You can include basic HTML tags like &lt;h3&gt;, &lt;p&gt;, &lt;strong&gt;, etc."></textarea>
-            </div>
-            
-            <div class="form-group">
-                <label for="mediaUrl">Media URL (optional):</label>
-                <input type="url" id="mediaUrl" placeholder="Paste image or video URL here">
-                <small style="color: #666; display: block; margin-top: 5px;">
-                    Upload images/videos to a free service like ImgBB or YouTube, then paste the URL here
-                </small>
-            </div>
-            
-            <div class="form-group">
-                <label for="orderInCategory">Order in Category (optional):</label>
-                <input type="number" id="orderInCategory" placeholder="1 = shows first, 2 = shows second, etc." min="1">
-                <small style="color: #666; display: block; margin-top: 5px;">
-                    Leave blank to add at the end of the category
-                </small>
-            </div>
-            
-            <button onclick="previewContent()">Preview Content</button>
-            <button onclick="publishContent()">Publish to Website</button>
-            
-            <div class="success" id="successMessage">
-                ✅ Content published successfully! Your website has been updated.
-            </div>
-            
-            <div class="preview-area" id="previewArea">
-                <h3>Content Preview:</h3>
-                <div id="previewContent"></div>
-            </div>
         </div>
     </div>
     
     <script src="../content.js"></script>
+    <script src="content-editor.js"></script>
+    <script src="category-management.js"></script>
     <script>
+        // Initialize rich text editor
+        let contentEditor;
+        
         // Login function
         function login() {
             const password = document.getElementById('passwordInput').value;
             if (password === 'portfolio2024') {
                 document.getElementById('loginSection').style.display = 'none';
                 document.getElementById('adminSection').style.display = 'block';
-                loadCategories();
+                initializeManagement();
             } else {
                 alert('Incorrect password! Try: portfolio2024');
             }
         }
         
-        // Load categories into dropdown
-        function loadCategories() {
+        // Initialize management interface
+        function initializeManagement() {
+            // Initialize rich text editor
+            contentEditor = initializeRichTextEditor('richTextEditor');
+            
+            // Load categories and content
+            loadCategoriesIntoForm();
+            loadContentManagement();
+        }
+        
+        // Load categories into form dropdown
+        function loadCategoriesIntoForm() {
             const categories = getStoredCategories();
-            const categorySelect = document.getElementById('category');
+            const categorySelect = document.getElementById('contentCategory');
             
             categorySelect.innerHTML = '<option value="">Select Category</option>';
             
@@ -129,16 +158,16 @@
                 });
         }
         
-        // Update subcategories when category is selected
-        function updateSubcategories() {
-            const categoryName = document.getElementById('category').value;
-            const subcategorySelect = document.getElementById('subcategory');
+        // Update subcategory options when category changes
+        function updateSubcategoryOptions(selectedCategory = null) {
+            const categoryName = selectedCategory || document.getElementById('contentCategory').value;
+            const subcategorySelect = document.getElementById('contentSubcategory');
             
             subcategorySelect.innerHTML = '<option value="">Select Subcategory</option>';
             
             if (categoryName) {
                 const categories = getStoredCategories();
-                const subcats = categories[categoryName].subcategories;
+                const subcats = categories[categoryName]?.subcategories || {};
                 
                 Object.keys(subcats)
                     .sort((a, b) => subcats[a].order - subcats[b].order)
@@ -146,89 +175,6 @@
                         subcategorySelect.innerHTML += `<option value="${subName}">${subName}</option>`;
                     });
             }
-        }
-        
-        // Preview content
-        function previewContent() {
-            const title = document.getElementById('title').value;
-            const content = document.getElementById('content').value;
-            const mediaUrl = document.getElementById('mediaUrl').value;
-            const contentType = document.getElementById('contentType').value;
-            
-            if (!title) {
-                alert('Please enter a title to preview.');
-                return;
-            }
-            
-            let previewHTML = `<h2>${title}</h2>`;
-            
-            if (contentType === 'image' && mediaUrl) {
-                previewHTML += `<img src="${mediaUrl}" style="max-width: 100%; height: auto; margin: 15px 0;" alt="${title}">`;
-            } else if (contentType === 'video' && mediaUrl) {
-                if (mediaUrl.includes('youtube.com') || mediaUrl.includes('youtu.be')) {
-                    const videoId = mediaUrl.includes('youtu.be') ? 
-                        mediaUrl.split('/').pop() : 
-                        mediaUrl.split('v=')[1]?.split('&')[0];
-                    previewHTML += `<iframe width="100%" height="315" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen style="margin: 15px 0;"></iframe>`;
-                } else {
-                    previewHTML += `<video controls style="max-width: 100%; margin: 15px 0;"><source src="${mediaUrl}"></video>`;
-                }
-            }
-            
-            previewHTML += `<div style="margin-top: 15px;">${content.replace(/\n/g, '<br>')}</div>`;
-            
-            document.getElementById('previewContent').innerHTML = previewHTML;
-            document.getElementById('previewArea').style.display = 'block';
-        }
-        
-        // Publish content
-        function publishContent() {
-            const title = document.getElementById('title').value.trim();
-            const content = document.getElementById('content').value.trim();
-            const category = document.getElementById('category').value;
-            const subcategory = document.getElementById('subcategory').value;
-            const contentType = document.getElementById('contentType').value;
-            const mediaUrl = document.getElementById('mediaUrl').value.trim();
-            const orderInCategory = document.getElementById('orderInCategory').value;
-            
-            if (!title) {
-                alert('Please enter a title.');
-                return;
-            }
-            
-            if (!category || !subcategory) {
-                alert('Please select both category and subcategory.');
-                return;
-            }
-            
-            const newContent = {
-                title: title,
-                content: content,
-                mediaUrl: mediaUrl,
-                type: contentType,
-                category: category,
-                subcategory: subcategory,
-                orderInCategory: orderInCategory ? parseInt(orderInCategory) : undefined
-            };
-            
-            addContent(newContent);
-            
-            // Show success message
-            document.getElementById('successMessage').style.display = 'block';
-            setTimeout(() => {
-                document.getElementById('successMessage').style.display = 'none';
-            }, 4000);
-            
-            // Clear form
-            document.getElementById('title').value = '';
-            document.getElementById('content').value = '';
-            document.getElementById('mediaUrl').value = '';
-            document.getElementById('orderInCategory').value = '';
-            document.getElementById('category').value = '';
-            document.getElementById('subcategory').value = '';
-            document.getElementById('previewArea').style.display = 'none';
-            
-            alert('Content published successfully! Check your main website to see it.');
         }
         
         // Enter key to login

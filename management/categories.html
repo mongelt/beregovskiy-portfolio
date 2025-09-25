@@ -5,16 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Category Management - Portfolio Admin</title>
     <link rel="stylesheet" href="shared-styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>📁 Category Management</h1>
-            <p>Organize your portfolio structure</p>
+            <p>Organize your portfolio structure with full editing control</p>
         </div>
         
         <div class="navigation">
-            <a href="index.html" class="nav-button">Add Content</a>
+            <a href="index.html" class="nav-button">Content Management</a>
             <a href="categories.html" class="nav-button active">Manage Categories</a>
             <a href="profile.html" class="nav-button">Business Card</a>
             <a href="../index.html" class="nav-button secondary">View Website</a>
@@ -52,14 +53,16 @@
                         </small>
                     </div>
                     
-                    <button onclick="addNewCategory()">Add Category</button>
+                    <button onclick="addNewCategory()">
+                        <i class="fas fa-plus"></i> Add Category
+                    </button>
                     
                     <hr style="margin: 30px 0; border: 1px solid #ddd;">
                     
-                    <h2>Add Subcategory to Existing Category</h2>
+                    <h2>Add Subcategory</h2>
                     
                     <div class="form-group">
-                        <label for="existingCategory">Choose Existing Category:</label>
+                        <label for="existingCategory">Choose Category:</label>
                         <select id="existingCategory">
                             <option value="">Select Category</option>
                         </select>
@@ -70,28 +73,54 @@
                         <input type="text" id="newSubcategoryName" placeholder="e.g., Press Releases, Feature Stories">
                     </div>
                     
-                    <button onclick="addNewSubcategory()">Add Subcategory</button>
+                    <button onclick="addNewSubcategory()">
+                        <i class="fas fa-plus"></i> Add Subcategory
+                    </button>
                 </div>
                 
-                <!-- Right Column: Current Categories -->
+                <!-- Right Column: Current Categories with Management -->
                 <div style="flex: 1;">
                     <h2>Current Categories</h2>
-                    <div class="category-list" id="categoryList">
+                    <div id="categoryList">
                         Loading categories...
                     </div>
                     
-                    <button onclick="refreshCategories()" class="secondary" style="margin-top: 15px;">Refresh List</button>
+                    <button onclick="refreshCategories()" class="secondary" style="margin-top: 15px;">
+                        <i class="fas fa-sync-alt"></i> Refresh List
+                    </button>
                 </div>
             </div>
             
-            <div class="success" id="successMessage">
-                ✅ Category updated successfully!
+            <!-- Edit Category Modal-style Section -->
+            <div id="editCategorySection" style="display: none; margin-top: 40px; padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #e74c3c;">
+                <h3>Edit Category</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editCategoryName">Category Name:</label>
+                        <input type="text" id="editCategoryName" placeholder="Category name">
+                    </div>
+                    <div class="form-group">
+                        <label for="editCategoryOrder">Display Order:</label>
+                        <input type="number" id="editCategoryOrder" min="1" placeholder="1, 2, 3...">
+                    </div>
+                </div>
+                <div style="margin-top: 15px;">
+                    <button onclick="saveEditedCategory()" class="update-btn">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                    <button onclick="cancelEditCategory()" class="secondary">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                </div>
             </div>
         </div>
     </div>
     
     <script src="../content.js"></script>
+    <script src="category-management.js"></script>
     <script>
+        let editingCategoryName = null;
+        
         // Login function
         function login() {
             const password = document.getElementById('passwordInput').value;
@@ -104,7 +133,7 @@
             }
         }
         
-        // Load and display current categories
+        // Load and display current categories with management options
         function loadCategories() {
             const categories = getStoredCategories();
             const categoryList = document.getElementById('categoryList');
@@ -114,28 +143,175 @@
             existingCategorySelect.innerHTML = '<option value="">Select Category</option>';
             
             if (Object.keys(categories).length === 0) {
-                html = '<p style="color: #666; font-style: italic;">No categories created yet. Add your first category!</p>';
+                html = '<div class="no-categories-management"><h3>No categories yet</h3><p>Create your first category using the form on the left!</p></div>';
             } else {
                 Object.keys(categories)
                     .sort((a, b) => categories[a].order - categories[b].order)
                     .forEach(catName => {
-                        html += `<div class="category-item">${catName}</div>`;
-                        existingCategorySelect.innerHTML += `<option value="${catName}">${catName}</option>`;
+                        const category = categories[catName];
+                        const subcategoryCount = Object.keys(category.subcategories).length;
+                        const contentCount = getContentByCategory(catName).length;
                         
-                        const subcats = categories[catName].subcategories;
-                        if (subcats && Object.keys(subcats).length > 0) {
-                            Object.keys(subcats)
-                                .sort((a, b) => subcats[a].order - subcats[b].order)
-                                .forEach(subName => {
-                                    html += `<div class="subcategory-item">└ ${subName}</div>`;
-                                });
-                        } else {
-                            html += `<div class="subcategory-item" style="color: #999;">└ No subcategories yet</div>`;
-                        }
+                        html += `
+                            <div class="category-management-item">
+                                <div class="category-item-header">
+                                    <h4>${catName}</h4>
+                                    <div class="category-actions">
+                                        <button class="edit-btn" onclick="editCategory('${catName}')" title="Edit Category">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="delete-btn" onclick="deleteCategory('${catName}')" title="Delete Category">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="category-stats">
+                                    <span class="stat">${subcategoryCount} subcategories</span>
+                                    <span class="stat">${contentCount} items</span>
+                                    <span class="stat">Order: ${category.order}</span>
+                                </div>
+                                
+                                <div class="subcategory-list">
+                                    ${Object.keys(category.subcategories).length === 0 ? 
+                                        '<span style="color: #999; font-style: italic;">No subcategories yet</span>' :
+                                        Object.keys(category.subcategories)
+                                            .sort((a, b) => category.subcategories[a].order - category.subcategories[b].order)
+                                            .map(subName => 
+                                                `<span class="subcategory-tag">${subName} 
+                                                    <button onclick="deleteSubcategory('${catName}', '${subName}')" 
+                                                            style="background:none; border:none; color:#e74c3c; margin-left:5px; cursor:pointer;" 
+                                                            title="Delete subcategory">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </span>`
+                                            ).join('')
+                                    }
+                                </div>
+                            </div>
+                        `;
+                        
+                        existingCategorySelect.innerHTML += `<option value="${catName}">${catName}</option>`;
                     });
             }
             
             categoryList.innerHTML = html;
+        }
+        
+        // Edit category function
+        function editCategory(categoryName) {
+            const categories = getStoredCategories();
+            const category = categories[categoryName];
+            
+            if (!category) {
+                showStatusMessage('Category not found!', 'error');
+                return;
+            }
+            
+            editingCategoryName = categoryName;
+            
+            // Populate edit form
+            document.getElementById('editCategoryName').value = categoryName;
+            document.getElementById('editCategoryOrder').value = category.order;
+            
+            // Show edit section
+            document.getElementById('editCategorySection').style.display = 'block';
+            
+            // Scroll to edit section
+            document.getElementById('editCategorySection').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Save edited category
+        function saveEditedCategory() {
+            const newName = document.getElementById('editCategoryName').value.trim();
+            const newOrder = parseInt(document.getElementById('editCategoryOrder').value);
+            
+            if (!newName) {
+                showStatusMessage('Please enter a category name.', 'error');
+                return;
+            }
+            
+            if (!newOrder || newOrder < 1) {
+                showStatusMessage('Please enter a valid order number.', 'error');
+                return;
+            }
+            
+            const categories = getStoredCategories();
+            
+            // Check if new name conflicts with existing category (unless it's the same)
+            if (newName !== editingCategoryName && categories[newName]) {
+                showStatusMessage('A category with that name already exists!', 'error');
+                return;
+            }
+            
+            // Update category
+            const categoryData = categories[editingCategoryName];
+            
+            if (newName !== editingCategoryName) {
+                // Rename category - need to update content as well
+                delete categories[editingCategoryName];
+                categories[newName] = categoryData;
+                
+                // Update all content with this category
+                const portfolioContent = getStoredContent();
+                ['articles', 'images', 'videos'].forEach(type => {
+                    portfolioContent[type].forEach(item => {
+                        if (item.category === editingCategoryName) {
+                            item.category = newName;
+                        }
+                    });
+                });
+                saveContent(portfolioContent);
+            }
+            
+            categories[newName].order = newOrder;
+            saveCategories(categories);
+            
+            // Hide edit section and refresh
+            cancelEditCategory();
+            loadCategories();
+            showStatusMessage(`Category "${newName}" updated successfully!`, 'success');
+        }
+        
+        // Cancel category editing
+        function cancelEditCategory() {
+            editingCategoryName = null;
+            document.getElementById('editCategorySection').style.display = 'none';
+            document.getElementById('editCategoryName').value = '';
+            document.getElementById('editCategoryOrder').value = '';
+        }
+        
+        // Delete subcategory
+        function deleteSubcategory(categoryName, subcategoryName) {
+            const contentCount = getContentByCategory(categoryName, subcategoryName).length;
+            
+            let confirmationMessage = `Delete subcategory "${subcategoryName}" from "${categoryName}"?`;
+            
+            if (contentCount > 0) {
+                confirmationMessage += `\n\nThis will also delete ${contentCount} content item(s) in this subcategory.`;
+            }
+            
+            const confirmation = confirm(confirmationMessage + '\n\nThis cannot be undone.');
+            if (!confirmation) return;
+            
+            // Remove subcategory
+            const categories = getStoredCategories();
+            delete categories[categoryName].subcategories[subcategoryName];
+            saveCategories(categories);
+            
+            // Remove content from this subcategory
+            if (contentCount > 0) {
+                const portfolioContent = getStoredContent();
+                ['articles', 'images', 'videos'].forEach(type => {
+                    portfolioContent[type] = portfolioContent[type].filter(item => 
+                        !(item.category === categoryName && item.subcategory === subcategoryName)
+                    );
+                });
+                saveContent(portfolioContent);
+            }
+            
+            loadCategories();
+            showStatusMessage(`Subcategory "${subcategoryName}" and ${contentCount} items deleted.`, 'success');
         }
         
         // Add new category with subcategories
@@ -144,14 +320,14 @@
             const subcategoriesText = document.getElementById('newSubcategories').value.trim();
             
             if (!categoryName) {
-                alert('Please enter a category name.');
+                showStatusMessage('Please enter a category name.', 'error');
                 return;
             }
             
             // Check if category already exists
             const existingCategories = getStoredCategories();
             if (existingCategories[categoryName]) {
-                alert('Category already exists! Choose a different name or add subcategories to the existing category.');
+                showStatusMessage('Category already exists! Choose a different name.', 'error');
                 return;
             }
             
@@ -166,7 +342,7 @@
             
             // Refresh display
             loadCategories();
-            showSuccess(`Category "${categoryName}" added successfully with ${subcategories.length} subcategories!`);
+            showStatusMessage(`Category "${categoryName}" added successfully with ${subcategories.length} subcategories!`, 'success');
         }
         
         // Add subcategory to existing category
@@ -175,19 +351,19 @@
             const subcategoryName = document.getElementById('newSubcategoryName').value.trim();
             
             if (!categoryName) {
-                alert('Please select a category.');
+                showStatusMessage('Please select a category.', 'error');
                 return;
             }
             
             if (!subcategoryName) {
-                alert('Please enter a subcategory name.');
+                showStatusMessage('Please enter a subcategory name.', 'error');
                 return;
             }
             
             // Check if subcategory already exists
             const categories = getStoredCategories();
             if (categories[categoryName].subcategories[subcategoryName]) {
-                alert('Subcategory already exists in this category!');
+                showStatusMessage('Subcategory already exists in this category!', 'error');
                 return;
             }
             
@@ -199,23 +375,18 @@
             
             // Refresh display
             loadCategories();
-            showSuccess(`Subcategory "${subcategoryName}" added to "${categoryName}"!`);
+            showStatusMessage(`Subcategory "${subcategoryName}" added to "${categoryName}"!`, 'success');
         }
         
         // Refresh categories display
         function refreshCategories() {
             loadCategories();
-            showSuccess('Categories refreshed!');
+            showStatusMessage('Categories refreshed!', 'success');
         }
         
-        // Show success message
+        // Show status message (using the function from category-management.js)
         function showSuccess(message) {
-            const successDiv = document.getElementById('successMessage');
-            successDiv.textContent = '✅ ' + message;
-            successDiv.style.display = 'block';
-            setTimeout(() => {
-                successDiv.style.display = 'none';
-            }, 4000);
+            showStatusMessage(message, 'success');
         }
         
         // Enter key to login
