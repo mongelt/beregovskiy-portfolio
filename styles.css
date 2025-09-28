@@ -1,13 +1,13 @@
-/* Main Styles - Modern Portfolio with Newspaper Aesthetic */
+/* Dark Mode Portfolio - Modern Foundation */
 
 /* Import specialized style sheets */
-@import url('business-card.css');
-@import url('layout.css');
-@import url('content-display.css');
+@import url('business-card-dark.css');
+@import url('layout-dark.css');
+@import url('content-display-dark.css');
 @import url('responsive.css');
-@import url('sidebar-hierarchy.css');
+@import url('sidebar-hierarchy-dark.css');
 
-/* Base Reset & Typography */
+/* Base Reset & Dark Typography */
 * {
     margin: 0;
     padding: 0;
@@ -22,64 +22,101 @@ html {
 body {
     font-family: 'Georgia', 'Times New Roman', serif;
     line-height: 1.6;
-    color: #2c3e50;
-    background-color: #fafafa;
+    color: #e8eaed;
+    background: linear-gradient(135deg, #0a0e27 0%, #1a1d29 50%, #2d1b3d 100%);
+    background-attachment: fixed;
     overflow-x: hidden;
+    min-height: 100vh;
 }
 
-/* Typography Hierarchy - Newspaper Style */
+/* Dark Typography Hierarchy */
 h1, h2, h3, h4, h5, h6 {
     font-family: 'Arial', 'Helvetica', sans-serif;
     font-weight: bold;
     line-height: 1.3;
-    color: #1a252f;
+    color: #ffffff;
     margin-bottom: 0.5em;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 h1 {
     font-size: 2.5rem;
     font-weight: 800;
     letter-spacing: -0.02em;
+    background: linear-gradient(135deg, #64b5f6, #42a5f5, #1e88e5);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 h2 {
     font-size: 2rem;
     font-weight: 700;
-    border-bottom: 3px solid #3498db;
+    border-bottom: 3px solid #1e88e5;
     padding-bottom: 0.3em;
     margin-bottom: 1em;
+    position: relative;
+}
+
+h2::after {
+    content: '';
+    position: absolute;
+    bottom: -3px;
+    left: 0;
+    width: 30%;
+    height: 3px;
+    background: linear-gradient(90deg, #64b5f6, #42a5f5);
+    border-radius: 2px;
 }
 
 h3 {
     font-size: 1.5rem;
     font-weight: 600;
-    color: #34495e;
+    color: #b3d9ff;
 }
 
 h4 {
     font-size: 1.25rem;
     font-weight: 600;
+    color: #90caf9;
 }
 
 p {
     margin-bottom: 1em;
     font-size: 1rem;
     line-height: 1.7;
+    color: #c9d1d9;
 }
 
-/* Links */
+/* Dark Links */
 a {
-    color: #3498db;
+    color: #64b5f6;
     text-decoration: none;
-    transition: color 0.3s ease;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+a::before {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #64b5f6, #42a5f5);
+    transition: width 0.3s ease;
 }
 
 a:hover {
-    color: #2980b9;
-    text-decoration: underline;
+    color: #90caf9;
+    text-shadow: 0 0 8px rgba(100, 181, 246, 0.3);
 }
 
-/* Buttons */
+a:hover::before {
+    width: 100%;
+}
+
+/* Dark Buttons */
 button {
     font-family: 'Arial', 'Helvetica', sans-serif;
     font-size: 0.9rem;
@@ -88,41 +125,78 @@ button {
     transition: all 0.3s ease;
     border: none;
     outline: none;
+    background: linear-gradient(135deg, #1e88e5, #1565c0);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(30, 136, 229, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transition: left 0.5s ease;
+}
+
+button:hover::before {
+    left: 100%;
 }
 
 button:hover {
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(30, 136, 229, 0.4);
+    background: linear-gradient(135deg, #2196f3, #1e88e5);
 }
 
-/* Utility Classes */
+button:active {
+    transform: translateY(0);
+}
+
+/* Dark Utility Classes */
 .loading {
-    color: #7f8c8d;
+    color: #8195a3;
     font-style: italic;
     text-align: center;
     padding: 2rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .no-content {
     text-align: center;
     padding: 3rem 2rem;
-    color: #7f8c8d;
+    color: #8195a3;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .no-content h3 {
-    color: #95a5a6;
+    color: #b3d9ff;
     margin-bottom: 1rem;
 }
 
 .welcome-message {
     text-align: center;
     padding: 3rem 2rem;
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    border-radius: 8px;
-    border-left: 4px solid #3498db;
+    background: linear-gradient(135deg, rgba(30, 136, 229, 0.1), rgba(21, 101, 192, 0.05));
+    border-radius: 12px;
+    border-left: 4px solid #1e88e5;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .welcome-message h3 {
-    color: #2c3e50;
+    color: #ffffff;
     margin-bottom: 1.5rem;
     font-size: 1.8rem;
 }
@@ -132,50 +206,125 @@ button:hover {
     line-height: 1.8;
     max-width: 600px;
     margin: 0 auto 1.5rem;
+    color: #e1e8ed;
 }
 
 .welcome-message p:last-child {
     margin-bottom: 0;
 }
 
-/* Scrollbar Styling */
+/* Dark Scrollbar Styling */
 ::-webkit-scrollbar {
     width: 8px;
+    height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-    background: #ecf0f1;
-}
-
-::-webkit-scrollbar-thumb {
-    background: #bdc3c7;
+    background: rgba(255, 255, 255, 0.05);
     border-radius: 4px;
 }
 
-::-webkit-scrollbar-thumb:hover {
-    background: #95a5a6;
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #1e88e5, #1565c0);
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-/* Selection Styling */
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #2196f3, #1e88e5);
+}
+
+::-webkit-scrollbar-corner {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Firefox scrollbar */
+html {
+    scrollbar-width: thin;
+    scrollbar-color: #1e88e5 rgba(255, 255, 255, 0.05);
+}
+
+/* Dark Selection Styling */
 ::selection {
-    background-color: #3498db;
-    color: white;
+    background: rgba(30, 136, 229, 0.3);
+    color: #ffffff;
+    text-shadow: none;
 }
 
 ::-moz-selection {
-    background-color: #3498db;
-    color: white;
+    background: rgba(30, 136, 229, 0.3);
+    color: #ffffff;
+    text-shadow: none;
 }
 
 /* Focus States */
 button:focus,
 a:focus {
-    outline: 2px solid #3498db;
+    outline: 2px solid #64b5f6;
     outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(100, 181, 246, 0.2);
 }
 
-/* Print Styles */
+/* Glow Effects */
+.glow-text {
+    text-shadow: 0 0 20px rgba(100, 181, 246, 0.5);
+}
+
+.glow-element {
+    box-shadow: 0 0 20px rgba(30, 136, 229, 0.3);
+}
+
+/* Subtle Animations */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes glow {
+    0%, 100% {
+        text-shadow: 0 0 20px rgba(100, 181, 246, 0.5);
+    }
+    50% {
+        text-shadow: 0 0 30px rgba(100, 181, 246, 0.8), 0 0 40px rgba(100, 181, 246, 0.3);
+    }
+}
+
+/* Add subtle entrance animations */
+body * {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+/* Print Styles (Dark Mode Override) */
 @media print {
+    body {
+        background: white !important;
+        color: black !important;
+    }
+    
+    h1, h2, h3, h4, h5, h6 {
+        color: black !important;
+        text-shadow: none !important;
+        background: none !important;
+        -webkit-text-fill-color: unset !important;
+    }
+    
     .admin-link,
     .expand-button,
     .sidebar {
@@ -190,5 +339,7 @@ a:focus {
     .business-card {
         position: static !important;
         height: auto !important;
+        background: white !important;
+        color: black !important;
     }
 }
