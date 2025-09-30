@@ -1,16 +1,14 @@
-// Independent Column Navigation - 20 Char Limit, Subtitle + Year
+// Fixed Navigation - No Reloading, Proper Alignment
 
 let selectedCategory = null;
 let selectedSubcategory = null;
 let selectedDocumentId = null;
 
-// Truncate text to max 20 characters
 function truncateText(text, maxLength = 20) {
     if (!text) return '';
     return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
 }
 
-// Extract year from date
 function getYear(dateString) {
     const date = new Date(dateString);
     return date.getFullYear();
@@ -34,7 +32,7 @@ function generateEnhancedSidebar() {
     categoryNav.innerHTML = html;
 }
 
-// Reorder array to put selected item in middle (circular)
+// Reorder array to center selected item
 function reorderArrayForCenter(array, selectedIndex) {
     if (array.length === 0) return [];
     if (selectedIndex < 0 || selectedIndex >= array.length) selectedIndex = 0;
@@ -51,8 +49,8 @@ function reorderArrayForCenter(array, selectedIndex) {
     return reordered;
 }
 
-// Generate categories wheel
-function generateCategoriesWheel(selectedCategoryName = null) {
+// Generate categories wheel - ONLY called when selection changes
+function renderCategoriesWheel(selectedCategoryName) {
     const categories = getStoredCategories();
     const categoriesArray = Object.keys(categories)
         .sort((a, b) => categories[a].order - categories[b].order)
@@ -64,13 +62,13 @@ function generateCategoriesWheel(selectedCategoryName = null) {
     const reordered = reorderArrayForCenter(categoriesArray, selectedIndex);
     
     let html = '';
-    reordered.forEach((cat, index) => {
-        const isActive = cat.name === selectedCategoryName || (selectedCategoryName === null && index === Math.floor(reordered.length / 2));
+    reordered.forEach((cat) => {
+        const isActive = cat.name === selectedCategoryName;
         const distanceClass = cat.distanceFromCenter > 2 ? 'far-from-center' : (cat.distanceFromCenter === 1 ? 'near-center' : '');
         
         html += `
             <button class="wheel-segment ${isActive ? 'active' : ''} ${distanceClass}" 
-                    onclick="selectCategory('${escapeHtml(cat.name)}')"
+                    onclick="event.preventDefault(); selectCategory('${escapeHtml(cat.name)}');"
                     title="${cat.name}">
                 ${truncateText(cat.name, 20)}
             </button>
@@ -80,20 +78,12 @@ function generateCategoriesWheel(selectedCategoryName = null) {
     document.getElementById('categoriesWheel').innerHTML = html;
 }
 
-// Generate subcategories wheel - only regenerates when category changes
-function generateSubcategoriesWheel(categoryName, selectedSubcategoryName = null, forceRegenerate = false) {
+// Generate subcategories wheel - ONLY called when selection changes
+function renderSubcategoriesWheel(categoryName, selectedSubcategoryName) {
     const categories = getStoredCategories();
     const category = categories[categoryName];
     
     if (!category) return;
-    
-    // Check if we need to regenerate
-    const currentWheel = document.getElementById('subcategoriesWheel');
-    if (!forceRegenerate && currentWheel.dataset.categoryName === categoryName && selectedSubcategoryName === null) {
-        return; // Don't regenerate if same category and no specific selection
-    }
-    
-    currentWheel.dataset.categoryName = categoryName;
     
     const subcats = category.subcategories;
     const subcatsArray = Object.keys(subcats)
@@ -106,14 +96,14 @@ function generateSubcategoriesWheel(categoryName, selectedSubcategoryName = null
     const reordered = reorderArrayForCenter(subcatsArray, selectedIndex);
     
     let html = '';
-    reordered.forEach((sub, index) => {
+    reordered.forEach((sub) => {
         const contentCount = getContentByCategory(categoryName, sub.name).length;
-        const isActive = sub.name === selectedSubcategoryName || (selectedSubcategoryName === null && index === Math.floor(reordered.length / 2));
+        const isActive = sub.name === selectedSubcategoryName;
         const distanceClass = sub.distanceFromCenter > 2 ? 'far-from-center' : (sub.distanceFromCenter === 1 ? 'near-center' : '');
         
         html += `
             <button class="wheel-segment ${isActive ? 'active' : ''} ${distanceClass}" 
-                    onclick="selectSubcategory('${escapeHtml(categoryName)}', '${escapeHtml(sub.name)}')"
+                    onclick="event.preventDefault(); selectSubcategory('${escapeHtml(categoryName)}', '${escapeHtml(sub.name)}');"
                     title="${sub.name}">
                 <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; overflow: hidden;">
                     <span style="flex: 1; overflow: hidden; text-overflow: ellipsis;">${truncateText(sub.name, 15)}</span>
@@ -123,26 +113,17 @@ function generateSubcategoriesWheel(categoryName, selectedSubcategoryName = null
         `;
     });
     
-    currentWheel.innerHTML = html;
+    document.getElementById('subcategoriesWheel').innerHTML = html;
 }
 
-// Generate documents wheel - only regenerates when subcategory changes
-function generateDocumentsWheel(categoryName, subcategoryName, selectedContentId = null, forceRegenerate = false) {
+// Generate documents wheel - ONLY called when selection changes
+function renderDocumentsWheel(categoryName, subcategoryName, selectedContentId) {
     const contentItems = getContentByCategory(categoryName, subcategoryName);
     
-    const currentWheel = document.getElementById('documentsWheel');
-    
     if (contentItems.length === 0) {
-        currentWheel.innerHTML = '<div style="padding: 2rem 1rem; text-align: center; color: #8195a3; font-style: italic; font-size: 0.85rem;">No documents yet</div>';
+        document.getElementById('documentsWheel').innerHTML = '<div style="padding: 2rem 1rem; text-align: center; color: #8195a3; font-style: italic; font-size: 0.85rem;">No documents yet</div>';
         return;
     }
-    
-    // Check if we need to regenerate
-    if (!forceRegenerate && currentWheel.dataset.subcategoryName === subcategoryName && selectedContentId === null) {
-        return;
-    }
-    
-    currentWheel.dataset.subcategoryName = subcategoryName;
     
     let selectedIndex = contentItems.findIndex(item => item.id == selectedContentId);
     if (selectedIndex === -1) selectedIndex = 0;
@@ -150,16 +131,16 @@ function generateDocumentsWheel(categoryName, subcategoryName, selectedContentId
     const reordered = reorderArrayForCenter(contentItems, selectedIndex);
     
     let html = '';
-    reordered.forEach((item, index) => {
+    reordered.forEach((item) => {
         const title = truncateText(item.sidebarTitle || item.title, 20);
-        const subtitle = truncateText(item.sidebarSubtitle || '', 20); // Use subtitle instead of type
-        const year = getYear(item.dateCreated); // Use year instead of full date
-        const isActive = item.id == selectedContentId || (selectedContentId === null && index === Math.floor(reordered.length / 2));
+        const subtitle = truncateText(item.sidebarSubtitle || '', 20);
+        const year = getYear(item.dateCreated);
+        const isActive = item.id == selectedContentId;
         const distanceClass = item.distanceFromCenter > 2 ? 'far-from-center' : (item.distanceFromCenter === 1 ? 'near-center' : '');
         
         html += `
             <button class="wheel-segment ${isActive ? 'active' : ''} ${distanceClass}" 
-                    onclick="showContentItem(${item.id})" 
+                    onclick="event.preventDefault(); showContentItem(${item.id});" 
                     data-content-id="${item.id}"
                     title="${item.sidebarTitle || item.title}">
                 <div style="display: flex; align-items: flex-start; gap: 0.5rem; overflow: hidden;">
@@ -180,17 +161,19 @@ function generateDocumentsWheel(categoryName, subcategoryName, selectedContentId
         `;
     });
     
-    currentWheel.innerHTML = html;
+    document.getElementById('documentsWheel').innerHTML = html;
 }
 
-// Handle category selection - only regenerates category wheel
+// Select category - updates all three wheels
 function selectCategory(categoryName) {
+    if (selectedCategory === categoryName) return; // Don't reload if same
+    
     selectedCategory = categoryName;
     
-    // Only regenerate categories wheel
-    generateCategoriesWheel(categoryName);
+    // Render categories wheel
+    renderCategoriesWheel(categoryName);
     
-    // Regenerate subcategories for new category
+    // Get first subcategory
     const categories = getStoredCategories();
     const category = categories[categoryName];
     if (category && category.subcategories) {
@@ -199,33 +182,34 @@ function selectCategory(categoryName) {
         
         if (firstSubcategory) {
             selectedSubcategory = firstSubcategory;
-            generateSubcategoriesWheel(categoryName, firstSubcategory, true);
+            renderSubcategoriesWheel(categoryName, firstSubcategory);
             
-            // Load documents for first subcategory
+            // Get first document
             const contentItems = getContentByCategory(categoryName, firstSubcategory);
             if (contentItems.length > 0) {
                 selectedDocumentId = contentItems[0].id;
-                generateDocumentsWheel(categoryName, firstSubcategory, contentItems[0].id, true);
-                setTimeout(() => showContentItem(contentItems[0].id), 10);
+                renderDocumentsWheel(categoryName, firstSubcategory, contentItems[0].id);
+                displayContent(contentItems[0].id);
             }
         }
     }
 }
 
-// Handle subcategory selection - only regenerates subcategory wheel
+// Select subcategory - only updates subcategory and document wheels
 function selectSubcategory(categoryName, subcategoryName) {
-    selectedCategory = categoryName;
+    if (selectedSubcategory === subcategoryName) return; // Don't reload if same
+    
     selectedSubcategory = subcategoryName;
     
-    // Only regenerate subcategories wheel
-    generateSubcategoriesWheel(categoryName, subcategoryName, true);
+    // Only render subcategories wheel
+    renderSubcategoriesWheel(categoryName, subcategoryName);
     
-    // Load documents for selected subcategory
+    // Get first document
     const contentItems = getContentByCategory(categoryName, subcategoryName);
     if (contentItems.length > 0) {
         selectedDocumentId = contentItems[0].id;
-        generateDocumentsWheel(categoryName, subcategoryName, contentItems[0].id, true);
-        setTimeout(() => showContentItem(contentItems[0].id), 10);
+        renderDocumentsWheel(categoryName, subcategoryName, contentItems[0].id);
+        displayContent(contentItems[0].id);
     } else {
         document.getElementById('documentsWheel').innerHTML = '<div style="padding: 2rem 1rem; text-align: center; color: #8195a3; font-style: italic; font-size: 0.85rem;">No documents yet</div>';
         
@@ -239,28 +223,36 @@ function selectSubcategory(categoryName, subcategoryName) {
         container.innerHTML = `
             <div class="welcome-message">
                 <h3>${subcategoryName}</h3>
-                <p>No documents in this subcategory yet. <a href="management/" style="color: #64b5f6;">Add some content</a> to get started.</p>
+                <p>No documents in this subcategory yet.</p>
             </div>
         `;
     }
 }
 
-// Show content item - only regenerates documents wheel
+// Show content item - only updates document wheel
 function showContentItem(contentId) {
+    if (selectedDocumentId === contentId) return; // Don't reload if same
+    
     const allContent = getAllContent();
     const contentItem = allContent.find(item => item.id == contentId);
     
-    if (!contentItem) {
-        console.error('Content item not found:', contentId);
-        return;
-    }
+    if (!contentItem) return;
     
     selectedDocumentId = contentId;
     
-    // Only regenerate documents wheel
-    generateDocumentsWheel(contentItem.category, contentItem.subcategory, contentId, true);
+    // Only render documents wheel
+    renderDocumentsWheel(contentItem.category, contentItem.subcategory, contentId);
     
-    // Update content area
+    displayContent(contentId);
+}
+
+// Display content in main area
+function displayContent(contentId) {
+    const allContent = getAllContent();
+    const contentItem = allContent.find(item => item.id == contentId);
+    
+    if (!contentItem) return;
+    
     const container = document.getElementById('contentContainer');
     const title = document.getElementById('contentTitle');
     const subtitle = document.getElementById('contentSubtitle');
