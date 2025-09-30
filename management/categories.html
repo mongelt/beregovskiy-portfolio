@@ -117,7 +117,6 @@
     </div>
     
     <script src="../content.js"></script>
-    <script src="../category-management.js"></script>
     <script>
         let editingCategoryName = null;
         
@@ -152,15 +151,18 @@
                         const subcategoryCount = Object.keys(category.subcategories).length;
                         const contentCount = getContentByCategory(catName).length;
                         
+                        // Escape category name for use in onclick
+                        const escapedCatName = catName.replace(/'/g, "\\'");
+                        
                         html += `
                             <div class="category-management-item">
                                 <div class="category-item-header">
                                     <h4>${catName}</h4>
                                     <div class="category-actions">
-                                        <button class="edit-btn" onclick="editCategory('${catName}')" title="Edit Category">
+                                        <button class="edit-btn" onclick="editCategory('${escapedCatName}')" title="Edit Category">
                                             <i class="fas fa-edit"></i>
                                         </button>
-                                        <button class="delete-btn" onclick="deleteCategory('${catName}')" title="Delete Category">
+                                        <button class="delete-btn" onclick="deleteCategoryConfirm('${escapedCatName}')" title="Delete Category">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </div>
@@ -177,15 +179,16 @@
                                         '<span style="color: #999; font-style: italic;">No subcategories yet</span>' :
                                         Object.keys(category.subcategories)
                                             .sort((a, b) => category.subcategories[a].order - category.subcategories[b].order)
-                                            .map(subName => 
-                                                `<span class="subcategory-tag">${subName} 
-                                                    <button onclick="deleteSubcategory('${catName}', '${subName}')" 
+                                            .map(subName => {
+                                                const escapedSubName = subName.replace(/'/g, "\\'");
+                                                return `<span class="subcategory-tag">${subName} 
+                                                    <button onclick="deleteSubcategoryConfirm('${escapedCatName}', '${escapedSubName}')" 
                                                             style="background:none; border:none; color:#e74c3c; margin-left:5px; cursor:pointer;" 
                                                             title="Delete subcategory">
                                                         <i class="fas fa-times"></i>
                                                     </button>
-                                                </span>`
-                                            ).join('')
+                                                </span>`;
+                                            }).join('')
                                     }
                                 </div>
                             </div>
@@ -196,6 +199,83 @@
             }
             
             categoryList.innerHTML = html;
+        }
+        
+        // Delete category with confirmation
+        function deleteCategoryConfirm(categoryName) {
+            console.log('Delete category called:', categoryName);
+            const contentCount = getContentByCategory(categoryName).length;
+            
+            let confirmationMessage = `Are you sure you want to delete the category "${categoryName}"?`;
+            
+            if (contentCount > 0) {
+                confirmationMessage += `\n\nThis will also delete ${contentCount} content item(s) in this category.`;
+            }
+            
+            confirmationMessage += '\n\nThis action cannot be undone.';
+            
+            const confirmation = confirm(confirmationMessage);
+            if (!confirmation) return;
+            
+            console.log('Confirmed, deleting category:', categoryName);
+            
+            // Remove category from storage
+            const categories = getStoredCategories();
+            delete categories[categoryName];
+            saveCategories(categories);
+            
+            // Remove all content from this category
+            if (contentCount > 0) {
+                const portfolioContent = getStoredContent();
+                
+                ['articles', 'images', 'videos'].forEach(type => {
+                    portfolioContent[type] = portfolioContent[type].filter(item => 
+                        item.category !== categoryName
+                    );
+                });
+                
+                saveContent(portfolioContent);
+            }
+            
+            // Refresh displays
+            loadCategories();
+            showStatusMessage(`Category "${categoryName}" and ${contentCount} items have been deleted.`, 'success');
+        }
+        
+        // Delete subcategory with confirmation
+        function deleteSubcategoryConfirm(categoryName, subcategoryName) {
+            console.log('Delete subcategory called:', categoryName, subcategoryName);
+            const contentCount = getContentByCategory(categoryName, subcategoryName).length;
+            
+            let confirmationMessage = `Delete subcategory "${subcategoryName}" from "${categoryName}"?`;
+            
+            if (contentCount > 0) {
+                confirmationMessage += `\n\nThis will also delete ${contentCount} content item(s) in this subcategory.`;
+            }
+            
+            const confirmation = confirm(confirmationMessage + '\n\nThis cannot be undone.');
+            if (!confirmation) return;
+            
+            console.log('Confirmed, deleting subcategory');
+            
+            // Remove subcategory
+            const categories = getStoredCategories();
+            delete categories[categoryName].subcategories[subcategoryName];
+            saveCategories(categories);
+            
+            // Remove content from this subcategory
+            if (contentCount > 0) {
+                const portfolioContent = getStoredContent();
+                ['articles', 'images', 'videos'].forEach(type => {
+                    portfolioContent[type] = portfolioContent[type].filter(item => 
+                        !(item.category === categoryName && item.subcategory === subcategoryName)
+                    );
+                });
+                saveContent(portfolioContent);
+            }
+            
+            loadCategories();
+            showStatusMessage(`Subcategory "${subcategoryName}" and ${contentCount} items deleted.`, 'success');
         }
         
         // Edit category function
@@ -281,39 +361,6 @@
             document.getElementById('editCategoryOrder').value = '';
         }
         
-        // Delete subcategory
-        function deleteSubcategory(categoryName, subcategoryName) {
-            const contentCount = getContentByCategory(categoryName, subcategoryName).length;
-            
-            let confirmationMessage = `Delete subcategory "${subcategoryName}" from "${categoryName}"?`;
-            
-            if (contentCount > 0) {
-                confirmationMessage += `\n\nThis will also delete ${contentCount} content item(s) in this subcategory.`;
-            }
-            
-            const confirmation = confirm(confirmationMessage + '\n\nThis cannot be undone.');
-            if (!confirmation) return;
-            
-            // Remove subcategory
-            const categories = getStoredCategories();
-            delete categories[categoryName].subcategories[subcategoryName];
-            saveCategories(categories);
-            
-            // Remove content from this subcategory
-            if (contentCount > 0) {
-                const portfolioContent = getStoredContent();
-                ['articles', 'images', 'videos'].forEach(type => {
-                    portfolioContent[type] = portfolioContent[type].filter(item => 
-                        !(item.category === categoryName && item.subcategory === subcategoryName)
-                    );
-                });
-                saveContent(portfolioContent);
-            }
-            
-            loadCategories();
-            showStatusMessage(`Subcategory "${subcategoryName}" and ${contentCount} items deleted.`, 'success');
-        }
-        
         // Add new category with subcategories
         function addNewCategory() {
             const categoryName = document.getElementById('newCategoryName').value.trim();
@@ -384,9 +431,28 @@
             showStatusMessage('Categories refreshed!', 'success');
         }
         
-        // Show status message (using the function from category-management.js)
-        function showSuccess(message) {
-            showStatusMessage(message, 'success');
+        // Show status message
+        function showStatusMessage(message, type = 'info') {
+            // Remove existing messages
+            const existing = document.querySelector('.status-message');
+            if (existing) existing.remove();
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `status-message ${type}`;
+            messageDiv.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+                <span>${message}</span>
+                <button onclick="this.parentElement.remove()">×</button>
+            `;
+            
+            document.body.appendChild(messageDiv);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (messageDiv.parentElement) {
+                    messageDiv.remove();
+                }
+            }, 5000);
         }
         
         // Enter key to login
