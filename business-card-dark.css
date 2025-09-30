@@ -1,4 +1,4 @@
-/* Dark Mode Business Card - Floating Professional Header */
+/* Clean Dark Mode Business Card - No Animations */
 
 .business-card {
     position: fixed;
@@ -63,7 +63,6 @@
     align-items: center;
     gap: 2rem;
     margin-bottom: 1.5rem;
-    animation: slideInLeft 0.8s ease-out 0.2s both;
 }
 
 .profile-image-container {
@@ -127,7 +126,6 @@
     -webkit-text-fill-color: transparent;
     background-clip: text;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-    animation: glow 3s ease-in-out infinite alternate;
 }
 
 .profile-title {
@@ -162,7 +160,6 @@
 /* Profile Summary */
 .profile-summary {
     margin-bottom: 1.5rem;
-    animation: fadeInUp 0.8s ease-out 0.4s both;
 }
 
 .short-bio {
@@ -211,7 +208,6 @@
     margin-top: auto;
     padding-top: 1rem;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
-    animation: fadeInUp 0.8s ease-out 0.6s both;
 }
 
 .contact-item {
@@ -264,7 +260,6 @@
     padding-top: 2rem;
     border-top: 2px solid rgba(100, 181, 246, 0.3);
     margin-top: 1rem;
-    animation: fadeInUp 0.8s ease-out 0.8s both;
     position: relative;
 }
 
@@ -451,18 +446,4 @@
 .expand-text {
     font-family: 'Arial', 'Helvetica', sans-serif;
     letter-spacing: 0.02em;
-}
-
-/* Floating Animation */
-@keyframes float {
-    0%, 100% {
-        transform: translateX(-50%) translateY(0px);
-    }
-    50% {
-        transform: translateX(-50%) translateY(-2px);
-    }
-}
-
-.expand-button {
-    animation: float 3s ease-in-out infinite;
 }
