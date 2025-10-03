@@ -6,8 +6,6 @@
     <title>Content Management - Portfolio Admin</title>
     <link rel="stylesheet" href="shared-styles.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="../supabase-config.js"></script>
-    <script src="../content.js"></script>
 </head>
 <body>
     <div class="admin-container">
@@ -25,7 +23,7 @@
             <section class="admin-section">
                 <h2 id="form-title">Add New Content</h2>
                 
-                <form id="contentForm" class="admin-form">
+                <form id="contentForm" class="admin-form" onsubmit="return handleSubmit(event)">
                     <input type="hidden" id="editContentId">
                     
                     <div class="form-group">
@@ -40,7 +38,7 @@
 
                     <div class="form-group">
                         <label for="categorySelect">Category *</label>
-                        <select id="categorySelect" required>
+                        <select id="categorySelect" required onchange="loadSubcategories()">
                             <option value="">Select category...</option>
                         </select>
                     </div>
@@ -130,7 +128,7 @@
 
                     <div class="form-actions">
                         <button type="submit" class="btn-primary" id="submitBtn">Create Content</button>
-                        <button type="button" class="btn-secondary" id="cancelBtn" style="display: none;">Cancel Edit</button>
+                        <button type="button" class="btn-secondary" id="cancelBtn" style="display: none;" onclick="resetForm()">Cancel Edit</button>
                     </div>
                 </form>
             </section>
@@ -144,110 +142,193 @@
         </main>
     </div>
 
+    <script src="../supabase-config.js"></script>
     <script>
+        // Global variables
         let categories = [];
         let allContent = [];
 
-        // Initialize page
-        async function init() {
-            console.log('Initializing content management...');
-            await loadCategories();
-            await loadContent();
-            setupEventListeners();
-        }
-
-        // Setup event listeners
-        function setupEventListeners() {
-            // Category selection change
-            const categorySelect = document.getElementById('categorySelect');
-            categorySelect.addEventListener('change', handleCategoryChange);
-
-            // Cancel edit button
-            document.getElementById('cancelBtn').addEventListener('click', resetForm);
-
-            // Form submission
-            document.getElementById('contentForm').addEventListener('submit', handleFormSubmit);
-        }
-
-        // Load categories and populate dropdown
-        async function loadCategories() {
+        // Initialize Supabase functions inline
+        async function getCategories() {
             try {
-                categories = await getCategories();
-                console.log('Loaded categories:', categories);
-                
-                const categorySelect = document.getElementById('categorySelect');
-                categorySelect.innerHTML = '<option value="">Select category...</option>';
-                
-                categories.forEach(cat => {
-                    const option = document.createElement('option');
-                    option.value = cat.id;
-                    option.textContent = cat.name;
-                    categorySelect.appendChild(option);
-                });
+                const { data: cats, error: catError } = await supabase
+                    .from('categories')
+                    .select('*')
+                    .order('order_index');
+
+                if (catError) throw catError;
+
+                const { data: subs, error: subError } = await supabase
+                    .from('subcategories')
+                    .select('*')
+                    .order('order_index');
+
+                if (subError) throw subError;
+
+                return cats.map(cat => ({
+                    ...cat,
+                    subcategories: subs.filter(sub => sub.category_id === cat.id)
+                }));
             } catch (error) {
-                console.error('Error loading categories:', error);
-                alert('Error loading categories. Please check console for details.');
+                console.error('Error fetching categories:', error);
+                return [];
             }
         }
 
-        // Handle category selection change
-        function handleCategoryChange(event) {
-            const categoryId = parseInt(event.target.value);
-            const subcategorySelect = document.getElementById('subcategorySelect');
+        async function getAllContent() {
+            try {
+                const { data, error } = await supabase
+                    .from('content')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+                return data || [];
+            } catch (error) {
+                console.error('Error fetching content:', error);
+                return [];
+            }
+        }
+
+        async function createContent(contentData) {
+            try {
+                const { data, error } = await supabase
+                    .from('content')
+                    .insert([{
+                        title: contentData.title,
+                        subtitle: contentData.subtitle || null,
+                        sidebar_title: contentData.sidebarTitle || null,
+                        sidebar_subtitle: contentData.sidebarSubtitle || null,
+                        type: contentData.type,
+                        content: contentData.content,
+                        subcategory_id: contentData.subcategoryId,
+                        author_name: contentData.authorName || null,
+                        publication_name: contentData.publicationName || null,
+                        publication_date: contentData.publicationDate || null,
+                        source_link: contentData.sourceLink || null,
+                        copyright_notice: contentData.copyrightNotice || null,
+                        created_at: new Date().toISOString()
+                    }])
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                return data;
+            } catch (error) {
+                console.error('Error creating content:', error);
+                throw error;
+            }
+        }
+
+        async function updateContent(contentId, contentData) {
+            try {
+                const { data, error } = await supabase
+                    .from('content')
+                    .update({
+                        title: contentData.title,
+                        subtitle: contentData.subtitle || null,
+                        sidebar_title: contentData.sidebarTitle || null,
+                        sidebar_subtitle: contentData.sidebarSubtitle || null,
+                        type: contentData.type,
+                        content: contentData.content,
+                        subcategory_id: contentData.subcategoryId,
+                        author_name: contentData.authorName || null,
+                        publication_name: contentData.publicationName || null,
+                        publication_date: contentData.publicationDate || null,
+                        source_link: contentData.sourceLink || null,
+                        copyright_notice: contentData.copyrightNotice || null
+                    })
+                    .eq('id', contentId)
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                return data;
+            } catch (error) {
+                console.error('Error updating content:', error);
+                throw error;
+            }
+        }
+
+        async function deleteContent(contentId) {
+            try {
+                const { error } = await supabase
+                    .from('content')
+                    .delete()
+                    .eq('id', contentId);
+
+                if (error) throw error;
+                return true;
+            } catch (error) {
+                console.error('Error deleting content:', error);
+                throw error;
+            }
+        }
+
+        // Load categories into dropdown
+        async function loadCategories() {
+            categories = await getCategories();
+            console.log('Categories loaded:', categories);
             
-            console.log('Category changed to:', categoryId);
+            const select = document.getElementById('categorySelect');
+            select.innerHTML = '<option value="">Select category...</option>';
+            
+            categories.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat.id;
+                option.textContent = cat.name;
+                select.appendChild(option);
+            });
+        }
+
+        // Load subcategories when category changes
+        function loadSubcategories() {
+            const categoryId = parseInt(document.getElementById('categorySelect').value);
+            const subSelect = document.getElementById('subcategorySelect');
+            
+            console.log('Loading subcategories for category:', categoryId);
             
             if (!categoryId) {
-                subcategorySelect.innerHTML = '<option value="">Select category first...</option>';
-                subcategorySelect.disabled = true;
+                subSelect.innerHTML = '<option value="">Select category first...</option>';
+                subSelect.disabled = true;
                 return;
             }
 
             const category = categories.find(c => c.id === categoryId);
             console.log('Found category:', category);
             
-            subcategorySelect.innerHTML = '<option value="">Select subcategory...</option>';
-            
             if (category && category.subcategories && category.subcategories.length > 0) {
+                subSelect.innerHTML = '<option value="">Select subcategory...</option>';
                 category.subcategories.forEach(sub => {
                     const option = document.createElement('option');
                     option.value = sub.id;
                     option.textContent = sub.name;
-                    subcategorySelect.appendChild(option);
+                    subSelect.appendChild(option);
                 });
-                subcategorySelect.disabled = false;
-                console.log('Loaded subcategories:', category.subcategories);
+                subSelect.disabled = false;
+                console.log('Loaded', category.subcategories.length, 'subcategories');
             } else {
-                subcategorySelect.innerHTML = '<option value="">No subcategories available</option>';
-                subcategorySelect.disabled = true;
-                console.log('No subcategories found for this category');
+                subSelect.innerHTML = '<option value="">No subcategories available</option>';
+                subSelect.disabled = true;
             }
         }
 
-        // Load and display all content
+        // Load and display content
         async function loadContent() {
-            try {
-                allContent = await getAllContent();
-                console.log('Loaded content:', allContent);
-                displayContent();
-            } catch (error) {
-                console.error('Error loading content:', error);
-                document.getElementById('contentList').innerHTML = 
-                    '<p class="error">Error loading content. Please check console for details.</p>';
-            }
+            allContent = await getAllContent();
+            console.log('Content loaded:', allContent);
+            displayContent();
         }
 
-        // Display content list
         function displayContent() {
-            const contentList = document.getElementById('contentList');
+            const list = document.getElementById('contentList');
             
             if (allContent.length === 0) {
-                contentList.innerHTML = '<p class="no-data">No content yet. Create your first content item above!</p>';
+                list.innerHTML = '<p class="no-data">No content yet. Create your first content item above!</p>';
                 return;
             }
 
-            contentList.innerHTML = allContent.map(item => {
-                // Find category and subcategory
+            list.innerHTML = allContent.map(item => {
                 let categoryName = 'Unknown';
                 let subcategoryName = 'Unknown';
                 
@@ -277,8 +358,8 @@
                                 ${item.publication_date ? `<div class="content-metadata"><strong>Date:</strong> ${item.publication_date}</div>` : ''}
                             </div>
                             <div class="content-actions">
-                                <button onclick="editContent(${item.id})" class="btn-edit">Edit</button>
-                                <button onclick="deleteContentItem(${item.id})" class="btn-delete">Delete</button>
+                                <button onclick="editContent(${item.id})" class="btn-edit" type="button">Edit</button>
+                                <button onclick="deleteContentItem(${item.id})" class="btn-delete" type="button">Delete</button>
                             </div>
                         </div>
                     </div>
@@ -287,8 +368,8 @@
         }
 
         // Handle form submission
-        async function handleFormSubmit(e) {
-            e.preventDefault();
+        function handleSubmit(event) {
+            event.preventDefault();
             
             const editId = document.getElementById('editContentId').value;
             const contentData = {
@@ -306,33 +387,33 @@
                 content: document.getElementById('contentBody').value
             };
 
-            try {
-                if (editId) {
-                    await updateContent(parseInt(editId), contentData);
-                    alert('Content updated successfully!');
-                } else {
-                    await createContent(contentData);
-                    alert('Content created successfully!');
-                }
-                
-                resetForm();
-                await loadContent();
-            } catch (error) {
-                console.error('Error saving content:', error);
-                alert('Error saving content: ' + error.message);
+            if (editId) {
+                updateContent(parseInt(editId), contentData)
+                    .then(() => {
+                        alert('Content updated successfully!');
+                        resetForm();
+                        loadContent();
+                    })
+                    .catch(error => alert('Error: ' + error.message));
+            } else {
+                createContent(contentData)
+                    .then(() => {
+                        alert('Content created successfully!');
+                        resetForm();
+                        loadContent();
+                    })
+                    .catch(error => alert('Error: ' + error.message));
             }
+            
+            return false;
         }
 
-        // Edit content - GLOBAL FUNCTION
-        window.editContent = async function(contentId) {
-            console.log('Editing content:', contentId);
+        // Edit content
+        function editContent(contentId) {
+            console.log('Edit clicked for:', contentId);
             const content = allContent.find(c => c.id === contentId);
-            if (!content) {
-                console.error('Content not found:', contentId);
-                return;
-            }
+            if (!content) return;
 
-            // Find category for this content
             let categoryId = null;
             for (let cat of categories) {
                 if (cat.subcategories) {
@@ -344,15 +425,12 @@
                 }
             }
 
-            // Populate form
             document.getElementById('editContentId').value = content.id;
             document.getElementById('contentType').value = content.type;
             document.getElementById('categorySelect').value = categoryId || '';
             
-            // Trigger category change to load subcategories
-            handleCategoryChange({ target: { value: categoryId } });
+            loadSubcategories();
             
-            // Wait a moment for subcategories to load
             setTimeout(() => {
                 document.getElementById('subcategorySelect').value = content.subcategory_id;
                 document.getElementById('contentTitle').value = content.title;
@@ -372,30 +450,25 @@
                 
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }, 100);
-        };
+        }
 
-        // Delete content - GLOBAL FUNCTION
-        window.deleteContentItem = async function(contentId) {
-            console.log('Deleting content:', contentId);
+        // Delete content
+        function deleteContentItem(contentId) {
+            console.log('Delete clicked for:', contentId);
             const content = allContent.find(c => c.id === contentId);
-            if (!content) {
-                console.error('Content not found:', contentId);
-                return;
-            }
+            if (!content) return;
 
-            if (!confirm(`Are you sure you want to delete "${content.title}"?\n\nThis action cannot be undone.`)) {
+            if (!confirm(`Are you sure you want to delete "${content.title}"?\n\nThis cannot be undone.`)) {
                 return;
             }
             
-            try {
-                await deleteContent(contentId);
-                alert('Content deleted successfully!');
-                await loadContent();
-            } catch (error) {
-                console.error('Error deleting content:', error);
-                alert('Error deleting content: ' + error.message);
-            }
-        };
+            deleteContent(contentId)
+                .then(() => {
+                    alert('Content deleted successfully!');
+                    loadContent();
+                })
+                .catch(error => alert('Error: ' + error.message));
+        }
 
         // Reset form
         function resetForm() {
@@ -408,8 +481,13 @@
             document.getElementById('subcategorySelect').innerHTML = '<option value="">Select category first...</option>';
         }
 
-        // Initialize on page load
-        document.addEventListener('DOMContentLoaded', init);
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', async function() {
+            console.log('Page loaded, initializing...');
+            await loadCategories();
+            await loadContent();
+            console.log('Initialization complete');
+        });
     </script>
 </body>
 </html>
