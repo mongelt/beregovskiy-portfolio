@@ -1,215 +1,289 @@
-// Three-Column Cylinder Sidebar Navigation with Supabase
+// Enhanced three-column cylinder sidebar navigation with Supabase integration
 
-async function initializeEnhancedSidebar() {
-    try {
-        const categories = await getCategories();
-        const allContent = await getAllContent();
-        
-        const categoryNav = document.getElementById('categoryNav');
-        
-        if (!categories || categories.length === 0) {
-            categoryNav.innerHTML = '<div class="empty-state">No categories yet. Visit the management panel to add categories.</div>';
-            return;
-        }
-        
-        // Create three-column structure using cylinder-wheel class to match CSS
-        categoryNav.innerHTML = `
-            <div class="cylinder-wheel" id="categoriesColumn">
-                <div class="wheel-segments" id="categorySegments"></div>
-            </div>
-            <div class="cylinder-wheel" id="subcategoriesColumn">
-                <div class="wheel-segments" id="subcategorySegments"></div>
-            </div>
-            <div class="cylinder-wheel" id="documentsColumn">
-                <div class="wheel-segments" id="documentSegments"></div>
-            </div>
-        `;
-        
-        // Populate categories
-        populateCategories(categories, allContent);
-        
-    } catch (error) {
-        console.error('Error initializing sidebar:', error);
-        document.getElementById('categoryNav').innerHTML = '<div class="error">Error loading categories</div>';
-    }
+let currentCategories = [];
+let currentSubcategories = [];
+let currentDocuments = [];
+let selectedCategory = null;
+let selectedSubcategory = null;
+let selectedDocument = null;
+
+// Initialize sidebar
+async function initSidebar() {
+    currentCategories = await getCategories();
+    renderCategories();
 }
 
-function populateCategories(categories, allContent) {
-    const categorySegments = document.getElementById('categorySegments');
-    
-    categories.forEach((category, index) => {
-        const segment = document.createElement('button');
-        segment.className = 'wheel-segment';
-        segment.dataset.categoryId = category.id;
-        segment.dataset.index = index;
-        
-        const contentCount = allContent.filter(c => c.categoryId === category.id).length;
-        
-        segment.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span>${category.name}</span>
-                <span style="opacity: 0.6; font-size: 0.85rem;">${contentCount}</span>
-            </div>
-        `;
-        
-        segment.addEventListener('click', () => selectCategory(category, allContent, index));
-        categorySegments.appendChild(segment);
-    });
-}
+// Render categories column
+function renderCategories() {
+    const container = document.getElementById('categories-column');
+    if (!container) return;
 
-function selectCategory(category, allContent, categoryIndex) {
-    // Update active states
-    document.querySelectorAll('#categorySegments .wheel-segment').forEach((seg, idx) => {
-        seg.classList.remove('active');
-        if (idx === categoryIndex) {
-            seg.classList.add('active');
-        }
-    });
-    
-    // Clear subcategories and documents
-    document.getElementById('subcategorySegments').innerHTML = '';
-    document.getElementById('documentSegments').innerHTML = '';
-    
-    if (category.subcategories && category.subcategories.length > 0) {
-        populateSubcategories(category, allContent);
-    } else {
-        // No subcategories - show content directly
-        const categoryContent = allContent.filter(c => c.categoryId === category.id && !c.subcategoryId);
-        populateDocuments(categoryContent);
-    }
-}
-
-function populateSubcategories(category, allContent) {
-    const subcategorySegments = document.getElementById('subcategorySegments');
-    
-    category.subcategories.forEach((subcategory, index) => {
-        const segment = document.createElement('button');
-        segment.className = 'wheel-segment';
-        segment.dataset.subcategoryId = subcategory.id;
-        segment.dataset.index = index;
-        
-        const contentCount = allContent.filter(c => 
-            c.categoryId === category.id && c.subcategoryId === subcategory.id
-        ).length;
-        
-        segment.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span>${subcategory.name}</span>
-                <span style="opacity: 0.6; font-size: 0.85rem;">${contentCount}</span>
-            </div>
-        `;
-        
-        segment.addEventListener('click', () => selectSubcategory(category, subcategory, allContent, index));
-        subcategorySegments.appendChild(segment);
-    });
-}
-
-function selectSubcategory(category, subcategory, allContent, subcategoryIndex) {
-    // Update active states
-    document.querySelectorAll('#subcategorySegments .wheel-segment').forEach((seg, idx) => {
-        seg.classList.remove('active');
-        if (idx === subcategoryIndex) {
-            seg.classList.add('active');
-        }
-    });
-    
-    // Clear documents
-    document.getElementById('documentSegments').innerHTML = '';
-    
-    // Show documents for this subcategory
-    const subcategoryContent = allContent.filter(c => 
-        c.categoryId === category.id && c.subcategoryId === subcategory.id
-    );
-    
-    populateDocuments(subcategoryContent);
-}
-
-function populateDocuments(contentItems) {
-    const documentSegments = document.getElementById('documentSegments');
-    
-    if (contentItems.length === 0) {
-        documentSegments.innerHTML = '<div style="padding: 2rem 1rem; text-align: center; color: #8195a3; font-style: italic;">No content yet</div>';
+    if (currentCategories.length === 0) {
+        container.innerHTML = '<div class="empty-message">No categories yet</div>';
         return;
     }
-    
-    contentItems.forEach((content, index) => {
-        const segment = document.createElement('button');
-        segment.className = 'wheel-segment';
-        segment.dataset.contentId = content.id;
-        segment.dataset.index = index;
+
+    container.innerHTML = currentCategories.map((cat, index) => {
+        const isSelected = selectedCategory?.id === cat.id;
+        const distance = selectedCategory ? Math.abs(currentCategories.indexOf(selectedCategory) - index) : 0;
         
-        const iconClass = {
-            'article': 'fa-file-alt',
-            'image': 'fa-image',
-            'video': 'fa-video'
-        }[content.type] || 'fa-file';
-        
-        segment.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 0.75rem;">
-                <i class="fas ${iconClass}" style="opacity: 0.7;"></i>
-                <span>${content.title}</span>
+        return `
+            <div class="wheel-item ${isSelected ? 'selected' : ''}" 
+                 data-distance="${distance}"
+                 onclick="selectCategory(${cat.id})">
+                <div class="wheel-item-content">
+                    <span class="item-title">${cat.name}</span>
+                </div>
             </div>
         `;
+    }).join('');
+}
+
+// Render subcategories column
+function renderSubcategories() {
+    const container = document.getElementById('subcategories-column');
+    if (!container) return;
+
+    if (!selectedCategory) {
+        container.innerHTML = '<div class="empty-message">Select a category</div>';
+        currentSubcategories = [];
+        return;
+    }
+
+    currentSubcategories = selectedCategory.subcategories || [];
+
+    if (currentSubcategories.length === 0) {
+        container.innerHTML = '<div class="empty-message">No subcategories</div>';
+        return;
+    }
+
+    container.innerHTML = currentSubcategories.map((sub, index) => {
+        const isSelected = selectedSubcategory?.id === sub.id;
+        const distance = selectedSubcategory ? Math.abs(currentSubcategories.indexOf(selectedSubcategory) - index) : 0;
         
-        segment.addEventListener('click', () => selectDocument(content, index));
-        documentSegments.appendChild(segment);
-    });
+        return `
+            <div class="wheel-item ${isSelected ? 'selected' : ''}"
+                 data-distance="${distance}"
+                 onclick="selectSubcategory(${sub.id})">
+                <div class="wheel-item-content">
+                    <span class="item-title">${sub.name}</span>
+                </div>
+            </div>
+        `;
+    }).join('');
 }
 
-function selectDocument(content, documentIndex) {
-    // Update active states
-    document.querySelectorAll('#documentSegments .wheel-segment').forEach((seg, idx) => {
-        seg.classList.remove('active');
-        if (idx === documentIndex) {
-            seg.classList.add('active');
+// Render documents column
+async function renderDocuments() {
+    const container = document.getElementById('documents-column');
+    if (!container) return;
+
+    if (!selectedSubcategory) {
+        container.innerHTML = '<div class="empty-message">Select a subcategory</div>';
+        currentDocuments = [];
+        return;
+    }
+
+    currentDocuments = await getContentBySubcategory(selectedSubcategory.id);
+
+    if (currentDocuments.length === 0) {
+        container.innerHTML = '<div class="empty-message">No content yet</div>';
+        return;
+    }
+
+    container.innerHTML = currentDocuments.map((doc, index) => {
+        const isSelected = selectedDocument?.id === doc.id;
+        const distance = selectedDocument ? Math.abs(currentDocuments.indexOf(selectedDocument) - index) : 0;
+        
+        // Use sidebar title/subtitle if available, otherwise fall back to main title/subtitle
+        const displayTitle = doc.sidebar_title || doc.title;
+        const displaySubtitle = doc.sidebar_subtitle || doc.subtitle;
+        
+        return `
+            <div class="wheel-item ${isSelected ? 'selected' : ''}"
+                 data-distance="${distance}"
+                 onclick="selectDocument(${doc.id})">
+                <div class="wheel-item-content">
+                    <div class="item-icon">${getContentIcon(doc.type)}</div>
+                    <div class="item-text">
+                        <span class="item-title">${displayTitle}</span>
+                        ${displaySubtitle ? `<span class="item-subtitle">${displaySubtitle}</span>` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Select category
+async function selectCategory(categoryId) {
+    selectedCategory = currentCategories.find(c => c.id === categoryId);
+    selectedSubcategory = null;
+    selectedDocument = null;
+    
+    renderCategories();
+    renderSubcategories();
+    renderDocuments();
+    clearContent();
+    
+    // Reorder categories to center selected
+    reorderColumn('categories-column', currentCategories, selectedCategory);
+}
+
+// Select subcategory
+async function selectSubcategory(subcategoryId) {
+    selectedSubcategory = currentSubcategories.find(s => s.id === subcategoryId);
+    selectedDocument = null;
+    
+    renderSubcategories();
+    await renderDocuments();
+    clearContent();
+    
+    // Reorder subcategories to center selected
+    reorderColumn('subcategories-column', currentSubcategories, selectedSubcategory);
+}
+
+// Select document
+async function selectDocument(documentId) {
+    selectedDocument = currentDocuments.find(d => d.id === documentId);
+    
+    renderDocuments();
+    displayContent(selectedDocument);
+    
+    // Reorder documents to center selected
+    reorderColumn('documents-column', currentDocuments, selectedDocument);
+}
+
+// Reorder column to center selected item
+function reorderColumn(columnId, items, selectedItem) {
+    const container = document.getElementById(columnId);
+    if (!container || !selectedItem) return;
+    
+    const selectedIndex = items.findIndex(item => item.id === selectedItem.id);
+    if (selectedIndex === -1) return;
+    
+    const wheelItems = Array.from(container.querySelectorAll('.wheel-item'));
+    const reorderedItems = [];
+    
+    // Start from selected item and alternate above/below
+    reorderedItems.push(wheelItems[selectedIndex]);
+    
+    let above = selectedIndex - 1;
+    let below = selectedIndex + 1;
+    
+    while (above >= 0 || below < wheelItems.length) {
+        if (below < wheelItems.length) {
+            reorderedItems.push(wheelItems[below]);
+            below++;
         }
-    });
+        if (above >= 0) {
+            reorderedItems.push(wheelItems[above]);
+            above--;
+        }
+    }
     
-    displayContent(content);
+    // Update distances and re-append
+    container.innerHTML = '';
+    reorderedItems.forEach((item, index) => {
+        item.setAttribute('data-distance', index);
+        container.appendChild(item);
+    });
 }
 
-async function displayContent(content) {
-    // Update content area
-    document.getElementById('contentTitle').textContent = content.title;
-    document.getElementById('contentSubtitle').textContent = content.subtitle || '';
-    
-    const contentContainer = document.getElementById('contentContainer');
-    
+// Display content in main area
+function displayContent(content) {
+    const contentArea = document.getElementById('content-display');
+    if (!contentArea || !content) return;
+
+    let contentHTML = '';
+
     if (content.type === 'article') {
-        contentContainer.innerHTML = `
+        // Build metadata section
+        let metadataHTML = '';
+        
+        if (content.author_name) {
+            metadataHTML += `<div class="content-metadata-item"><strong>Author:</strong> ${content.author_name}</div>`;
+        }
+        
+        if (content.publication_name) {
+            metadataHTML += `<div class="content-metadata-item"><strong>Published in:</strong> ${content.publication_name}</div>`;
+        }
+        
+        if (content.publication_date) {
+            metadataHTML += `<div class="content-metadata-item"><strong>Date:</strong> ${content.publication_date}</div>`;
+        }
+        
+        if (content.source_link) {
+            metadataHTML += `<div class="content-metadata-item"><strong>Source:</strong> <a href="${content.source_link}" target="_blank" rel="noopener noreferrer">View Original Article</a></div>`;
+        }
+        
+        contentHTML = `
             <article class="article-content">
-                ${content.content || '<p>No content available.</p>'}
+                <header class="article-header">
+                    <h1 class="article-title">${content.title}</h1>
+                    ${content.subtitle ? `<p class="article-subtitle">${content.subtitle}</p>` : ''}
+                    ${metadataHTML ? `<div class="article-metadata">${metadataHTML}</div>` : ''}
+                </header>
+                <div class="article-body">
+                    ${formatArticleContent(content.content)}
+                </div>
+                ${content.copyright_notice ? `<footer class="article-footer"><p class="copyright-notice">${content.copyright_notice}</p></footer>` : ''}
             </article>
         `;
     } else if (content.type === 'image') {
-        contentContainer.innerHTML = `
+        contentHTML = `
             <div class="image-content">
-                <img src="${content.imageUrl}" alt="${content.title}">
-                ${content.content ? `<div class="image-caption">${content.content}</div>` : ''}
+                <h1 class="content-title">${content.title}</h1>
+                ${content.subtitle ? `<p class="content-subtitle">${content.subtitle}</p>` : ''}
+                <div class="image-container">
+                    <img src="${content.content}" alt="${content.title}" />
+                </div>
+                ${content.copyright_notice ? `<p class="copyright-notice">${content.copyright_notice}</p>` : ''}
             </div>
         `;
     } else if (content.type === 'video') {
-        contentContainer.innerHTML = generateVideoHTML(content.videoUrl);
+        contentHTML = `
+            <div class="video-content">
+                <h1 class="content-title">${content.title}</h1>
+                ${content.subtitle ? `<p class="content-subtitle">${content.subtitle}</p>` : ''}
+                <div class="video-container">
+                    <iframe src="${content.content}" frameborder="0" allowfullscreen></iframe>
+                </div>
+                ${content.copyright_notice ? `<p class="copyright-notice">${content.copyright_notice}</p>` : ''}
+            </div>
+        `;
+    }
+
+    contentArea.innerHTML = contentHTML;
+}
+
+// Clear content area
+function clearContent() {
+    const contentArea = document.getElementById('content-display');
+    if (contentArea) {
+        contentArea.innerHTML = '<div class="no-content">Select a document to view its content</div>';
     }
 }
 
-async function autoSelectFirstContent() {
-    try {
-        const categories = await getCategories();
-        const allContent = await getAllContent();
-        
-        if (categories.length > 0) {
-            // Auto-select first category
-            selectCategory(categories[0], allContent, 0);
-            
-            // If first category has subcategories, select first one
-            if (categories[0].subcategories && categories[0].subcategories.length > 0) {
-                setTimeout(() => {
-                    selectSubcategory(categories[0], categories[0].subcategories[0], allContent, 0);
-                }, 100);
-            }
-        }
-    } catch (error) {
-        console.error('Error auto-selecting content:', error);
-    }
+// Format article content (preserve line breaks)
+function formatArticleContent(content) {
+    return content
+        .split('\n')
+        .map(para => para.trim())
+        .filter(para => para.length > 0)
+        .map(para => `<p>${para}</p>`)
+        .join('');
 }
+
+// Get icon for content type
+function getContentIcon(type) {
+    const icons = {
+        article: '📄',
+        image: '🖼️',
+        video: '🎥'
+    };
+    return icons[type] || '📄';
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', initSidebar);

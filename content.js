@@ -1,31 +1,26 @@
-// ===================================
-// SUPABASE DATA FUNCTIONS
-// ===================================
+// Content management functions with Supabase integration
 
-// Get all categories
+// Get all categories with their subcategories
 async function getCategories() {
     try {
-        const { data, error } = await supabase
+        const { data: categories, error: catError } = await supabase
             .from('categories')
-            .select(`
-                *,
-                subcategories (*)
-            `)
-            .order('order_index', { ascending: true });
-        
-        if (error) throw error;
-        
-        // Transform to match old format
-        return data.map(cat => ({
-            id: cat.id,
-            name: cat.name,
-            type: cat.type,
-            order: cat.order_index,
-            subcategories: cat.subcategories.map(sub => ({
-                id: sub.id,
-                name: sub.name,
-                order: sub.order_index
-            }))
+            .select('*')
+            .order('order_index');
+
+        if (catError) throw catError;
+
+        const { data: subcategories, error: subError } = await supabase
+            .from('subcategories')
+            .select('*')
+            .order('order_index');
+
+        if (subError) throw subError;
+
+        // Attach subcategories to their parent categories
+        return categories.map(cat => ({
+            ...cat,
+            subcategories: subcategories.filter(sub => sub.category_id === cat.id)
         }));
     } catch (error) {
         console.error('Error fetching categories:', error);
@@ -33,65 +28,7 @@ async function getCategories() {
     }
 }
 
-// Get all content
-async function getAllContent() {
-    try {
-        const { data, error } = await supabase
-            .from('content')
-            .select('*')
-            .order('created_at', { ascending: false });
-        
-        if (error) throw error;
-        
-        // Transform to match old format
-        return data.map(item => ({
-            id: item.id,
-            categoryId: item.category_id,
-            subcategoryId: item.subcategory_id,
-            type: item.type,
-            title: item.title,
-            subtitle: item.subtitle,
-            content: item.content,
-            imageUrl: item.image_url,
-            videoUrl: item.video_url,
-            createdAt: item.created_at
-        }));
-    } catch (error) {
-        console.error('Error fetching content:', error);
-        return [];
-    }
-}
-
-// Get content by category
-async function getContentByCategory(categoryId) {
-    try {
-        const { data, error } = await supabase
-            .from('content')
-            .select('*')
-            .eq('category_id', categoryId)
-            .order('created_at', { ascending: false });
-        
-        if (error) throw error;
-        
-        return data.map(item => ({
-            id: item.id,
-            categoryId: item.category_id,
-            subcategoryId: item.subcategory_id,
-            type: item.type,
-            title: item.title,
-            subtitle: item.subtitle,
-            content: item.content,
-            imageUrl: item.image_url,
-            videoUrl: item.video_url,
-            createdAt: item.created_at
-        }));
-    } catch (error) {
-        console.error('Error fetching content by category:', error);
-        return [];
-    }
-}
-
-// Get content by subcategory
+// Get content items for a specific subcategory
 async function getContentBySubcategory(subcategoryId) {
     try {
         const { data, error } = await supabase
@@ -99,71 +36,102 @@ async function getContentBySubcategory(subcategoryId) {
             .select('*')
             .eq('subcategory_id', subcategoryId)
             .order('created_at', { ascending: false });
-        
+
         if (error) throw error;
-        
-        return data.map(item => ({
-            id: item.id,
-            categoryId: item.category_id,
-            subcategoryId: item.subcategory_id,
-            type: item.type,
-            title: item.title,
-            subtitle: item.subtitle,
-            content: item.content,
-            imageUrl: item.image_url,
-            videoUrl: item.video_url,
-            createdAt: item.created_at
-        }));
+        return data || [];
     } catch (error) {
-        console.error('Error fetching content by subcategory:', error);
+        console.error('Error fetching content:', error);
         return [];
     }
 }
 
-// Add new content
-async function addContent(contentItem) {
+// Get all content items
+async function getAllContent() {
     try {
         const { data, error } = await supabase
             .from('content')
-            .insert({
-                category_id: contentItem.categoryId,
-                subcategory_id: contentItem.subcategoryId || null,
-                type: contentItem.type,
-                title: contentItem.title,
-                subtitle: contentItem.subtitle || null,
-                content: contentItem.content || null,
-                image_url: contentItem.imageUrl || null,
-                video_url: contentItem.videoUrl || null
-            })
-            .select()
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        return data || [];
+    } catch (error) {
+        console.error('Error fetching all content:', error);
+        return [];
+    }
+}
+
+// Get a single content item by ID
+async function getContentById(contentId) {
+    try {
+        const { data, error } = await supabase
+            .from('content')
+            .select('*')
+            .eq('id', contentId)
             .single();
-        
+
         if (error) throw error;
         return data;
     } catch (error) {
-        console.error('Error adding content:', error);
+        console.error('Error fetching content:', error);
+        return null;
+    }
+}
+
+// Create new content item
+async function createContent(contentData) {
+    try {
+        const { data, error } = await supabase
+            .from('content')
+            .insert([{
+                title: contentData.title,
+                subtitle: contentData.subtitle || null,
+                sidebar_title: contentData.sidebarTitle || null,
+                sidebar_subtitle: contentData.sidebarSubtitle || null,
+                type: contentData.type,
+                content: contentData.content,
+                subcategory_id: contentData.subcategoryId,
+                author_name: contentData.authorName || null,
+                publication_name: contentData.publicationName || null,
+                publication_date: contentData.publicationDate || null,
+                source_link: contentData.sourceLink || null,
+                copyright_notice: contentData.copyrightNotice || null,
+                created_at: new Date().toISOString()
+            }])
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    } catch (error) {
+        console.error('Error creating content:', error);
         throw error;
     }
 }
 
-// Update content
-async function updateContent(contentId, updates) {
+// Update existing content item
+async function updateContent(contentId, contentData) {
     try {
-        const updateData = {
-            title: updates.title,
-            subtitle: updates.subtitle || null,
-            content: updates.content || null,
-            image_url: updates.imageUrl || null,
-            video_url: updates.videoUrl || null
-        };
-        
         const { data, error } = await supabase
             .from('content')
-            .update(updateData)
+            .update({
+                title: contentData.title,
+                subtitle: contentData.subtitle || null,
+                sidebar_title: contentData.sidebarTitle || null,
+                sidebar_subtitle: contentData.sidebarSubtitle || null,
+                type: contentData.type,
+                content: contentData.content,
+                subcategory_id: contentData.subcategoryId,
+                author_name: contentData.authorName || null,
+                publication_name: contentData.publicationName || null,
+                publication_date: contentData.publicationDate || null,
+                source_link: contentData.sourceLink || null,
+                copyright_notice: contentData.copyrightNotice || null
+            })
             .eq('id', contentId)
             .select()
             .single();
-        
+
         if (error) throw error;
         return data;
     } catch (error) {
@@ -172,14 +140,14 @@ async function updateContent(contentId, updates) {
     }
 }
 
-// Delete content
+// Delete content item
 async function deleteContent(contentId) {
     try {
         const { error } = await supabase
             .from('content')
             .delete()
             .eq('id', contentId);
-        
+
         if (error) throw error;
         return true;
     } catch (error) {
@@ -188,40 +156,39 @@ async function deleteContent(contentId) {
     }
 }
 
-// Add category
-async function addCategory(category) {
+// Create new category
+async function createCategory(name, orderIndex) {
     try {
         const { data, error } = await supabase
             .from('categories')
-            .insert({
-                name: category.name,
-                type: category.type,
-                order_index: category.order || 0
-            })
+            .insert([{
+                name: name,
+                order_index: orderIndex || 0
+            }])
             .select()
             .single();
-        
+
         if (error) throw error;
         return data;
     } catch (error) {
-        console.error('Error adding category:', error);
+        console.error('Error creating category:', error);
         throw error;
     }
 }
 
 // Update category
-async function updateCategory(categoryId, updates) {
+async function updateCategory(categoryId, name, orderIndex) {
     try {
         const { data, error } = await supabase
             .from('categories')
             .update({
-                name: updates.name,
-                order_index: updates.order || 0
+                name: name,
+                order_index: orderIndex
             })
             .eq('id', categoryId)
             .select()
             .single();
-        
+
         if (error) throw error;
         return data;
     } catch (error) {
@@ -230,15 +197,14 @@ async function updateCategory(categoryId, updates) {
     }
 }
 
-// Delete category
+// Delete category (will cascade delete subcategories and content)
 async function deleteCategory(categoryId) {
     try {
-        // Supabase will cascade delete subcategories and content
         const { error } = await supabase
             .from('categories')
             .delete()
             .eq('id', categoryId);
-        
+
         if (error) throw error;
         return true;
     } catch (error) {
@@ -247,40 +213,40 @@ async function deleteCategory(categoryId) {
     }
 }
 
-// Add subcategory
-async function addSubcategory(categoryId, subcategory) {
+// Create new subcategory
+async function createSubcategory(name, categoryId, orderIndex) {
     try {
         const { data, error } = await supabase
             .from('subcategories')
-            .insert({
+            .insert([{
+                name: name,
                 category_id: categoryId,
-                name: subcategory.name,
-                order_index: subcategory.order || 0
-            })
+                order_index: orderIndex || 0
+            }])
             .select()
             .single();
-        
+
         if (error) throw error;
         return data;
     } catch (error) {
-        console.error('Error adding subcategory:', error);
+        console.error('Error creating subcategory:', error);
         throw error;
     }
 }
 
 // Update subcategory
-async function updateSubcategory(subcategoryId, updates) {
+async function updateSubcategory(subcategoryId, name, orderIndex) {
     try {
         const { data, error } = await supabase
             .from('subcategories')
             .update({
-                name: updates.name,
-                order_index: updates.order || 0
+                name: name,
+                order_index: orderIndex
             })
             .eq('id', subcategoryId)
             .select()
             .single();
-        
+
         if (error) throw error;
         return data;
     } catch (error) {
@@ -289,14 +255,14 @@ async function updateSubcategory(subcategoryId, updates) {
     }
 }
 
-// Delete subcategory
+// Delete subcategory (will cascade delete content)
 async function deleteSubcategory(subcategoryId) {
     try {
         const { error } = await supabase
             .from('subcategories')
             .delete()
             .eq('id', subcategoryId);
-        
+
         if (error) throw error;
         return true;
     } catch (error) {
@@ -305,21 +271,26 @@ async function deleteSubcategory(subcategoryId) {
     }
 }
 
-// Get profile data
-function getProfileData() {
-    // For now, return from localStorage
-    // We'll update this to use Supabase in next step
-    const profile = localStorage.getItem('portfolioProfile');
-    return profile ? JSON.parse(profile) : {
-        personalInfo: {},
-        bioInfo: {},
-        displaySettings: {}
+// Get profile data (still using localStorage for now)
+function getProfile() {
+    const profileData = localStorage.getItem('profileData');
+    return profileData ? JSON.parse(profileData) : {
+        name: '',
+        title: '',
+        email: '',
+        phone: '',
+        location: '',
+        bio: '',
+        socialLinks: {
+            linkedin: '',
+            twitter: '',
+            github: '',
+            website: ''
+        }
     };
 }
 
-// Save profile data
-function saveProfileData(profile) {
-    // For now, keep using localStorage
-    // We'll update this to use Supabase in next step
-    localStorage.setItem('portfolioProfile', JSON.stringify(profile));
+// Save profile data (still using localStorage for now)
+function saveProfile(profileData) {
+    localStorage.setItem('profileData', JSON.stringify(profileData));
 }
