@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Content Management - Portfolio Admin</title>
     <link rel="stylesheet" href="shared-styles.css">
+    <!-- Add Supabase library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../supabase-config.js"></script>
     <script src="../content.js"></script>
 </head>
@@ -149,22 +151,30 @@
 
         // Initialize page
         async function init() {
+            console.log('Initializing content management...');
             await loadCategories();
             await loadContent();
         }
 
         // Load categories and populate dropdown
         async function loadCategories() {
-            categories = await getCategories();
-            const categorySelect = document.getElementById('categorySelect');
-            categorySelect.innerHTML = '<option value="">Select category...</option>';
-            
-            categories.forEach(cat => {
-                const option = document.createElement('option');
-                option.value = cat.id;
-                option.textContent = cat.name;
-                categorySelect.appendChild(option);
-            });
+            try {
+                categories = await getCategories();
+                console.log('Loaded categories:', categories);
+                
+                const categorySelect = document.getElementById('categorySelect');
+                categorySelect.innerHTML = '<option value="">Select category...</option>';
+                
+                categories.forEach(cat => {
+                    const option = document.createElement('option');
+                    option.value = cat.id;
+                    option.textContent = cat.name;
+                    categorySelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading categories:', error);
+                alert('Error loading categories. Please check console for details.');
+            }
         }
 
         // Handle category selection
@@ -194,8 +204,15 @@
 
         // Load and display all content
         async function loadContent() {
-            allContent = await getAllContent();
-            displayContent();
+            try {
+                allContent = await getAllContent();
+                console.log('Loaded content:', allContent);
+                displayContent();
+            } catch (error) {
+                console.error('Error loading content:', error);
+                document.getElementById('contentList').innerHTML = 
+                    '<p class="error">Error loading content. Please check console for details.</p>';
+            }
         }
 
         // Display content list
@@ -269,6 +286,7 @@
                 resetForm();
                 await loadContent();
             } catch (error) {
+                console.error('Error saving content:', error);
                 alert('Error saving content: ' + error.message);
             }
         });
@@ -322,6 +340,7 @@
                 alert('Content deleted successfully!');
                 await loadContent();
             } catch (error) {
+                console.error('Error deleting content:', error);
                 alert('Error deleting content: ' + error.message);
             }
         }
