@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Content Management - Portfolio Admin</title>
     <link rel="stylesheet" href="shared-styles.css">
-    <!-- Add Supabase library -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../supabase-config.js"></script>
     <script src="../content.js"></script>
@@ -154,6 +153,20 @@
             console.log('Initializing content management...');
             await loadCategories();
             await loadContent();
+            setupEventListeners();
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Category selection change
+            const categorySelect = document.getElementById('categorySelect');
+            categorySelect.addEventListener('change', handleCategoryChange);
+
+            // Cancel edit button
+            document.getElementById('cancelBtn').addEventListener('click', resetForm);
+
+            // Form submission
+            document.getElementById('contentForm').addEventListener('submit', handleFormSubmit);
         }
 
         // Load categories and populate dropdown
@@ -177,10 +190,12 @@
             }
         }
 
-        // Handle category selection
-        document.getElementById('categorySelect').addEventListener('change', function() {
-            const categoryId = parseInt(this.value);
+        // Handle category selection change
+        function handleCategoryChange(event) {
+            const categoryId = parseInt(event.target.value);
             const subcategorySelect = document.getElementById('subcategorySelect');
+            
+            console.log('Category changed to:', categoryId);
             
             if (!categoryId) {
                 subcategorySelect.innerHTML = '<option value="">Select category first...</option>';
@@ -189,9 +204,11 @@
             }
 
             const category = categories.find(c => c.id === categoryId);
+            console.log('Found category:', category);
+            
             subcategorySelect.innerHTML = '<option value="">Select subcategory...</option>';
             
-            if (category && category.subcategories) {
+            if (category && category.subcategories && category.subcategories.length > 0) {
                 category.subcategories.forEach(sub => {
                     const option = document.createElement('option');
                     option.value = sub.id;
@@ -199,8 +216,13 @@
                     subcategorySelect.appendChild(option);
                 });
                 subcategorySelect.disabled = false;
+                console.log('Loaded subcategories:', category.subcategories);
+            } else {
+                subcategorySelect.innerHTML = '<option value="">No subcategories available</option>';
+                subcategorySelect.disabled = true;
+                console.log('No subcategories found for this category');
             }
-        });
+        }
 
         // Load and display all content
         async function loadContent() {
@@ -225,10 +247,20 @@
             }
 
             contentList.innerHTML = allContent.map(item => {
-                const category = categories.find(c => 
-                    c.subcategories.some(s => s.id === item.subcategory_id)
-                );
-                const subcategory = category?.subcategories.find(s => s.id === item.subcategory_id);
+                // Find category and subcategory
+                let categoryName = 'Unknown';
+                let subcategoryName = 'Unknown';
+                
+                for (let cat of categories) {
+                    if (cat.subcategories) {
+                        const sub = cat.subcategories.find(s => s.id === item.subcategory_id);
+                        if (sub) {
+                            categoryName = cat.name;
+                            subcategoryName = sub.name;
+                            break;
+                        }
+                    }
+                }
 
                 return `
                     <div class="content-item">
@@ -238,7 +270,7 @@
                                 ${item.subtitle ? `<p class="content-subtitle">${item.subtitle}</p>` : ''}
                                 <div class="content-meta">
                                     <span class="content-type">${item.type}</span>
-                                    <span class="content-category">${category?.name || 'Unknown'} → ${subcategory?.name || 'Unknown'}</span>
+                                    <span class="content-category">${categoryName} → ${subcategoryName}</span>
                                 </div>
                                 ${item.author_name ? `<div class="content-metadata"><strong>Author:</strong> ${item.author_name}</div>` : ''}
                                 ${item.publication_name ? `<div class="content-metadata"><strong>Published in:</strong> ${item.publication_name}</div>` : ''}
@@ -246,7 +278,7 @@
                             </div>
                             <div class="content-actions">
                                 <button onclick="editContent(${item.id})" class="btn-edit">Edit</button>
-                                <button onclick="deleteContentItem(${item.id}, '${item.title.replace(/'/g, "\\'")}')" class="btn-delete">Delete</button>
+                                <button onclick="deleteContentItem(${item.id})" class="btn-delete">Delete</button>
                             </div>
                         </div>
                     </div>
@@ -255,7 +287,7 @@
         }
 
         // Handle form submission
-        document.getElementById('contentForm').addEventListener('submit', async function(e) {
+        async function handleFormSubmit(e) {
             e.preventDefault();
             
             const editId = document.getElementById('editContentId').value;
@@ -289,25 +321,36 @@
                 console.error('Error saving content:', error);
                 alert('Error saving content: ' + error.message);
             }
-        });
+        }
 
-        // Edit content
-        async function editContent(contentId) {
+        // Edit content - GLOBAL FUNCTION
+        window.editContent = async function(contentId) {
+            console.log('Editing content:', contentId);
             const content = allContent.find(c => c.id === contentId);
-            if (!content) return;
+            if (!content) {
+                console.error('Content not found:', contentId);
+                return;
+            }
 
             // Find category for this content
-            const category = categories.find(c => 
-                c.subcategories.some(s => s.id === content.subcategory_id)
-            );
+            let categoryId = null;
+            for (let cat of categories) {
+                if (cat.subcategories) {
+                    const sub = cat.subcategories.find(s => s.id === content.subcategory_id);
+                    if (sub) {
+                        categoryId = cat.id;
+                        break;
+                    }
+                }
+            }
 
             // Populate form
             document.getElementById('editContentId').value = content.id;
             document.getElementById('contentType').value = content.type;
-            document.getElementById('categorySelect').value = category?.id || '';
+            document.getElementById('categorySelect').value = categoryId || '';
             
             // Trigger category change to load subcategories
-            document.getElementById('categorySelect').dispatchEvent(new Event('change'));
+            handleCategoryChange({ target: { value: categoryId } });
             
             // Wait a moment for subcategories to load
             setTimeout(() => {
@@ -329,11 +372,20 @@
                 
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }, 100);
-        }
+        };
 
-        // Delete content
-        async function deleteContentItem(contentId, title) {
-            if (!confirm(`Are you sure you want to delete "${title}"?`)) return;
+        // Delete content - GLOBAL FUNCTION
+        window.deleteContentItem = async function(contentId) {
+            console.log('Deleting content:', contentId);
+            const content = allContent.find(c => c.id === contentId);
+            if (!content) {
+                console.error('Content not found:', contentId);
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to delete "${content.title}"?\n\nThis action cannot be undone.`)) {
+                return;
+            }
             
             try {
                 await deleteContent(contentId);
@@ -343,10 +395,7 @@
                 console.error('Error deleting content:', error);
                 alert('Error deleting content: ' + error.message);
             }
-        }
-
-        // Cancel edit
-        document.getElementById('cancelBtn').addEventListener('click', resetForm);
+        };
 
         // Reset form
         function resetForm() {
@@ -360,7 +409,7 @@
         }
 
         // Initialize on page load
-        init();
+        document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>
