@@ -156,9 +156,9 @@ async function deleteContent(contentId) {
     }
 }
 
-// ========== CATEGORY FUNCTIONS (FIXED - REMOVED TYPE FIELD) ==========
+// ========== CATEGORY FUNCTIONS ==========
 
-// Add new category (NO TYPE FIELD - that was causing the bug!)
+// Add new category
 async function addCategory(categoryData) {
     try {
         const { data, error } = await supabase
@@ -178,7 +178,7 @@ async function addCategory(categoryData) {
     }
 }
 
-// Update category (NO TYPE FIELD)
+// Update category
 async function updateCategory(categoryId, categoryData) {
     try {
         const { data, error } = await supabase
@@ -199,7 +199,7 @@ async function updateCategory(categoryId, categoryData) {
     }
 }
 
-// Delete category (will cascade delete subcategories and content)
+// Delete category
 async function deleteCategory(categoryId) {
     try {
         const { error } = await supabase
@@ -257,7 +257,7 @@ async function updateSubcategory(subcategoryId, subcategoryData) {
     }
 }
 
-// Delete subcategory (will cascade delete content)
+// Delete subcategory
 async function deleteSubcategory(subcategoryId) {
     try {
         const { error } = await supabase
@@ -273,50 +273,163 @@ async function deleteSubcategory(subcategoryId) {
     }
 }
 
-// ========== PROFILE FUNCTIONS (FOR BUSINESS CARD) ==========
+// ========== PROFILE FUNCTIONS (SUPABASE) ==========
 
-// Get profile data (still using localStorage for now)
-function getProfileData() {
-    const profileData = localStorage.getItem('portfolioProfile');
-    
-    if (profileData) {
-        return JSON.parse(profileData);
-    }
-    
-    // Return default structure
-    return {
-        personalInfo: {
-            fullName: 'Your Name',
-            jobTitle: 'Your Title',
-            currentEmployer: 'Your Company',
-            location: 'Your Location',
-            profileImage: '',
-            email: '',
-            phone: '',
-            website: '',
-            linkedin: '',
-            twitter: ''
-        },
-        bioInfo: {
-            shortBio: 'Professional summary coming soon...',
-            fullBio: '<p>Detailed bio coming soon...</p>',
-            skills: [],
-            languages: [],
-            education: ''
-        },
-        displaySettings: {
-            headerHeight: 40,
-            expandedHeight: 80,
-            showEmail: true,
-            showPhone: true,
-            showSocialMedia: true
+// Get profile data from Supabase
+async function getProfileData() {
+    try {
+        const { data, error } = await supabase
+            .from('profile')
+            .select('*')
+            .limit(1)
+            .single();
+
+        if (error) {
+            console.error('Error fetching profile:', error);
+            // Return default structure if no profile exists
+            return {
+                personalInfo: {
+                    fullName: 'Your Name',
+                    jobTitle1: 'Your Title',
+                    jobTitle2: '',
+                    jobTitle3: '',
+                    jobTitle4: '',
+                    location: 'Your Location',
+                    profileImage: '',
+                    email: '',
+                    phone: '',
+                    linkedin: ''
+                },
+                bioInfo: {
+                    shortBio: 'Professional summary coming soon...',
+                    fullBio: '<p>Detailed bio coming soon...</p>',
+                    skills: [],
+                    languages: [],
+                    education: ''
+                },
+                displaySettings: {
+                    showEmail: true,
+                    showPhone: true,
+                    showSocialMedia: true
+                }
+            };
         }
-    };
+
+        // Transform database format to match expected format
+        return {
+            personalInfo: {
+                fullName: data.full_name || 'Your Name',
+                jobTitle1: data.job_title_1 || 'Your Title',
+                jobTitle2: data.job_title_2 || '',
+                jobTitle3: data.job_title_3 || '',
+                jobTitle4: data.job_title_4 || '',
+                location: data.location || 'Your Location',
+                profileImage: data.profile_image || '',
+                email: data.email || '',
+                phone: data.phone || '',
+                linkedin: data.linkedin || ''
+            },
+            bioInfo: {
+                shortBio: data.short_bio || 'Professional summary coming soon...',
+                fullBio: data.full_bio || '<p>Detailed bio coming soon...</p>',
+                skills: data.skills || [],
+                languages: data.languages || [],
+                education: data.education || ''
+            },
+            displaySettings: {
+                showEmail: data.show_email !== false,
+                showPhone: data.show_phone !== false,
+                showSocialMedia: data.show_social_media !== false
+            }
+        };
+    } catch (error) {
+        console.error('Error in getProfileData:', error);
+        // Return default structure on error
+        return {
+            personalInfo: {
+                fullName: 'Your Name',
+                jobTitle1: 'Your Title',
+                jobTitle2: '',
+                jobTitle3: '',
+                jobTitle4: '',
+                location: 'Your Location',
+                profileImage: '',
+                email: '',
+                phone: '',
+                linkedin: ''
+            },
+            bioInfo: {
+                shortBio: 'Professional summary coming soon...',
+                fullBio: '<p>Detailed bio coming soon...</p>',
+                skills: [],
+                languages: [],
+                education: ''
+            },
+            displaySettings: {
+                showEmail: true,
+                showPhone: true,
+                showSocialMedia: true
+            }
+        };
+    }
 }
 
-// Update profile data
-function updateProfile(section, data) {
-    const profile = getProfileData();
-    profile[section] = data;
-    localStorage.setItem('portfolioProfile', JSON.stringify(profile));
+// Update profile data in Supabase
+async function updateProfile(profileData) {
+    try {
+        // First, check if a profile exists
+        const { data: existing, error: fetchError } = await supabase
+            .from('profile')
+            .select('id')
+            .limit(1)
+            .single();
+
+        // Prepare the update data
+        const updateData = {
+            full_name: profileData.personalInfo?.fullName,
+            location: profileData.personalInfo?.location,
+            job_title_1: profileData.personalInfo?.jobTitle1,
+            job_title_2: profileData.personalInfo?.jobTitle2 || null,
+            job_title_3: profileData.personalInfo?.jobTitle3 || null,
+            job_title_4: profileData.personalInfo?.jobTitle4 || null,
+            profile_image: profileData.personalInfo?.profileImage || null,
+            email: profileData.personalInfo?.email || null,
+            phone: profileData.personalInfo?.phone || null,
+            linkedin: profileData.personalInfo?.linkedin || null,
+            short_bio: profileData.bioInfo?.shortBio,
+            full_bio: profileData.bioInfo?.fullBio,
+            skills: profileData.bioInfo?.skills || [],
+            languages: profileData.bioInfo?.languages || [],
+            education: profileData.bioInfo?.education || null,
+            show_email: profileData.displaySettings?.showEmail !== false,
+            show_phone: profileData.displaySettings?.showPhone !== false,
+            show_social_media: profileData.displaySettings?.showSocialMedia !== false
+        };
+
+        if (existing && existing.id) {
+            // Update existing profile
+            const { data, error } = await supabase
+                .from('profile')
+                .update(updateData)
+                .eq('id', existing.id)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data;
+        } else {
+            // Create new profile
+            const { data, error } = await supabase
+                .from('profile')
+                .insert([updateData])
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data;
+        }
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        throw error;
+    }
 }

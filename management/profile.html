@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profile Management - Portfolio Admin</title>
     <link rel="stylesheet" href="shared-styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="admin-container">
@@ -30,24 +31,42 @@
                     </div>
                     
                     <div class="form-group">
-                        <label for="jobTitle">Job Title *</label>
-                        <input type="text" id="jobTitle" required placeholder="Reporter & Content Creator">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="currentEmployer">Current Employer</label>
-                        <input type="text" id="currentEmployer" placeholder="Your Media Company">
-                    </div>
-                    
-                    <div class="form-group">
                         <label for="location">Location *</label>
                         <input type="text" id="location" required placeholder="City, State">
+                    </div>
+
+                    <div class="form-divider">
+                        <h3>Job Titles (Combined Title + Employer)</h3>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="jobTitle1">Job Title 1 * (Required)</label>
+                        <input type="text" id="jobTitle1" required placeholder="e.g., Brand Journalist at Axway">
+                        <small>Format: "Title at Company" - This will appear on line 3</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="jobTitle2">Job Title 2 (Optional)</label>
+                        <input type="text" id="jobTitle2" placeholder="e.g., Correspondent at the LCB">
+                        <small>Optional second title - This will appear on line 4</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="jobTitle3">Job Title 3 (Optional)</label>
+                        <input type="text" id="jobTitle3" placeholder="e.g., Editor of Ask a Pol">
+                        <small>Optional third title - This will appear on line 5</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="jobTitle4">Job Title 4 (Optional)</label>
+                        <input type="text" id="jobTitle4" placeholder="e.g., Additional title">
+                        <small>Optional fourth title - This will appear on line 6</small>
                     </div>
                     
                     <div class="form-group">
                         <label for="profileImage">Profile Image URL</label>
                         <input type="url" id="profileImage" placeholder="https://example.com/your-photo.jpg">
-                        <small>Upload your photo to a hosting service, then paste the URL here</small>
+                        <small>Upload your photo to a hosting service, then paste the URL here (currently hidden on site)</small>
                     </div>
 
                     <div class="form-divider">
@@ -65,18 +84,8 @@
                     </div>
                     
                     <div class="form-group">
-                        <label for="website">Personal Website</label>
-                        <input type="url" id="website" placeholder="https://yourwebsite.com">
-                    </div>
-                    
-                    <div class="form-group">
                         <label for="linkedin">LinkedIn Profile</label>
                         <input type="url" id="linkedin" placeholder="https://linkedin.com/in/yourname">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="twitter">Twitter/X Profile</label>
-                        <input type="url" id="twitter" placeholder="https://twitter.com/yourhandle">
                     </div>
 
                     <div class="form-actions">
@@ -94,31 +103,32 @@
                 <form id="bioForm" class="admin-form">
                     <div class="form-group">
                         <label for="shortBio">Short Bio (collapsed header) *</label>
-                        <textarea id="shortBio" required rows="3" placeholder="Brief professional summary that appears when the header is collapsed..."></textarea>
-                        <small>Keep this concise - 1-2 sentences that capture your expertise</small>
+                        <textarea id="shortBio" required rows="4" placeholder="Brief professional summary that appears in the collapsed header..."></textarea>
+                        <small>Appears on the right side when header is collapsed. Keep concise but informative.</small>
                     </div>
                     
                     <div class="form-group">
                         <label for="fullBio">Full Bio (expanded header)</label>
-                        <textarea id="fullBio" rows="8" placeholder="Detailed professional biography that appears when header is expanded. You can use HTML tags like <p>, <strong>, <ul>, etc."></textarea>
-                        <small>This can be longer and include achievements, experience, etc.</small>
+                        <textarea id="fullBio" rows="10" placeholder="Detailed professional biography that appears when header is expanded. You can use HTML tags like <p>, <strong>, <ul>, etc."></textarea>
+                        <small>This appears when header is expanded. Can include multiple paragraphs and HTML formatting.</small>
                     </div>
                     
                     <div class="form-group">
                         <label for="skills">Skills (comma-separated)</label>
                         <input type="text" id="skills" placeholder="Investigative Reporting, Breaking News, Video Production, Social Media">
-                        <small>Separate each skill with a comma</small>
+                        <small>Separate each skill with a comma. Appears in expanded header on the right side.</small>
                     </div>
                     
                     <div class="form-group">
                         <label for="languages">Languages (comma-separated)</label>
                         <input type="text" id="languages" placeholder="English (Native), Spanish (Fluent), French (Conversational)">
-                        <small>Separate each language with a comma</small>
+                        <small>Separate each language with a comma. Appears in expanded header on the right side.</small>
                     </div>
                     
                     <div class="form-group">
                         <label for="education">Education</label>
                         <input type="text" id="education" placeholder="Bachelor's in Journalism, Master's in Communications">
+                        <small>Appears in expanded header on the right side.</small>
                     </div>
 
                     <div class="form-actions">
@@ -160,24 +170,28 @@
         </main>
     </div>
 
+    <!-- Supabase Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../supabase-config.js"></script>
     <script src="../content.js"></script>
+    
     <script>
         // Load existing profile data into forms
-        function loadProfileData() {
-            const profile = getProfileData();
+        async function loadProfileData() {
+            const profile = await getProfileData();
             
             // Load personal information
             if (profile.personalInfo) {
                 document.getElementById('fullName').value = profile.personalInfo.fullName || '';
-                document.getElementById('jobTitle').value = profile.personalInfo.jobTitle || '';
-                document.getElementById('currentEmployer').value = profile.personalInfo.currentEmployer || '';
                 document.getElementById('location').value = profile.personalInfo.location || '';
+                document.getElementById('jobTitle1').value = profile.personalInfo.jobTitle1 || '';
+                document.getElementById('jobTitle2').value = profile.personalInfo.jobTitle2 || '';
+                document.getElementById('jobTitle3').value = profile.personalInfo.jobTitle3 || '';
+                document.getElementById('jobTitle4').value = profile.personalInfo.jobTitle4 || '';
                 document.getElementById('profileImage').value = profile.personalInfo.profileImage || '';
                 document.getElementById('email').value = profile.personalInfo.email || '';
                 document.getElementById('phone').value = profile.personalInfo.phone || '';
-                document.getElementById('website').value = profile.personalInfo.website || '';
                 document.getElementById('linkedin').value = profile.personalInfo.linkedin || '';
-                document.getElementById('twitter').value = profile.personalInfo.twitter || '';
             }
             
             // Load bio information
@@ -198,58 +212,98 @@
         }
 
         // Save personal information
-        document.getElementById('personalInfoForm').addEventListener('submit', function(e) {
+        document.getElementById('personalInfoForm').addEventListener('submit', async function(e) {
             e.preventDefault();
 
-            const personalInfo = {
-                fullName: document.getElementById('fullName').value.trim(),
-                jobTitle: document.getElementById('jobTitle').value.trim(),
-                currentEmployer: document.getElementById('currentEmployer').value.trim(),
-                location: document.getElementById('location').value.trim(),
-                profileImage: document.getElementById('profileImage').value.trim(),
-                email: document.getElementById('email').value.trim(),
-                phone: document.getElementById('phone').value.trim(),
-                website: document.getElementById('website').value.trim(),
-                linkedin: document.getElementById('linkedin').value.trim(),
-                twitter: document.getElementById('twitter').value.trim()
-            };
-            
-            updateProfile('personalInfo', personalInfo);
-            showStatus('personalInfoStatus', 'Personal information saved successfully!', 'success');
+            const submitBtn = this.querySelector('.btn-primary');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Saving...';
+
+            try {
+                const profile = await getProfileData();
+                
+                profile.personalInfo = {
+                    fullName: document.getElementById('fullName').value.trim(),
+                    location: document.getElementById('location').value.trim(),
+                    jobTitle1: document.getElementById('jobTitle1').value.trim(),
+                    jobTitle2: document.getElementById('jobTitle2').value.trim(),
+                    jobTitle3: document.getElementById('jobTitle3').value.trim(),
+                    jobTitle4: document.getElementById('jobTitle4').value.trim(),
+                    profileImage: document.getElementById('profileImage').value.trim(),
+                    email: document.getElementById('email').value.trim(),
+                    phone: document.getElementById('phone').value.trim(),
+                    linkedin: document.getElementById('linkedin').value.trim()
+                };
+                
+                await updateProfile(profile);
+                showStatus('personalInfoStatus', 'Personal information saved successfully!', 'success');
+            } catch (error) {
+                console.error('Error saving personal info:', error);
+                showStatus('personalInfoStatus', 'Error saving: ' + error.message, 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Save Personal Information';
+            }
         });
 
         // Save bio and professional details
-        document.getElementById('bioForm').addEventListener('submit', function(e) {
+        document.getElementById('bioForm').addEventListener('submit', async function(e) {
             e.preventDefault();
 
-            const bioInfo = {
-                shortBio: document.getElementById('shortBio').value.trim(),
-                fullBio: document.getElementById('fullBio').value.trim(),
-                skills: document.getElementById('skills').value ? 
-                    document.getElementById('skills').value.split(',').map(s => s.trim()).filter(s => s) : [],
-                languages: document.getElementById('languages').value ? 
-                    document.getElementById('languages').value.split(',').map(s => s.trim()).filter(s => s) : [],
-                education: document.getElementById('education').value.trim()
-            };
-            
-            updateProfile('bioInfo', bioInfo);
-            showStatus('bioStatus', 'Bio and details saved successfully!', 'success');
+            const submitBtn = this.querySelector('.btn-primary');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Saving...';
+
+            try {
+                const profile = await getProfileData();
+                
+                profile.bioInfo = {
+                    shortBio: document.getElementById('shortBio').value.trim(),
+                    fullBio: document.getElementById('fullBio').value.trim(),
+                    skills: document.getElementById('skills').value ? 
+                        document.getElementById('skills').value.split(',').map(s => s.trim()).filter(s => s) : [],
+                    languages: document.getElementById('languages').value ? 
+                        document.getElementById('languages').value.split(',').map(s => s.trim()).filter(s => s) : [],
+                    education: document.getElementById('education').value.trim()
+                };
+                
+                await updateProfile(profile);
+                showStatus('bioStatus', 'Bio and details saved successfully!', 'success');
+            } catch (error) {
+                console.error('Error saving bio:', error);
+                showStatus('bioStatus', 'Error saving: ' + error.message, 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Save Bio & Details';
+            }
         });
 
         // Save display settings
-        document.getElementById('settingsForm').addEventListener('submit', function(e) {
+        document.getElementById('settingsForm').addEventListener('submit', async function(e) {
             e.preventDefault();
 
-            const displaySettings = {
-                headerHeight: 40,
-                expandedHeight: 80,
-                showEmail: document.getElementById('showEmail').checked,
-                showPhone: document.getElementById('showPhone').checked,
-                showSocialMedia: document.getElementById('showSocialMedia').checked
-            };
-            
-            updateProfile('displaySettings', displaySettings);
-            showStatus('settingsStatus', 'Display settings saved successfully!', 'success');
+            const submitBtn = this.querySelector('.btn-primary');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Saving...';
+
+            try {
+                const profile = await getProfileData();
+                
+                profile.displaySettings = {
+                    showEmail: document.getElementById('showEmail').checked,
+                    showPhone: document.getElementById('showPhone').checked,
+                    showSocialMedia: document.getElementById('showSocialMedia').checked
+                };
+                
+                await updateProfile(profile);
+                showStatus('settingsStatus', 'Display settings saved successfully!', 'success');
+            } catch (error) {
+                console.error('Error saving settings:', error);
+                showStatus('settingsStatus', 'Error saving: ' + error.message, 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Save Display Settings';
+            }
         });
 
         // Preview business card
@@ -270,9 +324,9 @@
         }
 
         // Initialize on page load
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
             console.log('Profile page loaded, loading data...');
-            loadProfileData();
+            await loadProfileData();
             console.log('Profile page initialization complete!');
         });
     </script>

@@ -6,11 +6,13 @@
     <title>Beregovskiy Portfolio</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <!-- Expandable Business Card Header -->
     <header id="businessCard" class="business-card collapsed">
         <div class="business-card-content">
+            <!-- Profile Section (Left side when collapsed) -->
             <div class="profile-section">
                 <div class="profile-image-container">
                     <img id="profileImage" src="" alt="Profile" class="profile-image">
@@ -21,72 +23,70 @@
                 
                 <div class="profile-info">
                     <h1 id="fullName" class="profile-name">Loading...</h1>
-                    <p id="jobTitle" class="profile-title">Loading...</p>
-                    <p id="currentEmployer" class="profile-employer">Loading...</p>
-                    <p id="location" class="profile-location">
-                        <i class="fas fa-map-marker-alt"></i> <span>Loading...</span>
-                    </p>
+                    <div>
+                        <span id="jobTitle" class="profile-title">Loading...</span>
+                        <span id="currentEmployer" class="profile-employer">Loading...</span>
+                        <span id="location" class="profile-location">
+                            <i class="fas fa-map-marker-alt"></i>Loading...
+                        </span>
+                    </div>
                 </div>
             </div>
             
+            <!-- Profile Summary (Right side when collapsed) -->
             <div class="profile-summary">
                 <p id="shortBio" class="short-bio">Loading...</p>
             </div>
             
-            <div class="contact-info">
-                <div class="contact-item" id="emailContact" style="display: none;">
-                    <i class="fas fa-envelope"></i>
-                    <a id="emailLink" href="">email</a>
+            <!-- Expanded Content (Only visible when expanded) -->
+            <div class="expanded-content" id="expandedContent">
+                <!-- Full Bio (Replaces short bio) -->
+                <div class="full-bio" id="fullBio">
+                    Loading full bio...
                 </div>
-                <div class="contact-item" id="phoneContact" style="display: none;">
-                    <i class="fas fa-phone"></i>
-                    <span id="phoneNumber">phone</span>
+                
+                <!-- Professional Details -->
+                <div class="professional-details">
+                    <div class="detail-section">
+                        <h3>Skills</h3>
+                        <div id="skillsList" class="skills-list">Loading...</div>
+                    </div>
+                    
+                    <div class="detail-section">
+                        <h3>Languages</h3>
+                        <div id="languagesList" class="languages-list">Loading...</div>
+                    </div>
+                    
+                    <div class="detail-section">
+                        <h3>Education</h3>
+                        <p id="educationInfo">Loading...</p>
+                    </div>
                 </div>
-                <div class="contact-item" id="websiteContact" style="display: none;">
-                    <i class="fas fa-globe"></i>
-                    <a id="websiteLink" href="" target="_blank">website</a>
-                </div>
-                <div class="contact-item" id="linkedinContact" style="display: none;">
-                    <i class="fab fa-linkedin"></i>
-                    <a id="linkedinLink" href="" target="_blank">LinkedIn</a>
-                </div>
-                <div class="contact-item" id="twitterContact" style="display: none;">
-                    <i class="fab fa-twitter"></i>
-                    <a id="twitterLink" href="" target="_blank">Twitter</a>
+                
+                <!-- Contact Information -->
+                <div class="contact-info">
+                    <div class="contact-item" id="emailContact" style="display: none;">
+                        <i class="fas fa-envelope"></i>
+                        <a id="emailLink" href="">email</a>
+                    </div>
+                    <div class="contact-item" id="phoneContact" style="display: none;">
+                        <i class="fas fa-phone"></i>
+                        <span id="phoneNumber">phone</span>
+                    </div>
+                    <div class="contact-item" id="linkedinContact" style="display: none;">
+                        <i class="fab fa-linkedin"></i>
+                        <a id="linkedinLink" href="" target="_blank">LinkedIn</a>
+                    </div>
                 </div>
             </div>
         </div>
-        
-        <!-- Expanded Content (hidden initially) -->
-        <div class="expanded-content" id="expandedContent" style="display: none;">
-            <div class="full-bio" id="fullBio">
-                Loading full bio...
-            </div>
-            
-            <div class="professional-details">
-                <div class="detail-section">
-                    <h3>Skills</h3>
-                    <div id="skillsList" class="skills-list">Loading...</div>
-                </div>
-                
-                <div class="detail-section">
-                    <h3>Languages</h3>
-                    <div id="languagesList" class="languages-list">Loading...</div>
-                </div>
-                
-                <div class="detail-section">
-                    <h3>Education</h3>
-                    <p id="educationInfo">Loading...</p>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Expand/Collapse Button -->
-        <button class="expand-button" id="expandButton" onclick="toggleBusinessCard()">
-            <i class="fas fa-chevron-down"></i>
-            <span class="expand-text">More Info</span>
-        </button>
     </header>
+    
+    <!-- External Expand/Collapse Button (Lives OUTSIDE the card) -->
+    <button class="expand-button" id="expandButton" onclick="toggleBusinessCard()">
+        <i class="fas fa-chevron-down"></i>
+        <span class="expand-text">More Info</span>
+    </button>
     
     <!-- Main Content Area -->
     <main class="main-container">
@@ -145,7 +145,7 @@
                 // Expand
                 businessCard.classList.remove('collapsed');
                 businessCard.classList.add('expanded');
-                expandedContent.style.display = 'block';
+                expandedContent.style.display = 'flex';
                 expandText.textContent = 'Less Info';
                 chevron.className = 'fas fa-chevron-up';
             } else {
@@ -169,9 +169,9 @@
                 document.getElementById('fullName').textContent = info.fullName || 'Your Name';
                 document.getElementById('jobTitle').textContent = info.jobTitle || 'Your Title';
                 document.getElementById('currentEmployer').textContent = info.currentEmployer || 'Your Company';
-                document.getElementById('location').querySelector('span').textContent = info.location || 'Your Location';
+                document.getElementById('location').innerHTML = `<i class="fas fa-map-marker-alt"></i>${info.location || 'Your Location'}`;
                 
-                // Profile image
+                // Profile image (hidden by CSS)
                 const profileImg = document.getElementById('profileImage');
                 const placeholder = document.querySelector('.profile-image-placeholder');
                 
@@ -184,7 +184,7 @@
                     placeholder.style.display = 'flex';
                 }
                 
-                // Contact information
+                // Contact information (only shows when expanded)
                 if (profile.displaySettings?.showEmail && info.email) {
                     document.getElementById('emailContact').style.display = 'flex';
                     document.getElementById('emailLink').href = `mailto:${info.email}`;
@@ -196,21 +196,9 @@
                     document.getElementById('phoneNumber').textContent = info.phone;
                 }
                 
-                if (profile.displaySettings?.showSocialMedia) {
-                    if (info.website) {
-                        document.getElementById('websiteContact').style.display = 'flex';
-                        document.getElementById('websiteLink').href = info.website;
-                    }
-                    
-                    if (info.linkedin) {
-                        document.getElementById('linkedinContact').style.display = 'flex';
-                        document.getElementById('linkedinLink').href = info.linkedin;
-                    }
-                    
-                    if (info.twitter) {
-                        document.getElementById('twitterContact').style.display = 'flex';
-                        document.getElementById('twitterLink').href = info.twitter;
-                    }
+                if (profile.displaySettings?.showSocialMedia && info.linkedin) {
+                    document.getElementById('linkedinContact').style.display = 'flex';
+                    document.getElementById('linkedinLink').href = info.linkedin;
                 }
             }
             
@@ -221,22 +209,22 @@
                 document.getElementById('shortBio').textContent = bio.shortBio || 'Professional summary coming soon...';
                 document.getElementById('fullBio').innerHTML = bio.fullBio || '<p>Detailed bio coming soon...</p>';
                 
-                // Skills
+                // Skills - inline with bullets
                 if (bio.skills && bio.skills.length > 0) {
                     document.getElementById('skillsList').innerHTML = bio.skills.map(skill => 
                         `<span class="skill-tag">${skill}</span>`
                     ).join('');
                 } else {
-                    document.getElementById('skillsList').textContent = 'Skills coming soon...';
+                    document.getElementById('skillsList').innerHTML = '<span class="skill-tag">Skills coming soon</span>';
                 }
                 
-                // Languages
+                // Languages - inline with bullets
                 if (bio.languages && bio.languages.length > 0) {
                     document.getElementById('languagesList').innerHTML = bio.languages.map(lang => 
                         `<span class="language-tag">${lang}</span>`
                     ).join('');
                 } else {
-                    document.getElementById('languagesList').textContent = 'Languages coming soon...';
+                    document.getElementById('languagesList').innerHTML = '<span class="language-tag">Languages coming soon</span>';
                 }
                 
                 // Education
