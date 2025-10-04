@@ -12,7 +12,7 @@
     <!-- Expandable Business Card Header -->
     <header id="businessCard" class="business-card collapsed">
         <div class="business-card-content">
-            <!-- Profile Section (Left side when collapsed) -->
+            <!-- Profile Section -->
             <div class="profile-section">
                 <div class="profile-image-container">
                     <img id="profileImage" src="" alt="Profile" class="profile-image">
@@ -23,12 +23,8 @@
                 
                 <div class="profile-info">
                     <h1 id="fullName" class="profile-name">Loading...</h1>
-                    <div>
-                        <span id="jobTitle" class="profile-title">Loading...</span>
-                        <span id="currentEmployer" class="profile-employer">Loading...</span>
-                        <span id="location" class="profile-location">
-                            <i class="fas fa-map-marker-alt"></i>Loading...
-                        </span>
+                    <div id="jobTitlesContainer">
+                        <!-- Titles will be inserted here -->
                     </div>
                 </div>
             </div>
@@ -36,16 +32,49 @@
             <!-- Profile Summary (Right side when collapsed) -->
             <div class="profile-summary">
                 <p id="shortBio" class="short-bio">Loading...</p>
+                
+                <!-- Resume Button -->
+                <div class="resume-buttons">
+                    <button class="btn-resume" disabled>
+                        <i class="fas fa-file-alt"></i>
+                        Resume
+                    </button>
+                </div>
             </div>
             
-            <!-- Expanded Content (Only visible when expanded) -->
+            <!-- Expanded Content -->
             <div class="expanded-content" id="expandedContent">
-                <!-- Full Bio (Replaces short bio) -->
-                <div class="full-bio" id="fullBio">
-                    Loading full bio...
+                <!-- Resume Buttons (top right) -->
+                <div class="resume-buttons">
+                    <button class="btn-resume" disabled>
+                        <i class="fas fa-file-alt"></i>
+                        Resume
+                    </button>
                 </div>
                 
-                <!-- Professional Details -->
+                <!-- Left Column: Bio and Contact -->
+                <div class="bio-section">
+                    <div class="full-bio" id="fullBio">
+                        Loading full bio...
+                    </div>
+                    
+                    <div class="contact-info">
+                        <div class="contact-item" id="emailContact" style="display: none;">
+                            <i class="fas fa-envelope"></i>
+                            <a id="emailLink" href="">email</a>
+                        </div>
+                        <div class="contact-item" id="phoneContact" style="display: none;">
+                            <i class="fas fa-phone"></i>
+                            <span id="phoneNumber">phone</span>
+                        </div>
+                        <div class="contact-item" id="linkedinContact" style="display: none;">
+                            <i class="fab fa-linkedin"></i>
+                            <a id="linkedinLink" href="" target="_blank">LinkedIn</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right Column: Professional Details -->
                 <div class="professional-details">
                     <div class="detail-section">
                         <h3>Skills</h3>
@@ -62,35 +91,19 @@
                         <p id="educationInfo">Loading...</p>
                     </div>
                 </div>
-                
-                <!-- Contact Information -->
-                <div class="contact-info">
-                    <div class="contact-item" id="emailContact" style="display: none;">
-                        <i class="fas fa-envelope"></i>
-                        <a id="emailLink" href="">email</a>
-                    </div>
-                    <div class="contact-item" id="phoneContact" style="display: none;">
-                        <i class="fas fa-phone"></i>
-                        <span id="phoneNumber">phone</span>
-                    </div>
-                    <div class="contact-item" id="linkedinContact" style="display: none;">
-                        <i class="fab fa-linkedin"></i>
-                        <a id="linkedinLink" href="" target="_blank">LinkedIn</a>
-                    </div>
-                </div>
             </div>
         </div>
     </header>
     
-    <!-- External Expand/Collapse Button (Lives OUTSIDE the card) -->
-    <button class="expand-button" id="expandButton" onclick="toggleBusinessCard()">
+    <!-- External Expand/Collapse Button (positioned with JS) -->
+    <button class="expand-button" id="expandButton">
         <i class="fas fa-chevron-down"></i>
         <span class="expand-text">More Info</span>
     </button>
     
     <!-- Main Content Area -->
     <main class="main-container">
-        <!-- Sidebar Navigation (Three-Column Cylinder) -->
+        <!-- Sidebar Navigation -->
         <aside class="sidebar">
             <nav class="category-navigation" id="categoryNav">
                 <div class="cylinder-wheel" id="categories-column">
@@ -122,18 +135,26 @@
         </section>
     </main>
     
-    <!-- Supabase JavaScript Library -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <!-- Supabase Configuration -->
     <script src="supabase-config.js"></script>
-    
-    <!-- Your Scripts -->
     <script src="content.js"></script>
     <script src="sidebar-navigation.js"></script>
     
     <script>
-        // Business card expansion functionality
+        // Position expand button at bottom of business card
+        function positionExpandButton() {
+            const businessCard = document.getElementById('businessCard');
+            const expandButton = document.getElementById('expandButton');
+            const cardRect = businessCard.getBoundingClientRect();
+            
+            expandButton.style.position = 'fixed';
+            expandButton.style.top = cardRect.bottom + 'px';
+            expandButton.style.left = '50%';
+            expandButton.style.transform = 'translateX(-50%)';
+            expandButton.style.zIndex = '1002';
+        }
+        
+        // Business card toggle function
         function toggleBusinessCard() {
             const businessCard = document.getElementById('businessCard');
             const expandButton = document.getElementById('expandButton');
@@ -142,36 +163,62 @@
             const chevron = expandButton.querySelector('i');
             
             if (businessCard.classList.contains('collapsed')) {
-                // Expand
                 businessCard.classList.remove('collapsed');
                 businessCard.classList.add('expanded');
-                expandedContent.style.display = 'flex';
+                expandedContent.style.display = 'grid';
                 expandText.textContent = 'Less Info';
                 chevron.className = 'fas fa-chevron-up';
             } else {
-                // Collapse
                 businessCard.classList.remove('expanded');
                 businessCard.classList.add('collapsed');
                 expandedContent.style.display = 'none';
                 expandText.textContent = 'More Info';
                 chevron.className = 'fas fa-chevron-down';
             }
+            
+            // Reposition button after state change
+            setTimeout(positionExpandButton, 100);
         }
         
-        // Load profile data into business card
-        function loadBusinessCardData() {
-            const profile = getProfileData();
+        // Add click listener to button
+        document.getElementById('expandButton').addEventListener('click', toggleBusinessCard);
+        
+        // Load profile data
+        async function loadBusinessCardData() {
+            const profile = await getProfileData();
             
             if (profile.personalInfo) {
                 const info = profile.personalInfo;
                 
-                // Basic info
                 document.getElementById('fullName').textContent = info.fullName || 'Your Name';
-                document.getElementById('jobTitle').textContent = info.jobTitle || 'Your Title';
-                document.getElementById('currentEmployer').textContent = info.currentEmployer || 'Your Company';
-                document.getElementById('location').innerHTML = `<i class="fas fa-map-marker-alt"></i>${info.location || 'Your Location'}`;
                 
-                // Profile image (hidden by CSS)
+                // Build titles with wrapper
+                const jobTitlesContainer = document.getElementById('jobTitlesContainer');
+                let jobTitlesHTML = '';
+                
+                jobTitlesHTML += `<span class="profile-location"><i class="fas fa-map-marker-alt"></i>${info.location || 'Your Location'}</span>`;
+                
+                if (info.jobTitle1 || info.jobTitle2 || info.jobTitle3 || info.jobTitle4) {
+                    jobTitlesHTML += '<div class="titles-wrapper">';
+                    
+                    if (info.jobTitle1) {
+                        jobTitlesHTML += `<span class="profile-title">${info.jobTitle1}</span>`;
+                    }
+                    if (info.jobTitle2) {
+                        jobTitlesHTML += `<span class="profile-employer">${info.jobTitle2}</span>`;
+                    }
+                    if (info.jobTitle3) {
+                        jobTitlesHTML += `<span class="profile-employer">${info.jobTitle3}</span>`;
+                    }
+                    if (info.jobTitle4) {
+                        jobTitlesHTML += `<span class="profile-employer">${info.jobTitle4}</span>`;
+                    }
+                    
+                    jobTitlesHTML += '</div>';
+                }
+                
+                jobTitlesContainer.innerHTML = jobTitlesHTML;
+                
                 const profileImg = document.getElementById('profileImage');
                 const placeholder = document.querySelector('.profile-image-placeholder');
                 
@@ -184,7 +231,6 @@
                     placeholder.style.display = 'flex';
                 }
                 
-                // Contact information (only shows when expanded)
                 if (profile.displaySettings?.showEmail && info.email) {
                     document.getElementById('emailContact').style.display = 'flex';
                     document.getElementById('emailLink').href = `mailto:${info.email}`;
@@ -205,11 +251,9 @@
             if (profile.bioInfo) {
                 const bio = profile.bioInfo;
                 
-                // Bios
                 document.getElementById('shortBio').textContent = bio.shortBio || 'Professional summary coming soon...';
                 document.getElementById('fullBio').innerHTML = bio.fullBio || '<p>Detailed bio coming soon...</p>';
                 
-                // Skills - inline with bullets
                 if (bio.skills && bio.skills.length > 0) {
                     document.getElementById('skillsList').innerHTML = bio.skills.map(skill => 
                         `<span class="skill-tag">${skill}</span>`
@@ -218,7 +262,6 @@
                     document.getElementById('skillsList').innerHTML = '<span class="skill-tag">Skills coming soon</span>';
                 }
                 
-                // Languages - inline with bullets
                 if (bio.languages && bio.languages.length > 0) {
                     document.getElementById('languagesList').innerHTML = bio.languages.map(lang => 
                         `<span class="language-tag">${lang}</span>`
@@ -227,23 +270,23 @@
                     document.getElementById('languagesList').innerHTML = '<span class="language-tag">Languages coming soon</span>';
                 }
                 
-                // Education
                 document.getElementById('educationInfo').textContent = bio.education || 'Education info coming soon...';
             }
+            
+            // Position button after content loads
+            setTimeout(positionExpandButton, 100);
         }
         
-        // Initialize everything when page loads
+        // Initialize
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('Page loaded - initializing portfolio...');
-            
-            // Load business card data
-            loadBusinessCardData();
-            
-            // Initialize three-column sidebar (functions from sidebar-navigation.js)
+            await loadBusinessCardData();
             await initializeEnhancedSidebar();
-            
-            // Auto-select first content item
             await autoSelectFirstContent();
+            
+            // Position button on load and resize
+            positionExpandButton();
+            window.addEventListener('resize', positionExpandButton);
             
             console.log('Portfolio initialization complete!');
         });
