@@ -156,14 +156,16 @@ async function deleteContent(contentId) {
     }
 }
 
-// Create new category
-async function createCategory(name, orderIndex) {
+// ========== CATEGORY FUNCTIONS (FIXED - REMOVED TYPE FIELD) ==========
+
+// Add new category (NO TYPE FIELD - that was causing the bug!)
+async function addCategory(categoryData) {
     try {
         const { data, error } = await supabase
             .from('categories')
             .insert([{
-                name: name,
-                order_index: orderIndex || 0
+                name: categoryData.name,
+                order_index: categoryData.order || 0
             }])
             .select()
             .single();
@@ -176,14 +178,14 @@ async function createCategory(name, orderIndex) {
     }
 }
 
-// Update category
-async function updateCategory(categoryId, name, orderIndex) {
+// Update category (NO TYPE FIELD)
+async function updateCategory(categoryId, categoryData) {
     try {
         const { data, error } = await supabase
             .from('categories')
             .update({
-                name: name,
-                order_index: orderIndex
+                name: categoryData.name,
+                order_index: categoryData.order || 0
             })
             .eq('id', categoryId)
             .select()
@@ -213,15 +215,15 @@ async function deleteCategory(categoryId) {
     }
 }
 
-// Create new subcategory
-async function createSubcategory(name, categoryId, orderIndex) {
+// Add new subcategory
+async function addSubcategory(categoryId, subcategoryData) {
     try {
         const { data, error } = await supabase
             .from('subcategories')
             .insert([{
-                name: name,
+                name: subcategoryData.name,
                 category_id: categoryId,
-                order_index: orderIndex || 0
+                order_index: subcategoryData.order || 0
             }])
             .select()
             .single();
@@ -235,13 +237,13 @@ async function createSubcategory(name, categoryId, orderIndex) {
 }
 
 // Update subcategory
-async function updateSubcategory(subcategoryId, name, orderIndex) {
+async function updateSubcategory(subcategoryId, subcategoryData) {
     try {
         const { data, error } = await supabase
             .from('subcategories')
             .update({
-                name: name,
-                order_index: orderIndex
+                name: subcategoryData.name,
+                order_index: subcategoryData.order || 0
             })
             .eq('id', subcategoryId)
             .select()
@@ -271,26 +273,50 @@ async function deleteSubcategory(subcategoryId) {
     }
 }
 
+// ========== PROFILE FUNCTIONS (FOR BUSINESS CARD) ==========
+
 // Get profile data (still using localStorage for now)
-function getProfile() {
-    const profileData = localStorage.getItem('profileData');
-    return profileData ? JSON.parse(profileData) : {
-        name: '',
-        title: '',
-        email: '',
-        phone: '',
-        location: '',
-        bio: '',
-        socialLinks: {
+function getProfileData() {
+    const profileData = localStorage.getItem('portfolioProfile');
+    
+    if (profileData) {
+        return JSON.parse(profileData);
+    }
+    
+    // Return default structure
+    return {
+        personalInfo: {
+            fullName: 'Your Name',
+            jobTitle: 'Your Title',
+            currentEmployer: 'Your Company',
+            location: 'Your Location',
+            profileImage: '',
+            email: '',
+            phone: '',
+            website: '',
             linkedin: '',
-            twitter: '',
-            github: '',
-            website: ''
+            twitter: ''
+        },
+        bioInfo: {
+            shortBio: 'Professional summary coming soon...',
+            fullBio: '<p>Detailed bio coming soon...</p>',
+            skills: [],
+            languages: [],
+            education: ''
+        },
+        displaySettings: {
+            headerHeight: 40,
+            expandedHeight: 80,
+            showEmail: true,
+            showPhone: true,
+            showSocialMedia: true
         }
     };
 }
 
-// Save profile data (still using localStorage for now)
-function saveProfile(profileData) {
-    localStorage.setItem('profileData', JSON.stringify(profileData));
+// Update profile data
+function updateProfile(section, data) {
+    const profile = getProfileData();
+    profile[section] = data;
+    localStorage.setItem('portfolioProfile', JSON.stringify(profile));
 }

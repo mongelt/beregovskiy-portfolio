@@ -7,45 +7,83 @@ let selectedCategory = null;
 let selectedSubcategory = null;
 let selectedDocument = null;
 
+// Initialize enhanced sidebar (called from index.html)
+async function initializeEnhancedSidebar() {
+    await initSidebar();
+}
+
+// Auto-select first content item (called from index.html)
+async function autoSelectFirstContent() {
+    // Try to select first category, subcategory, and content
+    if (currentCategories.length > 0) {
+        await selectCategory(currentCategories[0].id);
+        
+        if (selectedCategory && selectedCategory.subcategories && selectedCategory.subcategories.length > 0) {
+            await selectSubcategory(selectedCategory.subcategories[0].id);
+            
+            if (currentDocuments.length > 0) {
+                await selectDocument(currentDocuments[0].id);
+            }
+        }
+    }
+}
+
 // Initialize sidebar
 async function initSidebar() {
     currentCategories = await getCategories();
+    console.log('Loaded categories:', currentCategories);
+    
     renderCategories();
+    renderSubcategories();
+    renderDocuments();
 }
 
-// Render categories column
+// Render categories column using wheel-segment class
 function renderCategories() {
     const container = document.getElementById('categories-column');
     if (!container) return;
 
     if (currentCategories.length === 0) {
-        container.innerHTML = '<div class="empty-message">No categories yet</div>';
+        container.innerHTML = '<div class="loading">No categories yet</div>';
         return;
     }
 
     container.innerHTML = currentCategories.map((cat, index) => {
         const isSelected = selectedCategory?.id === cat.id;
-        const distance = selectedCategory ? Math.abs(currentCategories.indexOf(selectedCategory) - index) : 0;
+        const distance = selectedCategory ? Math.abs(currentCategories.indexOf(selectedCategory) - index) : 999;
+        
+        let distanceClass = '';
+        if (distance === 0) {
+            distanceClass = 'active';
+        } else if (distance === 1) {
+            distanceClass = 'near-center';
+        } else if (distance >= 3) {
+            distanceClass = 'far-from-center';
+        }
         
         return `
-            <div class="wheel-item ${isSelected ? 'selected' : ''}" 
-                 data-distance="${distance}"
-                 onclick="selectCategory(${cat.id})">
-                <div class="wheel-item-content">
-                    <span class="item-title">${cat.name}</span>
-                </div>
+            <div class="wheel-segment ${distanceClass}" data-category-id="${cat.id}">
+                ${cat.name}
             </div>
         `;
     }).join('');
+    
+    // Add click listeners
+    container.querySelectorAll('.wheel-segment').forEach(segment => {
+        segment.addEventListener('click', function() {
+            const categoryId = this.getAttribute('data-category-id');
+            selectCategory(categoryId);
+        });
+    });
 }
 
-// Render subcategories column
+// Render subcategories column using wheel-segment class
 function renderSubcategories() {
     const container = document.getElementById('subcategories-column');
     if (!container) return;
 
     if (!selectedCategory) {
-        container.innerHTML = '<div class="empty-message">Select a category</div>';
+        container.innerHTML = '<div class="loading">Select a category</div>';
         currentSubcategories = [];
         return;
     }
@@ -53,33 +91,46 @@ function renderSubcategories() {
     currentSubcategories = selectedCategory.subcategories || [];
 
     if (currentSubcategories.length === 0) {
-        container.innerHTML = '<div class="empty-message">No subcategories</div>';
+        container.innerHTML = '<div class="loading">No subcategories</div>';
         return;
     }
 
     container.innerHTML = currentSubcategories.map((sub, index) => {
         const isSelected = selectedSubcategory?.id === sub.id;
-        const distance = selectedSubcategory ? Math.abs(currentSubcategories.indexOf(selectedSubcategory) - index) : 0;
+        const distance = selectedSubcategory ? Math.abs(currentSubcategories.indexOf(selectedSubcategory) - index) : 999;
+        
+        let distanceClass = '';
+        if (distance === 0) {
+            distanceClass = 'active';
+        } else if (distance === 1) {
+            distanceClass = 'near-center';
+        } else if (distance >= 3) {
+            distanceClass = 'far-from-center';
+        }
         
         return `
-            <div class="wheel-item ${isSelected ? 'selected' : ''}"
-                 data-distance="${distance}"
-                 onclick="selectSubcategory(${sub.id})">
-                <div class="wheel-item-content">
-                    <span class="item-title">${sub.name}</span>
-                </div>
+            <div class="wheel-segment ${distanceClass}" data-subcategory-id="${sub.id}">
+                ${sub.name}
             </div>
         `;
     }).join('');
+    
+    // Add click listeners
+    container.querySelectorAll('.wheel-segment').forEach(segment => {
+        segment.addEventListener('click', function() {
+            const subcategoryId = this.getAttribute('data-subcategory-id');
+            selectSubcategory(subcategoryId);
+        });
+    });
 }
 
-// Render documents column
+// Render documents column using wheel-segment class
 async function renderDocuments() {
     const container = document.getElementById('documents-column');
     if (!container) return;
 
     if (!selectedSubcategory) {
-        container.innerHTML = '<div class="empty-message">Select a subcategory</div>';
+        container.innerHTML = '<div class="loading">Select a subcategory</div>';
         currentDocuments = [];
         return;
     }
@@ -87,112 +138,82 @@ async function renderDocuments() {
     currentDocuments = await getContentBySubcategory(selectedSubcategory.id);
 
     if (currentDocuments.length === 0) {
-        container.innerHTML = '<div class="empty-message">No content yet</div>';
+        container.innerHTML = '<div class="loading">No content yet</div>';
         return;
     }
 
     container.innerHTML = currentDocuments.map((doc, index) => {
         const isSelected = selectedDocument?.id === doc.id;
-        const distance = selectedDocument ? Math.abs(currentDocuments.indexOf(selectedDocument) - index) : 0;
+        const distance = selectedDocument ? Math.abs(currentDocuments.indexOf(selectedDocument) - index) : 999;
+        
+        let distanceClass = '';
+        if (distance === 0) {
+            distanceClass = 'active';
+        } else if (distance === 1) {
+            distanceClass = 'near-center';
+        } else if (distance >= 3) {
+            distanceClass = 'far-from-center';
+        }
         
         // Use sidebar title/subtitle if available, otherwise fall back to main title/subtitle
         const displayTitle = doc.sidebar_title || doc.title;
-        const displaySubtitle = doc.sidebar_subtitle || doc.subtitle;
+        const icon = getContentIcon(doc.type);
         
         return `
-            <div class="wheel-item ${isSelected ? 'selected' : ''}"
-                 data-distance="${distance}"
-                 onclick="selectDocument(${doc.id})">
-                <div class="wheel-item-content">
-                    <div class="item-icon">${getContentIcon(doc.type)}</div>
-                    <div class="item-text">
-                        <span class="item-title">${displayTitle}</span>
-                        ${displaySubtitle ? `<span class="item-subtitle">${displaySubtitle}</span>` : ''}
-                    </div>
-                </div>
+            <div class="wheel-segment ${distanceClass}" data-document-id="${doc.id}">
+                ${icon} ${displayTitle}
             </div>
         `;
     }).join('');
+    
+    // Add click listeners
+    container.querySelectorAll('.wheel-segment').forEach(segment => {
+        segment.addEventListener('click', function() {
+            const documentId = this.getAttribute('data-document-id');
+            selectDocument(documentId);
+        });
+    });
 }
 
-// Select category
+// Select category - KEEPING ID AS STRING (UUID)
 async function selectCategory(categoryId) {
     selectedCategory = currentCategories.find(c => c.id === categoryId);
     selectedSubcategory = null;
     selectedDocument = null;
     
+    console.log('Selected category:', selectedCategory);
+    
     renderCategories();
     renderSubcategories();
     renderDocuments();
     clearContent();
-    
-    // Reorder categories to center selected
-    reorderColumn('categories-column', currentCategories, selectedCategory);
 }
 
-// Select subcategory
+// Select subcategory - KEEPING ID AS STRING (UUID)
 async function selectSubcategory(subcategoryId) {
     selectedSubcategory = currentSubcategories.find(s => s.id === subcategoryId);
     selectedDocument = null;
     
+    console.log('Selected subcategory:', selectedSubcategory);
+    
     renderSubcategories();
     await renderDocuments();
     clearContent();
-    
-    // Reorder subcategories to center selected
-    reorderColumn('subcategories-column', currentSubcategories, selectedSubcategory);
 }
 
-// Select document
+// Select document - KEEPING ID AS STRING (UUID)
 async function selectDocument(documentId) {
     selectedDocument = currentDocuments.find(d => d.id === documentId);
     
+    console.log('Selected document:', selectedDocument);
+    
     renderDocuments();
     displayContent(selectedDocument);
-    
-    // Reorder documents to center selected
-    reorderColumn('documents-column', currentDocuments, selectedDocument);
-}
-
-// Reorder column to center selected item
-function reorderColumn(columnId, items, selectedItem) {
-    const container = document.getElementById(columnId);
-    if (!container || !selectedItem) return;
-    
-    const selectedIndex = items.findIndex(item => item.id === selectedItem.id);
-    if (selectedIndex === -1) return;
-    
-    const wheelItems = Array.from(container.querySelectorAll('.wheel-item'));
-    const reorderedItems = [];
-    
-    // Start from selected item and alternate above/below
-    reorderedItems.push(wheelItems[selectedIndex]);
-    
-    let above = selectedIndex - 1;
-    let below = selectedIndex + 1;
-    
-    while (above >= 0 || below < wheelItems.length) {
-        if (below < wheelItems.length) {
-            reorderedItems.push(wheelItems[below]);
-            below++;
-        }
-        if (above >= 0) {
-            reorderedItems.push(wheelItems[above]);
-            above--;
-        }
-    }
-    
-    // Update distances and re-append
-    container.innerHTML = '';
-    reorderedItems.forEach((item, index) => {
-        item.setAttribute('data-distance', index);
-        container.appendChild(item);
-    });
 }
 
 // Display content in main area
 function displayContent(content) {
-    const contentArea = document.getElementById('content-display');
+    const contentArea = document.getElementById('contentContainer');
     if (!contentArea || !content) return;
 
     let contentHTML = '';
@@ -259,9 +280,14 @@ function displayContent(content) {
 
 // Clear content area
 function clearContent() {
-    const contentArea = document.getElementById('content-display');
+    const contentArea = document.getElementById('contentContainer');
     if (contentArea) {
-        contentArea.innerHTML = '<div class="no-content">Select a document to view its content</div>';
+        contentArea.innerHTML = `
+            <div class="welcome-message">
+                <h3>Select Content</h3>
+                <p>Choose a document from the sidebar to view its content.</p>
+            </div>
+        `;
     }
 }
 
@@ -285,5 +311,13 @@ function getContentIcon(type) {
     return icons[type] || '📄';
 }
 
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', initSidebar);
+// Initialize on page load (backup in case index.html doesn't call it)
+document.addEventListener('DOMContentLoaded', async function() {
+    // Only initialize if the main portfolio page is loaded
+    if (document.getElementById('categoryNav')) {
+        console.log('Sidebar navigation initializing...');
+        await initializeEnhancedSidebar();
+        await autoSelectFirstContent();
+        console.log('Sidebar navigation ready!');
+    }
+});

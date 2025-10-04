@@ -90,14 +90,18 @@
     
     <!-- Main Content Area -->
     <main class="main-container">
-        <!-- Sidebar Navigation -->
+        <!-- Sidebar Navigation (Three-Column Cylinder) -->
         <aside class="sidebar">
-            <div class="sidebar-header">
-                <h2>Portfolio</h2>
-            </div>
-            
             <nav class="category-navigation" id="categoryNav">
-                <div class="loading">Loading categories...</div>
+                <div class="cylinder-wheel" id="categories-column">
+                    <div class="loading">Loading categories...</div>
+                </div>
+                <div class="cylinder-wheel" id="subcategories-column">
+                    <div class="loading">Select a category</div>
+                </div>
+                <div class="cylinder-wheel" id="documents-column">
+                    <div class="loading">Select a subcategory</div>
+                </div>
             </nav>
         </aside>
         
@@ -127,6 +131,7 @@
     <!-- Your Scripts -->
     <script src="content.js"></script>
     <script src="sidebar-navigation.js"></script>
+    
     <script>
         // Business card expansion functionality
         function toggleBusinessCard() {
@@ -239,32 +244,20 @@
             }
         }
         
-        // Load categories into sidebar (now handled by sidebar-navigation.js)
-        function loadCategorySidebar() {
-            initializeEnhancedSidebar();
-            autoSelectFirstContent();
-        }
-        
-        // Generate video HTML
-        function generateVideoHTML(url) {
-            if (url.includes('youtube.com') || url.includes('youtu.be')) {
-                const videoId = url.includes('youtu.be') ? 
-                    url.split('/').pop() : 
-                    url.split('v=')[1]?.split('&')[0];
-                return `<div class="content-media">
-                    <iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>
-                </div>`;
-            } else {
-                return `<div class="content-media">
-                    <video controls><source src="${url}"></video>
-                </div>`;
-            }
-        }
-        
         // Initialize everything when page loads
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('Page loaded - initializing portfolio...');
+            
+            // Load business card data
             loadBusinessCardData();
-            loadCategorySidebar();
+            
+            // Initialize three-column sidebar (functions from sidebar-navigation.js)
+            await initializeEnhancedSidebar();
+            
+            // Auto-select first content item
+            await autoSelectFirstContent();
+            
+            console.log('Portfolio initialization complete!');
         });
     </script>
 </body>
