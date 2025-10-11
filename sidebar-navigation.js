@@ -257,18 +257,43 @@ function displayContent(content) {
                 <h1 class="content-title">${content.title}</h1>
                 ${content.subtitle ? `<p class="content-subtitle">${content.subtitle}</p>` : ''}
                 <div class="image-container">
-                    <img src="${content.content}" alt="${content.title}" />
+                    <img src="${content.content}" alt="${content.title}" loading="lazy" />
                 </div>
                 ${content.copyright_notice ? `<p class="copyright-notice">${content.copyright_notice}</p>` : ''}
             </div>
         `;
     } else if (content.type === 'video') {
+        // Detect if Cloudinary video or YouTube embed
+        const isCloudinaryVideo = content.content.includes('cloudinary.com') && content.content.includes('/video/');
+        
         contentHTML = `
             <div class="video-content">
                 <h1 class="content-title">${content.title}</h1>
                 ${content.subtitle ? `<p class="content-subtitle">${content.subtitle}</p>` : ''}
                 <div class="video-container">
-                    <iframe src="${content.content}" frameborder="0" allowfullscreen></iframe>
+                    ${isCloudinaryVideo ? 
+                        `<video controls preload="metadata">
+                            <source src="${content.content}" type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>` :
+                        `<iframe src="${content.content}" frameborder="0" allowfullscreen></iframe>`
+                    }
+                </div>
+                ${content.copyright_notice ? `<p class="copyright-notice">${content.copyright_notice}</p>` : ''}
+            </div>
+        `;
+    } else if (content.type === 'audio') {
+        contentHTML = `
+            <div class="audio-content">
+                <h1 class="content-title">${content.title}</h1>
+                ${content.subtitle ? `<p class="content-subtitle">${content.subtitle}</p>` : ''}
+                <div class="audio-container">
+                    <audio controls preload="metadata">
+                        <source src="${content.audio_url}" type="audio/mpeg">
+                        <source src="${content.audio_url}" type="audio/wav">
+                        <source src="${content.audio_url}" type="audio/ogg">
+                        Your browser does not support the audio element.
+                    </audio>
                 </div>
                 ${content.copyright_notice ? `<p class="copyright-notice">${content.copyright_notice}</p>` : ''}
             </div>
@@ -306,7 +331,8 @@ function getContentIcon(type) {
     const icons = {
         article: '📄',
         image: '🖼️',
-        video: '🎥'
+        video: '🎥',
+        audio: '🎵'
     };
     return icons[type] || '📄';
 }

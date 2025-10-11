@@ -6,7 +6,41 @@
     <title>Content Management - Portfolio Admin</title>
     <link rel="stylesheet" href="shared-styles.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://upload-widget.cloudinary.com/global/all.js" type="text/javascript"></script>
     <script>const ADMIN_ACTIVE_PAGE = 'content';</script>
+    <style>
+        .upload-button {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 8px;
+            color: #60a5fa;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            margin-top: 0.5rem;
+        }
+        .upload-button:hover {
+            background: rgba(59, 130, 246, 0.3);
+            border-color: rgba(59, 130, 246, 0.5);
+        }
+        .upload-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .upload-status {
+            margin-top: 0.5rem;
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+        .upload-status.success {
+            color: #10b981;
+        }
+        .upload-status.error {
+            color: #ef4444;
+        }
+    </style>
 </head>
 <body>
     <div class="admin-container">
@@ -119,16 +153,38 @@
                         <h3>Content Body *</h3>
                     </div>
 
-                    <div class="form-group">
-                        <label for="contentBody">Content *</label>
-                        <textarea id="contentBody" required rows="15" placeholder="Enter your content here..."></textarea>
-                        <small>For articles: Write or paste your article text. For images/videos: Enter the URL.</small>
+                    <!-- Article Content -->
+                    <div class="form-group" id="articleBodyGroup">
+                        <label for="contentBody">Article Content *</label>
+                        <textarea id="contentBody" rows="15" placeholder="Write or paste your article text here..."></textarea>
+                        <small>Write your article content (will be formatted automatically)</small>
                     </div>
 
-                    <div class="form-group" id="audioUrlGroup" style="display: none;">
-                        <label for="audioUrl">Audio File URL</label>
-                        <input type="url" id="audioUrl" placeholder="https://example.com/audio.mp3">
-                        <small>Direct link to audio file (MP3, WAV, OGG)</small>
+                    <!-- Image Upload -->
+                    <div class="form-group" id="imageUploadGroup" style="display: none;">
+                        <label for="imageUrl">Image URL *</label>
+                        <input type="url" id="imageUrl" placeholder="Image URL will appear here after upload">
+                        <button type="button" class="upload-button" id="uploadImageBtn">📷 Upload Image to Cloudinary</button>
+                        <div id="imageUploadStatus" class="upload-status"></div>
+                        <small>Click "Upload Image" to select and upload an image file (automatically optimized)</small>
+                    </div>
+
+                    <!-- Video Upload -->
+                    <div class="form-group" id="videoUploadGroup" style="display: none;">
+                        <label for="videoUrl">Video URL *</label>
+                        <input type="url" id="videoUrl" placeholder="YouTube embed URL or Cloudinary video URL">
+                        <button type="button" class="upload-button" id="uploadVideoBtn">🎥 Upload Video to Cloudinary</button>
+                        <div id="videoUploadStatus" class="upload-status"></div>
+                        <small><strong>For videos &lt;10MB:</strong> Upload to Cloudinary. <strong>For larger videos:</strong> Upload to YouTube, set to "Unlisted", and paste the embed URL.</small>
+                    </div>
+
+                    <!-- Audio Upload -->
+                    <div class="form-group" id="audioUploadGroup" style="display: none;">
+                        <label for="audioUrl">Audio File URL *</label>
+                        <input type="url" id="audioUrl" placeholder="Audio URL will appear here after upload">
+                        <button type="button" class="upload-button" id="uploadAudioBtn">🎵 Upload Audio to Cloudinary</button>
+                        <div id="audioUploadStatus" class="upload-status"></div>
+                        <small>Click "Upload Audio" to select and upload an audio file (MP3, WAV, OGG)</small>
                     </div>
 
                     <div class="form-divider">
@@ -186,15 +242,128 @@
     <script src="../content-downloads.js"></script>
     <script src="shared-nav.js"></script>
     <script>
+        // CLOUDINARY CONFIGURATION
+        const CLOUDINARY_CLOUD_NAME = 'dkzypkiwf';
+        const CLOUDINARY_UPLOAD_PRESET = 'portfolio_uploads';
+
         // Global variables
         let categories = [];
         let allContent = [];
         let allCollections = [];
 
-        // Show/hide audio URL field based on content type
+        // Initialize Cloudinary Upload Widget
+        function createUploadWidget(resourceType, onSuccess) {
+            const widget = cloudinary.createUploadWidget(
+                {
+                    cloudName: CLOUDINARY_CLOUD_NAME,
+                    uploadPreset: CLOUDINARY_UPLOAD_PRESET,
+                    resourceType: resourceType, // 'image', 'video', or 'raw' (for audio)
+                    sources: ['local', 'url', 'camera'],
+                    multiple: false,
+                    maxFileSize: 10000000, // 10MB limit for free tier
+                    clientAllowedFormats: resourceType === 'image' ? ['jpg', 'jpeg', 'png', 'gif', 'webp'] : 
+                                         resourceType === 'video' ? ['mp4', 'mov', 'avi', 'webm'] :
+                                         ['mp3', 'wav', 'ogg'],
+                    styles: {
+                        palette: {
+                            window: "#0D1123",
+                            windowBorder: "#3B82F6",
+                            tabIcon: "#60A5FA",
+                            menuIcons: "#60A5FA",
+                            textDark: "#FFFFFF",
+                            textLight: "#FFFFFF",
+                            link: "#3B82F6",
+                            action: "#3B82F6",
+                            inactiveTabIcon: "#6B7280",
+                            error: "#EF4444",
+                            inProgress: "#3B82F6",
+                            complete: "#10B981",
+                            sourceBg: "#1F2937"
+                        }
+                    }
+                },
+                (error, result) => {
+                    if (!error && result && result.event === "success") {
+                        console.log('Upload successful!', result.info);
+                        onSuccess(result.info.secure_url);
+                    }
+                }
+            );
+            return widget;
+        }
+
+        // Upload Image Button
+        document.getElementById('uploadImageBtn').addEventListener('click', function() {
+            const statusEl = document.getElementById('imageUploadStatus');
+            statusEl.textContent = 'Opening upload widget...';
+            statusEl.className = 'upload-status';
+            
+            const widget = createUploadWidget('image', (url) => {
+                document.getElementById('imageUrl').value = url;
+                statusEl.textContent = '✓ Image uploaded successfully!';
+                statusEl.className = 'upload-status success';
+            });
+            widget.open();
+        });
+
+        // Upload Video Button
+        document.getElementById('uploadVideoBtn').addEventListener('click', function() {
+            const statusEl = document.getElementById('videoUploadStatus');
+            statusEl.textContent = 'Opening upload widget...';
+            statusEl.className = 'upload-status';
+            
+            const widget = createUploadWidget('video', (url) => {
+                document.getElementById('videoUrl').value = url;
+                statusEl.textContent = '✓ Video uploaded successfully!';
+                statusEl.className = 'upload-status success';
+            });
+            widget.open();
+        });
+
+        // Upload Audio Button
+        document.getElementById('uploadAudioBtn').addEventListener('click', function() {
+            const statusEl = document.getElementById('audioUploadStatus');
+            statusEl.textContent = 'Opening upload widget...';
+            statusEl.className = 'upload-status';
+            
+            const widget = createUploadWidget('raw', (url) => {
+                document.getElementById('audioUrl').value = url;
+                statusEl.textContent = '✓ Audio uploaded successfully!';
+                statusEl.className = 'upload-status success';
+            });
+            widget.open();
+        });
+
+        // Show/hide content type specific fields
         document.getElementById('contentType').addEventListener('change', function() {
-            const audioGroup = document.getElementById('audioUrlGroup');
-            audioGroup.style.display = this.value === 'audio' ? 'block' : 'none';
+            const type = this.value;
+            
+            // Hide all content-specific groups
+            document.getElementById('articleBodyGroup').style.display = 'none';
+            document.getElementById('imageUploadGroup').style.display = 'none';
+            document.getElementById('videoUploadGroup').style.display = 'none';
+            document.getElementById('audioUploadGroup').style.display = 'none';
+            
+            // Clear required attribute from all
+            document.getElementById('contentBody').removeAttribute('required');
+            document.getElementById('imageUrl').removeAttribute('required');
+            document.getElementById('videoUrl').removeAttribute('required');
+            document.getElementById('audioUrl').removeAttribute('required');
+            
+            // Show and require appropriate field
+            if (type === 'article') {
+                document.getElementById('articleBodyGroup').style.display = 'block';
+                document.getElementById('contentBody').setAttribute('required', 'required');
+            } else if (type === 'image') {
+                document.getElementById('imageUploadGroup').style.display = 'block';
+                document.getElementById('imageUrl').setAttribute('required', 'required');
+            } else if (type === 'video') {
+                document.getElementById('videoUploadGroup').style.display = 'block';
+                document.getElementById('videoUrl').setAttribute('required', 'required');
+            } else if (type === 'audio') {
+                document.getElementById('audioUploadGroup').style.display = 'block';
+                document.getElementById('audioUrl').setAttribute('required', 'required');
+            }
         });
 
         // Show/hide external download field based on checkbox
@@ -385,8 +554,25 @@
             e.preventDefault();
             
             const editId = document.getElementById('editContentId').value;
+            const contentType = document.getElementById('contentType').value;
+            
+            // Get content based on type
+            let contentValue = '';
+            let audioUrlValue = '';
+            
+            if (contentType === 'article') {
+                contentValue = document.getElementById('contentBody').value;
+            } else if (contentType === 'image') {
+                contentValue = document.getElementById('imageUrl').value;
+            } else if (contentType === 'video') {
+                contentValue = document.getElementById('videoUrl').value;
+            } else if (contentType === 'audio') {
+                audioUrlValue = document.getElementById('audioUrl').value;
+                contentValue = 'Audio file'; // Placeholder for content field
+            }
+            
             const contentData = {
-                type: document.getElementById('contentType').value,
+                type: contentType,
                 subcategoryId: document.getElementById('subcategorySelect').value,
                 title: document.getElementById('contentTitle').value,
                 subtitle: document.getElementById('contentSubtitle').value,
@@ -397,8 +583,8 @@
                 publicationDate: document.getElementById('publicationDate').value,
                 sourceLink: document.getElementById('sourceLink').value,
                 copyrightNotice: document.getElementById('copyrightNotice').value,
-                content: document.getElementById('contentBody').value,
-                audioUrl: document.getElementById('audioUrl').value,
+                content: contentValue,
+                audioUrl: audioUrlValue,
                 downloadEnabled: document.getElementById('downloadEnabled').checked,
                 externalDownloadUrl: document.getElementById('externalDownloadUrl').value
             };
@@ -457,8 +643,8 @@
             document.getElementById('editContentId').value = content.id;
             document.getElementById('contentType').value = content.type;
             
-            // Show/hide audio field
-            document.getElementById('audioUrlGroup').style.display = content.type === 'audio' ? 'block' : 'none';
+            // Trigger content type change to show appropriate fields
+            document.getElementById('contentType').dispatchEvent(new Event('change'));
             
             document.getElementById('categorySelect').value = categoryId || '';
             
@@ -475,8 +661,18 @@
                 document.getElementById('publicationDate').value = content.publication_date || '';
                 document.getElementById('sourceLink').value = content.source_link || '';
                 document.getElementById('copyrightNotice').value = content.copyright_notice || '';
-                document.getElementById('contentBody').value = content.content;
-                document.getElementById('audioUrl').value = content.audio_url || '';
+                
+                // Populate content based on type
+                if (content.type === 'article') {
+                    document.getElementById('contentBody').value = content.content;
+                } else if (content.type === 'image') {
+                    document.getElementById('imageUrl').value = content.content;
+                } else if (content.type === 'video') {
+                    document.getElementById('videoUrl').value = content.content;
+                } else if (content.type === 'audio') {
+                    document.getElementById('audioUrl').value = content.audio_url || '';
+                }
+                
                 document.getElementById('downloadEnabled').checked = content.download_enabled || false;
                 document.getElementById('externalDownloadUrl').value = content.external_download_url || '';
                 
@@ -523,8 +719,18 @@
             document.getElementById('cancelBtn').style.display = 'none';
             document.getElementById('subcategorySelect').disabled = true;
             document.getElementById('subcategorySelect').innerHTML = '<option value="">Select category first...</option>';
-            document.getElementById('audioUrlGroup').style.display = 'none';
+            
+            // Hide all content-specific groups
+            document.getElementById('articleBodyGroup').style.display = 'none';
+            document.getElementById('imageUploadGroup').style.display = 'none';
+            document.getElementById('videoUploadGroup').style.display = 'none';
+            document.getElementById('audioUploadGroup').style.display = 'none';
             document.getElementById('externalDownloadGroup').style.display = 'none';
+            
+            // Clear upload status messages
+            document.getElementById('imageUploadStatus').textContent = '';
+            document.getElementById('videoUploadStatus').textContent = '';
+            document.getElementById('audioUploadStatus').textContent = '';
             
             // Uncheck all collection checkboxes
             document.querySelectorAll('.collection-checkbox').forEach(cb => cb.checked = false);

@@ -207,7 +207,8 @@
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
-.video-container iframe {
+.video-container iframe,
+.video-container video {
     position: absolute;
     top: 0;
     left: 0;
@@ -217,6 +218,62 @@
 }
 
 .video-content .copyright-notice {
+    margin-top: 1.5rem;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.5);
+    font-style: italic;
+}
+
+/* Audio Content */
+.audio-content {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 3rem 2rem;
+    text-align: center;
+}
+
+.audio-content .content-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #fff;
+    margin: 0 0 1rem 0;
+    background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.audio-content .content-subtitle {
+    font-size: 1.2rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin: 0 0 2rem 0;
+}
+
+.audio-container {
+    background: rgba(13, 17, 35, 0.4);
+    backdrop-filter: blur(12px);
+    border-radius: 20px;
+    padding: 2rem;
+    border: 1px solid rgba(59, 130, 246, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.audio-container audio {
+    width: 100%;
+    max-width: 600px;
+    border-radius: 12px;
+    outline: none;
+}
+
+/* Custom audio player styling (browser default styling) */
+.audio-container audio::-webkit-media-controls-panel {
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.audio-content .copyright-notice {
     margin-top: 1.5rem;
     font-size: 0.9rem;
     color: rgba(255, 255, 255, 0.5);
@@ -246,19 +303,22 @@
 @media (max-width: 768px) {
     .article-content,
     .image-content,
-    .video-content {
+    .video-content,
+    .audio-content {
         padding: 2rem 1.5rem;
     }
 
     .article-title,
     .image-content .content-title,
-    .video-content .content-title {
+    .video-content .content-title,
+    .audio-content .content-title {
         font-size: 2rem;
     }
 
     .article-subtitle,
     .image-content .content-subtitle,
-    .video-content .content-subtitle {
+    .video-content .content-subtitle,
+    .audio-content .content-subtitle {
         font-size: 1.1rem;
     }
 
@@ -268,5 +328,9 @@
 
     .article-metadata {
         padding: 1rem;
+    }
+    
+    .audio-container {
+        padding: 1.5rem 1rem;
     }
 }
