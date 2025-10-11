@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collections Management - Beregovskiy Portfolio</title>
+    <link rel="stylesheet" href="shared-styles.css">
+    <link rel="stylesheet" href="collections-styles.css">
+    <script>const ADMIN_ACTIVE_PAGE = 'collections';</script>
+</head>
+<body>
+    <div class="admin-container">
+        <header class="admin-header">
+            <h1>Collections Management</h1>
+            <nav class="admin-nav" id="adminNavContainer">
+                <!-- Navigation will be inserted by shared-nav.js -->
+            </nav>
+        </header>
+
+        <main class="admin-main">
+            <!-- Create/Edit Collection Form -->
+            <section class="admin-section">
+                <h2 id="collection-form-title">Create New Collection</h2>
+                
+                <form id="collectionForm" class="admin-form">
+                    <input type="hidden" id="editCollectionId">
+                    
+                    <div class="form-group">
+                        <label for="collectionName">Collection Name *</label>
+                        <input type="text" id="collectionName" required placeholder="e.g., B2B Marketing">
+                        <small>Display name for this collection</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="collectionSlug">URL Slug *</label>
+                        <input type="text" id="collectionSlug" required placeholder="e.g., b2b-marketing">
+                        <small>URL-friendly identifier (lowercase, hyphens only)</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="collectionDescription">Description</label>
+                        <textarea id="collectionDescription" rows="4" placeholder="Brief description for collection page header (optional)"></textarea>
+                        <small>This will appear at the top of the collection page</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="collectionOrder">Display Order</label>
+                        <input type="number" id="collectionOrder" value="0" min="0" placeholder="0">
+                        <small>Lower numbers appear first (0 = highest priority)</small>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary" id="collectionSubmitBtn">Create Collection</button>
+                        <button type="button" class="btn-secondary" id="collectionCancelBtn" style="display: none;">Cancel</button>
+                    </div>
+                </form>
+
+                <div id="collectionStatus" class="message" style="display: none;"></div>
+            </section>
+
+            <!-- Assign Content to Collection -->
+            <section class="admin-section" id="assignContentSection" style="display: none;">
+                <h2>Assign Content to: <span id="assignCollectionName"></span></h2>
+                
+                <div class="content-selector">
+                    <div class="form-group">
+                        <label for="filterCategory">Filter by Category</label>
+                        <select id="filterCategory">
+                            <option value="">All Categories</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="filterSubcategory">Filter by Subcategory</label>
+                        <select id="filterSubcategory" disabled>
+                            <option value="">Select category first...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="contentSelectionList" class="content-selection-list">
+                    <p class="loading">Loading content...</p>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="closeAssignBtn">Close</button>
+                </div>
+            </section>
+
+            <!-- Existing Collections List -->
+            <section class="admin-section">
+                <h2>Existing Collections</h2>
+                <div id="collectionsList" class="collections-list">
+                    <p class="loading">Loading collections...</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Supabase & Dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../supabase-config.js"></script>
+    <script src="../content-categories.js"></script>
+    <script src="../content-items.js"></script>
+    <script src="../content-profile.js"></script>
+    <script src="../content-collections.js"></script>
+    <script src="../content-resume.js"></script>
+    <script src="../content-downloads.js"></script>
+    <script src="shared-nav.js"></script>
+    
+    <!-- Collections Management Scripts -->
+    <script src="collections-functions.js"></script>
+    <script src="collections-ui.js"></script>
+</body>
+</html>

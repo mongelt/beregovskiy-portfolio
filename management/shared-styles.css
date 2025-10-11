@@ -1,5 +1,8 @@
 /* Admin Panel Shared Styles - Enhanced with Form Sections */
 
+/* Import downloads styles */
+@import url('downloads-styles.css');
+
 * {
     margin: 0;
     padding: 0;

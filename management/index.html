@@ -6,16 +6,14 @@
     <title>Content Management - Portfolio Admin</title>
     <link rel="stylesheet" href="shared-styles.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>const ADMIN_ACTIVE_PAGE = 'content';</script>
 </head>
 <body>
     <div class="admin-container">
         <header class="admin-header">
             <h1>Content Management</h1>
-            <nav class="admin-nav">
-                <a href="index.html" class="active">Content</a>
-                <a href="categories.html">Categories</a>
-                <a href="profile.html">Profile</a>
-                <a href="../index.html" class="btn-secondary">← Back to Portfolio</a>
+            <nav class="admin-nav" id="adminNavContainer">
+                <!-- Navigation will be inserted by shared-nav.js -->
             </nav>
         </header>
 
@@ -33,6 +31,7 @@
                             <option value="article">Article</option>
                             <option value="image">Image</option>
                             <option value="video">Video</option>
+                            <option value="audio">Audio</option>
                         </select>
                     </div>
 
@@ -126,6 +125,42 @@
                         <small>For articles: Write or paste your article text. For images/videos: Enter the URL.</small>
                     </div>
 
+                    <div class="form-group" id="audioUrlGroup" style="display: none;">
+                        <label for="audioUrl">Audio File URL</label>
+                        <input type="url" id="audioUrl" placeholder="https://example.com/audio.mp3">
+                        <small>Direct link to audio file (MP3, WAV, OGG)</small>
+                    </div>
+
+                    <div class="form-divider">
+                        <h3>Collections (Optional)</h3>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="collectionsSelect">Assign to Collections</label>
+                        <div id="collectionsCheckboxes" style="margin-top: 0.5rem;">
+                            <p class="loading" style="font-size: 0.9rem; color: rgba(255,255,255,0.5);">Loading collections...</p>
+                        </div>
+                        <small>Select which curated collections should feature this content</small>
+                    </div>
+
+                    <div class="form-divider">
+                        <h3>Download Settings (Optional)</h3>
+                    </div>
+
+                    <div class="form-group">
+                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                            <input type="checkbox" id="downloadEnabled" style="width: auto; margin: 0;">
+                            <span>Enable Download Button</span>
+                        </label>
+                        <small>Allow visitors to download this content item</small>
+                    </div>
+
+                    <div class="form-group" id="externalDownloadGroup" style="display: none;">
+                        <label for="externalDownloadUrl">External Download Link (Optional)</label>
+                        <input type="url" id="externalDownloadUrl" placeholder="https://example.com/download.pdf">
+                        <small>If provided, download button will link here instead of the content itself</small>
+                    </div>
+
                     <div class="form-actions">
                         <button type="submit" class="btn-primary" id="submitBtn">Create Content</button>
                         <button type="button" class="btn-secondary" id="cancelBtn" style="display: none;">Cancel Edit</button>
@@ -143,11 +178,85 @@
     </div>
 
     <script src="../supabase-config.js"></script>
-    <script src="../content.js"></script>
+    <script src="../content-categories.js"></script>
+    <script src="../content-items.js"></script>
+    <script src="../content-profile.js"></script>
+    <script src="../content-collections.js"></script>
+    <script src="../content-resume.js"></script>
+    <script src="../content-downloads.js"></script>
+    <script src="shared-nav.js"></script>
     <script>
         // Global variables
         let categories = [];
         let allContent = [];
+        let allCollections = [];
+
+        // Show/hide audio URL field based on content type
+        document.getElementById('contentType').addEventListener('change', function() {
+            const audioGroup = document.getElementById('audioUrlGroup');
+            audioGroup.style.display = this.value === 'audio' ? 'block' : 'none';
+        });
+
+        // Show/hide external download field based on checkbox
+        document.getElementById('downloadEnabled').addEventListener('change', function() {
+            const externalGroup = document.getElementById('externalDownloadGroup');
+            externalGroup.style.display = this.checked ? 'block' : 'none';
+        });
+
+        // Load collections checkboxes
+        async function loadCollections() {
+            try {
+                allCollections = await getCollections();
+                const container = document.getElementById('collectionsCheckboxes');
+                
+                if (allCollections.length === 0) {
+                    container.innerHTML = '<p style="font-size: 0.9rem; color: rgba(255,255,255,0.5);">No collections yet. Create collections in the Collections page.</p>';
+                    return;
+                }
+                
+                container.innerHTML = '';
+                allCollections.forEach(collection => {
+                    const checkboxWrapper = document.createElement('label');
+                    checkboxWrapper.style.cssText = 'display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin-bottom: 0.5rem; font-weight: normal;';
+                    
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.value = collection.id;
+                    checkbox.className = 'collection-checkbox';
+                    checkbox.style.cssText = 'width: auto; margin: 0;';
+                    
+                    const label = document.createElement('span');
+                    label.textContent = collection.name;
+                    
+                    checkboxWrapper.appendChild(checkbox);
+                    checkboxWrapper.appendChild(label);
+                    container.appendChild(checkboxWrapper);
+                });
+            } catch (error) {
+                console.error('Error loading collections:', error);
+                document.getElementById('collectionsCheckboxes').innerHTML = '<p style="font-size: 0.9rem; color: #ef4444;">Error loading collections</p>';
+            }
+        }
+
+        // Get selected collection IDs
+        function getSelectedCollections() {
+            const checkboxes = document.querySelectorAll('.collection-checkbox:checked');
+            return Array.from(checkboxes).map(cb => cb.value);
+        }
+
+        // Set selected collections (for editing)
+        async function setSelectedCollections(contentId) {
+            try {
+                const contentCollections = await getContentCollections(contentId);
+                const collectionIds = contentCollections.map(cc => cc.collection_id);
+                
+                document.querySelectorAll('.collection-checkbox').forEach(checkbox => {
+                    checkbox.checked = collectionIds.includes(checkbox.value);
+                });
+            } catch (error) {
+                console.error('Error loading content collections:', error);
+            }
+        }
 
         // Load categories into dropdown
         async function loadCategories() {
@@ -159,7 +268,7 @@
             
             categories.forEach(cat => {
                 const option = document.createElement('option');
-                option.value = cat.id; // UUID as string
+                option.value = cat.id;
                 option.textContent = cat.name;
                 select.appendChild(option);
             });
@@ -167,7 +276,7 @@
 
         // Load subcategories when category changes
         function loadSubcategories() {
-            const categoryId = document.getElementById('categorySelect').value; // UUID string
+            const categoryId = document.getElementById('categorySelect').value;
             const subSelect = document.getElementById('subcategorySelect');
             
             console.log('Loading subcategories for category:', categoryId);
@@ -185,7 +294,7 @@
                 subSelect.innerHTML = '<option value="">Select subcategory...</option>';
                 category.subcategories.forEach(sub => {
                     const option = document.createElement('option');
-                    option.value = sub.id; // UUID as string
+                    option.value = sub.id;
                     option.textContent = sub.name;
                     subSelect.appendChild(option);
                 });
@@ -230,6 +339,9 @@
                     }
                 }
 
+                const downloadStatus = item.download_enabled ? 
+                    '<div class="content-metadata"><strong>Download:</strong> ✅ Enabled</div>' : '';
+
                 return `
                     <div class="content-item">
                         <div class="content-item-header">
@@ -243,6 +355,7 @@
                                 ${item.author_name ? `<div class="content-metadata"><strong>Author:</strong> ${item.author_name}</div>` : ''}
                                 ${item.publication_name ? `<div class="content-metadata"><strong>Published in:</strong> ${item.publication_name}</div>` : ''}
                                 ${item.publication_date ? `<div class="content-metadata"><strong>Date:</strong> ${item.publication_date}</div>` : ''}
+                                ${downloadStatus}
                             </div>
                             <div class="content-actions">
                                 <button class="btn-edit" data-content-id="${item.id}">Edit</button>
@@ -274,7 +387,7 @@
             const editId = document.getElementById('editContentId').value;
             const contentData = {
                 type: document.getElementById('contentType').value,
-                subcategoryId: document.getElementById('subcategorySelect').value, // UUID string
+                subcategoryId: document.getElementById('subcategorySelect').value,
                 title: document.getElementById('contentTitle').value,
                 subtitle: document.getElementById('contentSubtitle').value,
                 sidebarTitle: document.getElementById('sidebarTitle').value,
@@ -284,17 +397,39 @@
                 publicationDate: document.getElementById('publicationDate').value,
                 sourceLink: document.getElementById('sourceLink').value,
                 copyrightNotice: document.getElementById('copyrightNotice').value,
-                content: document.getElementById('contentBody').value
+                content: document.getElementById('contentBody').value,
+                audioUrl: document.getElementById('audioUrl').value,
+                downloadEnabled: document.getElementById('downloadEnabled').checked,
+                externalDownloadUrl: document.getElementById('externalDownloadUrl').value
             };
 
+            const selectedCollections = getSelectedCollections();
+
             try {
+                let contentId;
+                
                 if (editId) {
                     await updateContent(editId, contentData);
+                    contentId = editId;
+                    
+                    // Remove existing collection assignments
+                    const existingCollections = await getContentCollections(contentId);
+                    for (const cc of existingCollections) {
+                        await removeContentFromCollection(contentId, cc.collection_id);
+                    }
+                    
                     alert('Content updated successfully!');
                 } else {
-                    await createContent(contentData);
+                    const newContent = await createContent(contentData);
+                    contentId = newContent.id;
                     alert('Content created successfully!');
                 }
+                
+                // Add new collection assignments
+                for (const collectionId of selectedCollections) {
+                    await addContentToCollection(contentId, collectionId);
+                }
+                
                 resetForm();
                 await loadContent();
             } catch (error) {
@@ -303,7 +438,7 @@
         });
 
         // Edit content
-        function editContent(contentId) {
+        async function editContent(contentId) {
             console.log('Edit clicked for:', contentId);
             const content = allContent.find(c => c.id === contentId);
             if (!content) return;
@@ -321,11 +456,15 @@
 
             document.getElementById('editContentId').value = content.id;
             document.getElementById('contentType').value = content.type;
+            
+            // Show/hide audio field
+            document.getElementById('audioUrlGroup').style.display = content.type === 'audio' ? 'block' : 'none';
+            
             document.getElementById('categorySelect').value = categoryId || '';
             
             loadSubcategories();
             
-            setTimeout(() => {
+            setTimeout(async () => {
                 document.getElementById('subcategorySelect').value = content.subcategory_id;
                 document.getElementById('contentTitle').value = content.title;
                 document.getElementById('contentSubtitle').value = content.subtitle || '';
@@ -337,6 +476,15 @@
                 document.getElementById('sourceLink').value = content.source_link || '';
                 document.getElementById('copyrightNotice').value = content.copyright_notice || '';
                 document.getElementById('contentBody').value = content.content;
+                document.getElementById('audioUrl').value = content.audio_url || '';
+                document.getElementById('downloadEnabled').checked = content.download_enabled || false;
+                document.getElementById('externalDownloadUrl').value = content.external_download_url || '';
+                
+                // Load collection assignments
+                await setSelectedCollections(content.id);
+                
+                // Show/hide external download field
+                document.getElementById('externalDownloadGroup').style.display = content.download_enabled ? 'block' : 'none';
 
                 document.getElementById('form-title').textContent = 'Edit Content';
                 document.getElementById('submitBtn').textContent = 'Update Content';
@@ -375,12 +523,18 @@
             document.getElementById('cancelBtn').style.display = 'none';
             document.getElementById('subcategorySelect').disabled = true;
             document.getElementById('subcategorySelect').innerHTML = '<option value="">Select category first...</option>';
+            document.getElementById('audioUrlGroup').style.display = 'none';
+            document.getElementById('externalDownloadGroup').style.display = 'none';
+            
+            // Uncheck all collection checkboxes
+            document.querySelectorAll('.collection-checkbox').forEach(cb => cb.checked = false);
         }
 
         // Initialize on load
         window.addEventListener('DOMContentLoaded', async function() {
             console.log('Page loaded, initializing...');
             await loadCategories();
+            await loadCollections();
             await loadContent();
             console.log('Initialization complete');
         });

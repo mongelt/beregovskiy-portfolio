@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Downloads Management - Beregovskiy Portfolio</title>
+    <link rel="stylesheet" href="shared-styles.css">
+    <link rel="stylesheet" href="downloads-styles.css">
+</head>
+<body>
+    <div class="admin-container">
+        <header class="admin-header">
+            <h1>Downloads Management</h1>
+            <nav class="admin-nav">
+                <a href="index.html">Content</a>
+                <a href="categories.html">Categories</a>
+                <a href="profile.html">Profile</a>
+                <a href="collections.html">Collections</a>
+                <a href="resume.html">Resume</a>
+                <a href="downloads.html" class="active">Downloads</a>
+                <a href="../index.html" class="btn-secondary">← Back to Portfolio</a>
+            </nav>
+        </header>
+
+        <main class="admin-main">
+            <!-- Resume PDFs Section -->
+            <section class="admin-section">
+                <h2>Resume PDFs</h2>
+                <p class="section-description">Upload your resume in two versions: Full (comprehensive) and Condensed (1-2 pages). These will be downloadable from your Resume page.</p>
+                
+                <div class="downloads-grid">
+                    <!-- Full Resume -->
+                    <div class="download-card">
+                        <div class="download-card-header">
+                            <div class="download-icon">📄</div>
+                            <h3>Full Resume</h3>
+                        </div>
+                        <div class="download-card-body">
+                            <div class="form-group">
+                                <label for="fullResumeUrl">Resume URL *</label>
+                                <input type="url" id="fullResumeUrl" placeholder="https://example.com/resume-full.pdf">
+                                <small>Link to your full resume PDF (hosted anywhere)</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="fullResumeFilename">File Name</label>
+                                <input type="text" id="fullResumeFilename" placeholder="John_Doe_Resume_Full.pdf">
+                                <small>Name for downloaded file (optional)</small>
+                            </div>
+                            <button class="btn-primary" id="saveFullResumeBtn">Save Full Resume</button>
+                            <div id="fullResumeStatus" class="message" style="display: none;"></div>
+                        </div>
+                        <div class="download-card-footer" id="fullResumePreview" style="display: none;">
+                            <p class="download-current">Current: <a href="#" target="_blank" id="fullResumeLink"></a></p>
+                            <button class="btn-delete-small" id="deleteFullResumeBtn">Remove</button>
+                        </div>
+                    </div>
+
+                    <!-- Condensed Resume -->
+                    <div class="download-card">
+                        <div class="download-card-header">
+                            <div class="download-icon">📋</div>
+                            <h3>Condensed Resume</h3>
+                        </div>
+                        <div class="download-card-body">
+                            <div class="form-group">
+                                <label for="condensedResumeUrl">Resume URL *</label>
+                                <input type="url" id="condensedResumeUrl" placeholder="https://example.com/resume-condensed.pdf">
+                                <small>Link to your condensed resume PDF (1-2 pages)</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="condensedResumeFilename">File Name</label>
+                                <input type="text" id="condensedResumeFilename" placeholder="John_Doe_Resume.pdf">
+                                <small>Name for downloaded file (optional)</small>
+                            </div>
+                            <button class="btn-primary" id="saveCondensedResumeBtn">Save Condensed Resume</button>
+                            <div id="condensedResumeStatus" class="message" style="display: none;"></div>
+                        </div>
+                        <div class="download-card-footer" id="condensedResumePreview" style="display: none;">
+                            <p class="download-current">Current: <a href="#" target="_blank" id="condensedResumeLink"></a></p>
+                            <button class="btn-delete-small" id="deleteCondensedResumeBtn">Remove</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Portfolio PDF Section -->
+            <section class="admin-section">
+                <h2>Portfolio PDF</h2>
+                <p class="section-description">Upload a portfolio PDF featuring your best work. This will be downloadable from your Resume page. Pro tip: Use featured timeline entries to auto-generate this in future phases!</p>
+                
+                <div class="download-card download-card-full">
+                    <div class="download-card-header">
+                        <div class="download-icon">📚</div>
+                        <h3>Portfolio PDF</h3>
+                    </div>
+                    <div class="download-card-body">
+                        <div class="form-group">
+                            <label for="portfolioUrl">Portfolio URL *</label>
+                            <input type="url" id="portfolioUrl" placeholder="https://example.com/portfolio.pdf">
+                            <small>Link to your portfolio PDF (hosted anywhere)</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="portfolioFilename">File Name</label>
+                            <input type="text" id="portfolioFilename" placeholder="John_Doe_Portfolio.pdf">
+                            <small>Name for downloaded file (optional)</small>
+                        </div>
+                        <button class="btn-primary" id="savePortfolioBtn">Save Portfolio PDF</button>
+                        <div id="portfolioStatus" class="message" style="display: none;"></div>
+                    </div>
+                    <div class="download-card-footer" id="portfolioPreview" style="display: none;">
+                        <p class="download-current">Current: <a href="#" target="_blank" id="portfolioLink"></a></p>
+                        <button class="btn-delete-small" id="deletePortfolioBtn">Remove</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Content Item Downloads Section -->
+            <section class="admin-section">
+                <h2>Content Item Downloads</h2>
+                <p class="section-description">Enable download buttons for individual content items. Note: You must enable downloads in the Content Management page for each item you want downloadable.</p>
+                
+                <div class="info-box">
+                    <div class="info-icon">ℹ️</div>
+                    <div class="info-content">
+                        <h4>How Content Downloads Work</h4>
+                        <ol>
+                            <li>Go to <a href="index.html">Content Management</a></li>
+                            <li>Create or edit a content item</li>
+                            <li>Check "Enable Download" checkbox</li>
+                            <li>Save the content</li>
+                            <li>A download button will appear on the front page for that item</li>
+                        </ol>
+                        <p><strong>Note:</strong> The content item itself (text/image/video) will be what's downloaded. No separate file upload needed.</p>
+                    </div>
+                </div>
+
+                <div class="downloads-stats">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalDownloadableCount">0</div>
+                        <div class="stat-label">Downloadable Content Items</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="articlesDownloadableCount">0</div>
+                        <div class="stat-label">Articles</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="imagesDownloadableCount">0</div>
+                        <div class="stat-label">Images</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="videosDownloadableCount">0</div>
+                        <div class="stat-label">Videos</div>
+                    </div>
+                </div>
+
+                <div class="action-box">
+                    <p>Want to enable downloads for content items?</p>
+                    <a href="index.html" class="btn-primary">Go to Content Management</a>
+                </div>
+            </section>
+
+            <!-- Instructions Section -->
+            <section class="admin-section">
+                <h2>📖 Instructions</h2>
+                <div class="instructions-grid">
+                    <div class="instruction-card">
+                        <h4>1. Upload Your PDFs</h4>
+                        <p>Upload your resume and portfolio PDFs to any cloud storage service:</p>
+                        <ul>
+                            <li><strong>Google Drive:</strong> Upload → Get shareable link → Set to "Anyone with link can view"</li>
+                            <li><strong>Dropbox:</strong> Upload → Share → Copy link</li>
+                            <li><strong>GitHub:</strong> Upload to repository → Get raw file URL</li>
+                            <li><strong>Any hosting:</strong> Just paste the direct link to the PDF</li>
+                        </ul>
+                    </div>
+                    <div class="instruction-card">
+                        <h4>2. Paste URLs Here</h4>
+                        <p>Copy the public URL to your PDF and paste it into the appropriate field above. The URL must be a direct link to the PDF file.</p>
+                    </div>
+                    <div class="instruction-card">
+                        <h4>3. Optional: Custom File Names</h4>
+                        <p>When visitors download your files, they'll get the file name you specify here. If you leave it blank, we'll use the original file name from the URL.</p>
+                    </div>
+                    <div class="instruction-card">
+                        <h4>4. Test Your Downloads</h4>
+                        <p>After saving, click the link in the "Current" section to make sure the PDF opens correctly. Then visit your Resume page to test the download buttons.</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Supabase & Dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../supabase-config.js"></script>
+    <script src="../content-categories.js"></script>
+    <script src="../content-items.js"></script>
+    <script src="../content-profile.js"></script>
+    <script src="../content-collections.js"></script>
+    <script src="../content-resume.js"></script>
+    <script src="../content-downloads.js"></script>
+    
+    <!-- Downloads Management Scripts -->
+    <script src="downloads-functions.js"></script>
+    <script src="downloads-ui.js"></script>
+</body>
+</html>

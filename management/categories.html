@@ -5,16 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Category Management - Beregovskiy Portfolio</title>
     <link rel="stylesheet" href="shared-styles.css">
+    <script>const ADMIN_ACTIVE_PAGE = 'categories';</script>
 </head>
 <body>
     <div class="admin-container">
         <header class="admin-header">
             <h1>Category Management</h1>
-            <nav class="admin-nav">
-                <a href="index.html">Content</a>
-                <a href="categories.html" class="active">Categories</a>
-                <a href="profile.html">Profile</a>
-                <a href="../index.html" class="btn-secondary">← Back to Portfolio</a>
+            <nav class="admin-nav" id="adminNavContainer">
+                <!-- Navigation will be inserted by shared-nav.js -->
             </nav>
         </header>
 
@@ -78,7 +76,13 @@
     <!-- Supabase Library -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../supabase-config.js"></script>
-    <script src="../content.js"></script>
+    <script src="../content-categories.js"></script>
+    <script src="../content-items.js"></script>
+    <script src="../content-profile.js"></script>
+    <script src="../content-collections.js"></script>
+    <script src="../content-resume.js"></script>
+    <script src="../content-downloads.js"></script>
+    <script src="shared-nav.js"></script>
     
     <script>
         let editingCategoryId = null;
@@ -129,7 +133,7 @@
             submitBtn.disabled = true;
             submitBtn.textContent = editingSubcategoryId ? 'Updating...' : 'Adding...';
 
-            const parentCategoryId = document.getElementById('parentCategory').value; // UUID string
+            const parentCategoryId = document.getElementById('parentCategory').value;
             const subcategoryData = {
                 name: document.getElementById('subcategoryName').value.trim(),
                 order: 0
@@ -190,7 +194,7 @@
                 allCategories = await getCategories();
                 allCategories.forEach(cat => {
                     const option = document.createElement('option');
-                    option.value = cat.id; // UUID string
+                    option.value = cat.id;
                     option.textContent = cat.name;
                     select.appendChild(option);
                 });
