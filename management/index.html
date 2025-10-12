@@ -257,10 +257,10 @@
                 {
                     cloudName: CLOUDINARY_CLOUD_NAME,
                     uploadPreset: CLOUDINARY_UPLOAD_PRESET,
-                    resourceType: resourceType, // 'image', 'video', or 'raw' (for audio)
+                    resourceType: resourceType,
                     sources: ['local', 'url', 'camera'],
                     multiple: false,
-                    maxFileSize: 10000000, // 10MB limit for free tier
+                    maxFileSize: 10000000,
                     clientAllowedFormats: resourceType === 'image' ? ['jpg', 'jpeg', 'png', 'gif', 'webp'] : 
                                          resourceType === 'video' ? ['mp4', 'mov', 'avi', 'webm'] :
                                          ['mp3', 'wav', 'ogg'],
@@ -338,19 +338,16 @@
         document.getElementById('contentType').addEventListener('change', function() {
             const type = this.value;
             
-            // Hide all content-specific groups
             document.getElementById('articleBodyGroup').style.display = 'none';
             document.getElementById('imageUploadGroup').style.display = 'none';
             document.getElementById('videoUploadGroup').style.display = 'none';
             document.getElementById('audioUploadGroup').style.display = 'none';
             
-            // Clear required attribute from all
             document.getElementById('contentBody').removeAttribute('required');
             document.getElementById('imageUrl').removeAttribute('required');
             document.getElementById('videoUrl').removeAttribute('required');
             document.getElementById('audioUrl').removeAttribute('required');
             
-            // Show and require appropriate field
             if (type === 'article') {
                 document.getElementById('articleBodyGroup').style.display = 'block';
                 document.getElementById('contentBody').setAttribute('required', 'required');
@@ -366,13 +363,10 @@
             }
         });
 
-        // Show/hide external download field based on checkbox
         document.getElementById('downloadEnabled').addEventListener('change', function() {
-            const externalGroup = document.getElementById('externalDownloadGroup');
-            externalGroup.style.display = this.checked ? 'block' : 'none';
+            document.getElementById('externalDownloadGroup').style.display = this.checked ? 'block' : 'none';
         });
 
-        // Load collections checkboxes
         async function loadCollections() {
             try {
                 allCollections = await getCollections();
@@ -407,13 +401,11 @@
             }
         }
 
-        // Get selected collection IDs
         function getSelectedCollections() {
             const checkboxes = document.querySelectorAll('.collection-checkbox:checked');
             return Array.from(checkboxes).map(cb => cb.value);
         }
 
-        // Set selected collections (for editing)
         async function setSelectedCollections(contentId) {
             try {
                 const contentCollections = await getContentCollections(contentId);
@@ -427,11 +419,8 @@
             }
         }
 
-        // Load categories into dropdown
         async function loadCategories() {
             categories = await getCategories();
-            console.log('Categories loaded:', categories);
-            
             const select = document.getElementById('categorySelect');
             select.innerHTML = '<option value="">Select category...</option>';
             
@@ -443,12 +432,9 @@
             });
         }
 
-        // Load subcategories when category changes
         function loadSubcategories() {
             const categoryId = document.getElementById('categorySelect').value;
             const subSelect = document.getElementById('subcategorySelect');
-            
-            console.log('Loading subcategories for category:', categoryId);
             
             if (!categoryId) {
                 subSelect.innerHTML = '<option value="">Select category first...</option>';
@@ -457,7 +443,6 @@
             }
 
             const category = categories.find(c => c.id === categoryId);
-            console.log('Found category:', category);
             
             if (category && category.subcategories && category.subcategories.length > 0) {
                 subSelect.innerHTML = '<option value="">Select subcategory...</option>';
@@ -468,20 +453,16 @@
                     subSelect.appendChild(option);
                 });
                 subSelect.disabled = false;
-                console.log('Loaded', category.subcategories.length, 'subcategories');
             } else {
                 subSelect.innerHTML = '<option value="">No subcategories available</option>';
                 subSelect.disabled = true;
             }
         }
 
-        // Add event listener for category change
         document.getElementById('categorySelect').addEventListener('change', loadSubcategories);
 
-        // Load and display content
         async function loadContent() {
             allContent = await getAllContent();
-            console.log('Content loaded:', allContent);
             displayContent();
         }
 
@@ -535,7 +516,6 @@
                 `;
             }).join('');
             
-            // Add event listeners to buttons
             list.querySelectorAll('.btn-edit').forEach(btn => {
                 btn.addEventListener('click', function() {
                     editContent(this.getAttribute('data-content-id'));
@@ -549,14 +529,12 @@
             });
         }
 
-        // Handle form submission
         document.getElementById('contentForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const editId = document.getElementById('editContentId').value;
             const contentType = document.getElementById('contentType').value;
             
-            // Get content based on type
             let contentValue = '';
             let audioUrlValue = '';
             
@@ -568,7 +546,7 @@
                 contentValue = document.getElementById('videoUrl').value;
             } else if (contentType === 'audio') {
                 audioUrlValue = document.getElementById('audioUrl').value;
-                contentValue = 'Audio file'; // Placeholder for content field
+                contentValue = 'Audio file';
             }
             
             const contentData = {
@@ -598,7 +576,6 @@
                     await updateContent(editId, contentData);
                     contentId = editId;
                     
-                    // Remove existing collection assignments
                     const existingCollections = await getContentCollections(contentId);
                     for (const cc of existingCollections) {
                         await removeContentFromCollection(contentId, cc.collection_id);
@@ -611,7 +588,6 @@
                     alert('Content created successfully!');
                 }
                 
-                // Add new collection assignments
                 for (const collectionId of selectedCollections) {
                     await addContentToCollection(contentId, collectionId);
                 }
@@ -623,9 +599,7 @@
             }
         });
 
-        // Edit content
         async function editContent(contentId) {
-            console.log('Edit clicked for:', contentId);
             const content = allContent.find(c => c.id === contentId);
             if (!content) return;
 
@@ -642,10 +616,7 @@
 
             document.getElementById('editContentId').value = content.id;
             document.getElementById('contentType').value = content.type;
-            
-            // Trigger content type change to show appropriate fields
             document.getElementById('contentType').dispatchEvent(new Event('change'));
-            
             document.getElementById('categorySelect').value = categoryId || '';
             
             loadSubcategories();
@@ -662,7 +633,6 @@
                 document.getElementById('sourceLink').value = content.source_link || '';
                 document.getElementById('copyrightNotice').value = content.copyright_notice || '';
                 
-                // Populate content based on type
                 if (content.type === 'article') {
                     document.getElementById('contentBody').value = content.content;
                 } else if (content.type === 'image') {
@@ -676,12 +646,9 @@
                 document.getElementById('downloadEnabled').checked = content.download_enabled || false;
                 document.getElementById('externalDownloadUrl').value = content.external_download_url || '';
                 
-                // Load collection assignments
                 await setSelectedCollections(content.id);
                 
-                // Show/hide external download field
                 document.getElementById('externalDownloadGroup').style.display = content.download_enabled ? 'block' : 'none';
-
                 document.getElementById('form-title').textContent = 'Edit Content';
                 document.getElementById('submitBtn').textContent = 'Update Content';
                 document.getElementById('cancelBtn').style.display = 'inline-block';
@@ -690,9 +657,7 @@
             }, 100);
         }
 
-        // Delete content
         function deleteContentItem(contentId) {
-            console.log('Delete clicked for:', contentId);
             const content = allContent.find(c => c.id === contentId);
             if (!content) return;
 
@@ -708,7 +673,6 @@
                 .catch(error => alert('Error: ' + error.message));
         }
 
-        // Reset form
         document.getElementById('cancelBtn').addEventListener('click', resetForm);
         
         function resetForm() {
@@ -720,29 +684,23 @@
             document.getElementById('subcategorySelect').disabled = true;
             document.getElementById('subcategorySelect').innerHTML = '<option value="">Select category first...</option>';
             
-            // Hide all content-specific groups
             document.getElementById('articleBodyGroup').style.display = 'none';
             document.getElementById('imageUploadGroup').style.display = 'none';
             document.getElementById('videoUploadGroup').style.display = 'none';
             document.getElementById('audioUploadGroup').style.display = 'none';
             document.getElementById('externalDownloadGroup').style.display = 'none';
             
-            // Clear upload status messages
             document.getElementById('imageUploadStatus').textContent = '';
             document.getElementById('videoUploadStatus').textContent = '';
             document.getElementById('audioUploadStatus').textContent = '';
             
-            // Uncheck all collection checkboxes
             document.querySelectorAll('.collection-checkbox').forEach(cb => cb.checked = false);
         }
 
-        // Initialize on load
         window.addEventListener('DOMContentLoaded', async function() {
-            console.log('Page loaded, initializing...');
             await loadCategories();
             await loadCollections();
             await loadContent();
-            console.log('Initialization complete');
         });
     </script>
 </body>

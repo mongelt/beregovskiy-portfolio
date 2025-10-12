@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume - Interactive Timeline</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="resume-dark.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body class="resume-page">
+    <!-- Fixed Header with Back Button -->
+    <header class="resume-header">
+        <div class="resume-header-content">
+            <a href="index.html" class="btn-back">
+                <i class="fas fa-arrow-left"></i>
+                Back to Portfolio
+            </a>
+            <h1 class="resume-title">Interactive Resume Timeline</h1>
+        </div>
+    </header>
+    
+    <!-- Main Resume Content -->
+    <main class="resume-container">
+        <!-- Executive Summary Section (Phase 10 Session 4) -->
+        <section class="executive-summary" id="executiveSummary" style="display: none;">
+            <div class="summary-content">
+                <h2>Executive Summary</h2>
+                <div id="summaryText" class="summary-text">
+                    <!-- Will be loaded from profile data -->
+                </div>
+            </div>
+        </section>
+        
+        <!-- Download Buttons Section (Phase 10 Session 4) -->
+        <section class="download-section" id="downloadSection" style="display: none;">
+            <div class="download-buttons">
+                <a href="#" class="btn-download" id="downloadFullResume" style="display: none;">
+                    <i class="fas fa-file-pdf"></i>
+                    Download Full Resume
+                </a>
+                <a href="#" class="btn-download" id="downloadCondensedResume" style="display: none;">
+                    <i class="fas fa-file-alt"></i>
+                    Download Condensed Resume
+                </a>
+                <a href="#" class="btn-download" id="downloadPortfolio" style="display: none;">
+                    <i class="fas fa-briefcase"></i>
+                    Download Portfolio PDF
+                </a>
+            </div>
+        </section>
+        
+        <!-- Timeline Section -->
+        <section class="timeline-section">
+            <div class="timeline-container" id="timelineContainer">
+                <!-- Timeline will be dynamically generated -->
+                <div class="loading-state">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Loading resume timeline...</p>
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="content-categories.js"></script>
+    <script src="content-items.js"></script>
+    <script src="content-profile.js"></script>
+    <script src="content-collections.js"></script>
+    <script src="content-resume.js"></script>
+    <script src="content-downloads.js"></script>
+    <script src="resume.js"></script>
+</body>
+</html>
