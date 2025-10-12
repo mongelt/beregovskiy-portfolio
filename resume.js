@@ -1,11 +1,12 @@
 // Resume Timeline - Main JavaScript
-// Phase 10 Session 1: Page Structure & Timeline Component
+// Phase 10 Session 2: Entry Cards with Expand/Collapse
 
 // ========== GLOBAL STATE ==========
 
 let resumeEntries = [];
 let entryTypes = [];
 let timelineYearRange = { earliest: null, latest: null };
+let expandedEntries = new Set(); // Track which entries are expanded
 
 // ========== INITIALIZATION ==========
 
@@ -148,14 +149,20 @@ function renderTimelineEntry(entry, index) {
     
     const duration = calculateDuration(startDate, endDate);
     const hasMedia = entry.media_urls && entry.media_urls.length > 0;
+    const isExpanded = expandedEntries.has(entry.id);
+    
+    // Check if description needs truncation
+    const fullDescription = entry.description || '';
+    const needsTruncation = fullDescription.length > 150;
+    const truncatedDescription = needsTruncation ? fullDescription.substring(0, 150) + '...' : fullDescription;
     
     return `
-        <div class="timeline-entry" data-entry-id="${entry.id}" data-index="${index}">
+        <div class="timeline-entry ${isExpanded ? 'expanded' : 'collapsed'}" data-entry-id="${entry.id}" data-index="${index}">
             <div class="timeline-dot">
                 <span class="dot-icon">${typeIcon}</span>
             </div>
             
-            <div class="entry-card">
+            <div class="entry-card" data-entry-id="${entry.id}">
                 <div class="entry-header">
                     <div class="entry-type-badge">
                         <span class="type-icon">${typeIcon}</span>
@@ -171,18 +178,19 @@ function renderTimelineEntry(entry, index) {
                     <h3 class="entry-title">${entry.title}</h3>
                     ${entry.subtitle ? `<p class="entry-subtitle">${entry.subtitle}</p>` : ''}
                     
-                    ${entry.description ? `
-                        <div class="entry-description">
-                            <p>${entry.description}</p>
+                    ${fullDescription ? `
+                        <div class="entry-description ${isExpanded ? 'expanded' : 'collapsed'}">
+                            <div class="description-preview">
+                                ${isExpanded ? `<p>${fullDescription}</p>` : `<p>${truncatedDescription}</p>`}
+                            </div>
                         </div>
                     ` : ''}
                     
-                    ${hasMedia ? `
-                        <div class="entry-media">
-                            <p class="media-count">
-                                <i class="fas fa-paperclip"></i>
-                                ${entry.media_urls.length} ${entry.media_urls.length === 1 ? 'attachment' : 'attachments'}
-                            </p>
+                    ${hasMedia && isExpanded ? renderMediaGallery(entry.media_urls) : ''}
+                    ${hasMedia && !isExpanded ? `
+                        <div class="entry-media-preview">
+                            <i class="fas fa-paperclip"></i>
+                            ${entry.media_urls.length} ${entry.media_urls.length === 1 ? 'attachment' : 'attachments'}
                         </div>
                     ` : ''}
                 </div>
@@ -193,9 +201,112 @@ function renderTimelineEntry(entry, index) {
                         Featured in Portfolio
                     </div>
                 ` : ''}
+                
+                <div class="entry-expand-toggle">
+                    <i class="fas fa-chevron-${isExpanded ? 'up' : 'down'}"></i>
+                    <span>${isExpanded ? 'Show Less' : 'Show More'}</span>
+                </div>
             </div>
         </div>
     `;
+}
+
+// ========== MEDIA GALLERY RENDERING ==========
+
+function renderMediaGallery(mediaUrls) {
+    if (!mediaUrls || mediaUrls.length === 0) return '';
+    
+    let galleryHTML = '<div class="entry-media-gallery">';
+    galleryHTML += '<h4 class="media-gallery-title"><i class="fas fa-paperclip"></i> Attachments</h4>';
+    galleryHTML += '<div class="media-gallery-items">';
+    
+    mediaUrls.forEach((url, index) => {
+        const mediaType = detectMediaType(url);
+        
+        if (mediaType === 'image') {
+            galleryHTML += `
+                <div class="media-item media-image">
+                    <img src="${url}" alt="Attachment ${index + 1}" loading="lazy">
+                </div>
+            `;
+        } else if (mediaType === 'video') {
+            galleryHTML += `
+                <div class="media-item media-video">
+                    <video controls>
+                        <source src="${url}" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
+            `;
+        } else if (mediaType === 'audio') {
+            galleryHTML += `
+                <div class="media-item media-audio">
+                    <audio controls>
+                        <source src="${url}" type="audio/mpeg">
+                        Your browser does not support the audio tag.
+                    </audio>
+                    <p class="media-label"><i class="fas fa-music"></i> Audio File ${index + 1}</p>
+                </div>
+            `;
+        } else {
+            // Unknown type - show as link
+            galleryHTML += `
+                <div class="media-item media-link">
+                    <a href="${url}" target="_blank" rel="noopener noreferrer">
+                        <i class="fas fa-external-link-alt"></i>
+                        Attachment ${index + 1}
+                    </a>
+                </div>
+            `;
+        }
+    });
+    
+    galleryHTML += '</div>'; // Close media-gallery-items
+    galleryHTML += '</div>'; // Close entry-media-gallery
+    
+    return galleryHTML;
+}
+
+function detectMediaType(url) {
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
+    const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov'];
+    const audioExtensions = ['.mp3', '.wav', '.ogg', '.m4a'];
+    
+    const lowerUrl = url.toLowerCase();
+    
+    if (imageExtensions.some(ext => lowerUrl.includes(ext))) return 'image';
+    if (videoExtensions.some(ext => lowerUrl.includes(ext))) return 'video';
+    if (audioExtensions.some(ext => lowerUrl.includes(ext))) return 'audio';
+    
+    // Check for common video hosting platforms
+    if (lowerUrl.includes('youtube.com') || lowerUrl.includes('youtu.be') || lowerUrl.includes('vimeo.com')) {
+        return 'video';
+    }
+    
+    return 'link';
+}
+
+// ========== EXPAND/COLLAPSE FUNCTIONALITY ==========
+
+function toggleEntryCard(entryId) {
+    if (expandedEntries.has(entryId)) {
+        expandedEntries.delete(entryId);
+    } else {
+        expandedEntries.add(entryId);
+    }
+    
+    // Re-render the specific entry
+    renderTimeline();
+    
+    // Scroll to entry if it was just expanded
+    if (expandedEntries.has(entryId)) {
+        setTimeout(() => {
+            const entryElement = document.querySelector(`.timeline-entry[data-entry-id="${entryId}"]`);
+            if (entryElement) {
+                entryElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }, 100);
+    }
 }
 
 // ========== UTILITY FUNCTIONS ==========
@@ -223,8 +334,26 @@ function calculateDuration(startDate, endDate) {
 // ========== EVENT LISTENERS ==========
 
 function attachEventListeners() {
-    // Entry card click handlers will be added in Session 2 (expand/collapse)
-    console.log('Event listeners attached');
+    // Add click listeners to all entry cards
+    document.querySelectorAll('.entry-card').forEach(card => {
+        card.addEventListener('click', function(e) {
+            // Don't toggle if clicking on a link or media element
+            if (e.target.tagName === 'A' || 
+                e.target.tagName === 'VIDEO' || 
+                e.target.tagName === 'AUDIO' ||
+                e.target.tagName === 'IMG') {
+                return;
+            }
+            
+            const entryId = this.getAttribute('data-entry-id');
+            toggleEntryCard(entryId);
+        });
+        
+        // Add hover effect
+        card.style.cursor = 'pointer';
+    });
+    
+    console.log('Event listeners attached to', document.querySelectorAll('.entry-card').length, 'cards');
 }
 
 // ========== EMPTY STATE ==========
