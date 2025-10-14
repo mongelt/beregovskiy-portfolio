@@ -1,5 +1,5 @@
 // Resume Timeline - Main JavaScript
-// Phase 10 Session 2: Entry Cards with Expand/Collapse
+// Phase 10 Session 4: Executive Summary & Downloads (FIXED)
 
 // ========== GLOBAL STATE ==========
 
@@ -7,6 +7,8 @@ let resumeEntries = [];
 let entryTypes = [];
 let timelineYearRange = { earliest: null, latest: null };
 let expandedEntries = new Set(); // Track which entries are expanded
+let profileData = null;
+let downloadFiles = [];
 
 // ========== INITIALIZATION ==========
 
@@ -17,8 +19,16 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 async function initializeResumePage() {
     try {
-        // Load data from Supabase
+        // Load all data from Supabase
+        await loadProfileData();
+        await loadDownloadFiles();
         await loadResumeData();
+        
+        // Render executive summary (if exists)
+        renderExecutiveSummary();
+        
+        // Render download buttons (if files exist)
+        renderDownloadButtons();
         
         // Calculate timeline year range
         calculateTimelineRange();
@@ -47,7 +57,7 @@ async function loadResumeData() {
         
         if (resumeEntries.length === 0) {
             showEmptyState();
-            return;
+            return false;
         }
         
         return true;
@@ -55,6 +65,126 @@ async function loadResumeData() {
         console.error('Error loading resume data:', error);
         throw error;
     }
+}
+
+async function loadProfileData() {
+    try {
+        profileData = await getProfileData();
+        console.log('Loaded profile data:', profileData);
+        console.log('Executive summary:', profileData?.executive_summary);
+        return true;
+    } catch (error) {
+        console.error('Error loading profile data:', error);
+        return false;
+    }
+}
+
+async function loadDownloadFiles() {
+    try {
+        downloadFiles = await getDownloadableFiles();
+        console.log('Loaded download files:', downloadFiles);
+        return true;
+    } catch (error) {
+        console.error('Error loading download files:', error);
+        return false;
+    }
+}
+
+// ========== EXECUTIVE SUMMARY RENDERING ==========
+
+function renderExecutiveSummary() {
+    const summarySection = document.getElementById('executiveSummary');
+    const summaryText = document.getElementById('summaryText');
+    
+    console.log('Rendering executive summary...');
+    console.log('Profile data exists:', !!profileData);
+    console.log('Executive summary value:', profileData?.executive_summary);
+    
+    if (!profileData) {
+        console.log('No profile data - hiding summary');
+        summarySection.style.display = 'none';
+        return;
+    }
+    
+    if (!profileData.executive_summary || profileData.executive_summary.trim() === '') {
+        console.log('Executive summary is empty - hiding section');
+        summarySection.style.display = 'none';
+        return;
+    }
+    
+    // Display the executive summary
+    const summaryContent = profileData.executive_summary.trim();
+    console.log('Displaying executive summary:', summaryContent);
+    
+    // Convert line breaks to paragraphs if needed
+    if (summaryContent.includes('\n')) {
+        const paragraphs = summaryContent.split('\n').filter(p => p.trim());
+        summaryText.innerHTML = paragraphs.map(p => `<p>${p}</p>`).join('');
+    } else {
+        summaryText.innerHTML = `<p>${summaryContent}</p>`;
+    }
+    
+    summarySection.style.display = 'block';
+    
+    console.log('Executive summary rendered successfully');
+}
+
+// ========== DOWNLOAD BUTTONS RENDERING ==========
+
+function renderDownloadButtons() {
+    const downloadSection = document.getElementById('downloadSection');
+    const fullResumeBtn = document.getElementById('downloadFullResume');
+    const condensedResumeBtn = document.getElementById('downloadCondensedResume');
+    const portfolioBtn = document.getElementById('downloadPortfolio');
+    
+    let hasAnyDownloads = false;
+    
+    // Find each type of download file
+    const fullResume = downloadFiles.find(f => f.file_type === 'resume_full');
+    const condensedResume = downloadFiles.find(f => f.file_type === 'resume_condensed');
+    const portfolio = downloadFiles.find(f => f.file_type === 'portfolio');
+    
+    console.log('Rendering download buttons...');
+    console.log('Full resume:', fullResume);
+    console.log('Condensed resume:', condensedResume);
+    console.log('Portfolio:', portfolio);
+    
+    // Show/hide and configure each button
+    if (fullResume) {
+        fullResumeBtn.href = fullResume.file_url;
+        fullResumeBtn.download = fullResume.file_name || 'Full_Resume.pdf';
+        fullResumeBtn.style.display = 'inline-flex';
+        hasAnyDownloads = true;
+    } else {
+        fullResumeBtn.style.display = 'none';
+    }
+    
+    if (condensedResume) {
+        condensedResumeBtn.href = condensedResume.file_url;
+        condensedResumeBtn.download = condensedResume.file_name || 'Condensed_Resume.pdf';
+        condensedResumeBtn.style.display = 'inline-flex';
+        hasAnyDownloads = true;
+    } else {
+        condensedResumeBtn.style.display = 'none';
+    }
+    
+    if (portfolio) {
+        portfolioBtn.href = portfolio.file_url;
+        portfolioBtn.download = portfolio.file_name || 'Portfolio.pdf';
+        portfolioBtn.style.display = 'inline-flex';
+        hasAnyDownloads = true;
+    } else {
+        portfolioBtn.style.display = 'none';
+    }
+    
+    // Show/hide the entire download section
+    if (hasAnyDownloads) {
+        downloadSection.style.display = 'block';
+    } else {
+        downloadSection.style.display = 'none';
+    }
+    
+    console.log('Download buttons rendered:', hasAnyDownloads ? 'visible' : 'hidden');
 }
 
 // ========== TIMELINE CALCULATION ==========
@@ -169,7 +299,7 @@ function renderTimelineEntry(entry, index) {
                         <span class="type-name">${typeName}</span>
                     </div>
                     <div class="entry-dates">
-                        <span class="date-range">${startMonth} — ${endMonth}</span>
+                        <span class="date-range">${startMonth} – ${endMonth}</span>
                         <span class="duration">${duration}</span>
                     </div>
                 </div>
@@ -295,7 +425,7 @@ function toggleEntryCard(entryId) {
         expandedEntries.add(entryId);
     }
     
-    // Re-render the specific entry
+    // Re-render the timeline
     renderTimeline();
     
     // Scroll to entry if it was just expanded

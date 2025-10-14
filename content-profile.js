@@ -32,7 +32,8 @@ async function getProfileData() {
                     education: '',
                     show_email: true,
                     show_phone: true,
-                    show_social_media: true
+                    show_social_media: true,
+                    executive_summary: ''
                 };
             }
             throw error;
@@ -76,7 +77,8 @@ async function updateProfile(profileData) {
                     education: profileData.education || null,
                     show_email: profileData.show_email !== false,
                     show_phone: profileData.show_phone !== false,
-                    show_social_media: profileData.show_social_media !== false
+                    show_social_media: profileData.show_social_media !== false,
+                    executive_summary: profileData.executive_summary || null
                 })
                 .eq('id', existing.id)
                 .select()
@@ -106,7 +108,8 @@ async function updateProfile(profileData) {
                     education: profileData.education || null,
                     show_email: profileData.show_email !== false,
                     show_phone: profileData.show_phone !== false,
-                    show_social_media: profileData.show_social_media !== false
+                    show_social_media: profileData.show_social_media !== false,
+                    executive_summary: profileData.executive_summary || null
                 }])
                 .select()
                 .single();

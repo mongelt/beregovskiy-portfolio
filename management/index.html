@@ -5,9 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Content Management - Portfolio Admin</title>
     <link rel="stylesheet" href="shared-styles.css">
+    
+    <!-- Editor.js Styles -->
+    <link rel="stylesheet" href="editor-styles-core.css">
+    <link rel="stylesheet" href="editor-styles-blocks.css">
+    
+    <!-- External Libraries -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://upload-widget.cloudinary.com/global/all.js" type="text/javascript"></script>
+    
+    <!-- Editor.js Core + Plugins -->
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/paragraph@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/header@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/list@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/image@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/quote@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/delimiter@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/embed@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/code@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/editorjs-undo"></script>
+    <script src="https://cdn.jsdelivr.net/npm/editorjs-drag-drop"></script>
+    
     <script>const ADMIN_ACTIVE_PAGE = 'content';</script>
+    
     <style>
         .upload-button {
             display: inline-block;
@@ -153,11 +174,11 @@
                         <h3>Content Body *</h3>
                     </div>
 
-                    <!-- Article Content -->
+                    <!-- Article Content with Editor.js -->
                     <div class="form-group" id="articleBodyGroup">
-                        <label for="contentBody">Article Content *</label>
-                        <textarea id="contentBody" rows="15" placeholder="Write or paste your article text here..."></textarea>
-                        <small>Write your article content (will be formatted automatically)</small>
+                        <label>Article Content *</label>
+                        <div id="editorjs"></div>
+                        <small>Use the rich text editor to format your content with headings, lists, images, and more</small>
                     </div>
 
                     <!-- Image Upload -->
@@ -233,6 +254,7 @@
         </main>
     </div>
 
+    <!-- Core JavaScript Libraries -->
     <script src="../supabase-config.js"></script>
     <script src="../content-categories.js"></script>
     <script src="../content-items.js"></script>
@@ -240,467 +262,42 @@
     <script src="../content-collections.js"></script>
     <script src="../content-resume.js"></script>
     <script src="../content-downloads.js"></script>
+    
+    <!-- Editor.js Integration -->
+    <script src="editor-cloudinary.js"></script>
+    <script src="editor-tools.js"></script>
+    <script src="editor-config.js"></script>
+    
+    <!-- Navigation -->
     <script src="shared-nav.js"></script>
+    
+    <!-- Modular Content Management Scripts -->
+    <script src="content-cloudinary-upload.js"></script>
+    <script src="content-editor-integration.js"></script>
+    <script src="content-form-handlers.js"></script>
+    <script src="content-list-display.js"></script>
+    
+    <!-- Initialization -->
     <script>
-        // CLOUDINARY CONFIGURATION
-        const CLOUDINARY_CLOUD_NAME = 'dkzypkiwf';
-        const CLOUDINARY_UPLOAD_PRESET = 'portfolio_uploads';
-
-        // Global variables
-        let categories = [];
-        let allContent = [];
-        let allCollections = [];
-
-        // Initialize Cloudinary Upload Widget
-        function createUploadWidget(resourceType, onSuccess) {
-            const widget = cloudinary.createUploadWidget(
-                {
-                    cloudName: CLOUDINARY_CLOUD_NAME,
-                    uploadPreset: CLOUDINARY_UPLOAD_PRESET,
-                    resourceType: resourceType,
-                    sources: ['local', 'url', 'camera'],
-                    multiple: false,
-                    maxFileSize: 10000000,
-                    clientAllowedFormats: resourceType === 'image' ? ['jpg', 'jpeg', 'png', 'gif', 'webp'] : 
-                                         resourceType === 'video' ? ['mp4', 'mov', 'avi', 'webm'] :
-                                         ['mp3', 'wav', 'ogg'],
-                    styles: {
-                        palette: {
-                            window: "#0D1123",
-                            windowBorder: "#3B82F6",
-                            tabIcon: "#60A5FA",
-                            menuIcons: "#60A5FA",
-                            textDark: "#FFFFFF",
-                            textLight: "#FFFFFF",
-                            link: "#3B82F6",
-                            action: "#3B82F6",
-                            inactiveTabIcon: "#6B7280",
-                            error: "#EF4444",
-                            inProgress: "#3B82F6",
-                            complete: "#10B981",
-                            sourceBg: "#1F2937"
-                        }
-                    }
-                },
-                (error, result) => {
-                    if (!error && result && result.event === "success") {
-                        console.log('Upload successful!', result.info);
-                        onSuccess(result.info.secure_url);
-                    }
-                }
-            );
-            return widget;
-        }
-
-        // Upload Image Button
-        document.getElementById('uploadImageBtn').addEventListener('click', function() {
-            const statusEl = document.getElementById('imageUploadStatus');
-            statusEl.textContent = 'Opening upload widget...';
-            statusEl.className = 'upload-status';
-            
-            const widget = createUploadWidget('image', (url) => {
-                document.getElementById('imageUrl').value = url;
-                statusEl.textContent = '✓ Image uploaded successfully!';
-                statusEl.className = 'upload-status success';
-            });
-            widget.open();
-        });
-
-        // Upload Video Button
-        document.getElementById('uploadVideoBtn').addEventListener('click', function() {
-            const statusEl = document.getElementById('videoUploadStatus');
-            statusEl.textContent = 'Opening upload widget...';
-            statusEl.className = 'upload-status';
-            
-            const widget = createUploadWidget('video', (url) => {
-                document.getElementById('videoUrl').value = url;
-                statusEl.textContent = '✓ Video uploaded successfully!';
-                statusEl.className = 'upload-status success';
-            });
-            widget.open();
-        });
-
-        // Upload Audio Button
-        document.getElementById('uploadAudioBtn').addEventListener('click', function() {
-            const statusEl = document.getElementById('audioUploadStatus');
-            statusEl.textContent = 'Opening upload widget...';
-            statusEl.className = 'upload-status';
-            
-            const widget = createUploadWidget('raw', (url) => {
-                document.getElementById('audioUrl').value = url;
-                statusEl.textContent = '✓ Audio uploaded successfully!';
-                statusEl.className = 'upload-status success';
-            });
-            widget.open();
-        });
-
-        // Show/hide content type specific fields
-        document.getElementById('contentType').addEventListener('change', function() {
-            const type = this.value;
-            
-            document.getElementById('articleBodyGroup').style.display = 'none';
-            document.getElementById('imageUploadGroup').style.display = 'none';
-            document.getElementById('videoUploadGroup').style.display = 'none';
-            document.getElementById('audioUploadGroup').style.display = 'none';
-            
-            document.getElementById('contentBody').removeAttribute('required');
-            document.getElementById('imageUrl').removeAttribute('required');
-            document.getElementById('videoUrl').removeAttribute('required');
-            document.getElementById('audioUrl').removeAttribute('required');
-            
-            if (type === 'article') {
-                document.getElementById('articleBodyGroup').style.display = 'block';
-                document.getElementById('contentBody').setAttribute('required', 'required');
-            } else if (type === 'image') {
-                document.getElementById('imageUploadGroup').style.display = 'block';
-                document.getElementById('imageUrl').setAttribute('required', 'required');
-            } else if (type === 'video') {
-                document.getElementById('videoUploadGroup').style.display = 'block';
-                document.getElementById('videoUrl').setAttribute('required', 'required');
-            } else if (type === 'audio') {
-                document.getElementById('audioUploadGroup').style.display = 'block';
-                document.getElementById('audioUrl').setAttribute('required', 'required');
-            }
-        });
-
-        document.getElementById('downloadEnabled').addEventListener('change', function() {
-            document.getElementById('externalDownloadGroup').style.display = this.checked ? 'block' : 'none';
-        });
-
-        async function loadCollections() {
-            try {
-                allCollections = await getCollections();
-                const container = document.getElementById('collectionsCheckboxes');
-                
-                if (allCollections.length === 0) {
-                    container.innerHTML = '<p style="font-size: 0.9rem; color: rgba(255,255,255,0.5);">No collections yet. Create collections in the Collections page.</p>';
-                    return;
-                }
-                
-                container.innerHTML = '';
-                allCollections.forEach(collection => {
-                    const checkboxWrapper = document.createElement('label');
-                    checkboxWrapper.style.cssText = 'display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin-bottom: 0.5rem; font-weight: normal;';
-                    
-                    const checkbox = document.createElement('input');
-                    checkbox.type = 'checkbox';
-                    checkbox.value = collection.id;
-                    checkbox.className = 'collection-checkbox';
-                    checkbox.style.cssText = 'width: auto; margin: 0;';
-                    
-                    const label = document.createElement('span');
-                    label.textContent = collection.name;
-                    
-                    checkboxWrapper.appendChild(checkbox);
-                    checkboxWrapper.appendChild(label);
-                    container.appendChild(checkboxWrapper);
-                });
-            } catch (error) {
-                console.error('Error loading collections:', error);
-                document.getElementById('collectionsCheckboxes').innerHTML = '<p style="font-size: 0.9rem; color: #ef4444;">Error loading collections</p>';
-            }
-        }
-
-        function getSelectedCollections() {
-            const checkboxes = document.querySelectorAll('.collection-checkbox:checked');
-            return Array.from(checkboxes).map(cb => cb.value);
-        }
-
-        async function setSelectedCollections(contentId) {
-            try {
-                const contentCollections = await getContentCollections(contentId);
-                const collectionIds = contentCollections.map(cc => cc.collection_id);
-                
-                document.querySelectorAll('.collection-checkbox').forEach(checkbox => {
-                    checkbox.checked = collectionIds.includes(checkbox.value);
-                });
-            } catch (error) {
-                console.error('Error loading content collections:', error);
-            }
-        }
-
-        async function loadCategories() {
-            categories = await getCategories();
-            const select = document.getElementById('categorySelect');
-            select.innerHTML = '<option value="">Select category...</option>';
-            
-            categories.forEach(cat => {
-                const option = document.createElement('option');
-                option.value = cat.id;
-                option.textContent = cat.name;
-                select.appendChild(option);
-            });
-        }
-
-        function loadSubcategories() {
-            const categoryId = document.getElementById('categorySelect').value;
-            const subSelect = document.getElementById('subcategorySelect');
-            
-            if (!categoryId) {
-                subSelect.innerHTML = '<option value="">Select category first...</option>';
-                subSelect.disabled = true;
-                return;
-            }
-
-            const category = categories.find(c => c.id === categoryId);
-            
-            if (category && category.subcategories && category.subcategories.length > 0) {
-                subSelect.innerHTML = '<option value="">Select subcategory...</option>';
-                category.subcategories.forEach(sub => {
-                    const option = document.createElement('option');
-                    option.value = sub.id;
-                    option.textContent = sub.name;
-                    subSelect.appendChild(option);
-                });
-                subSelect.disabled = false;
-            } else {
-                subSelect.innerHTML = '<option value="">No subcategories available</option>';
-                subSelect.disabled = true;
-            }
-        }
-
-        document.getElementById('categorySelect').addEventListener('change', loadSubcategories);
-
-        async function loadContent() {
-            allContent = await getAllContent();
-            displayContent();
-        }
-
-        function displayContent() {
-            const list = document.getElementById('contentList');
-            
-            if (allContent.length === 0) {
-                list.innerHTML = '<p class="no-data">No content yet. Create your first content item above!</p>';
-                return;
-            }
-
-            list.innerHTML = allContent.map(item => {
-                let categoryName = 'Unknown';
-                let subcategoryName = 'Unknown';
-                
-                for (let cat of categories) {
-                    if (cat.subcategories) {
-                        const sub = cat.subcategories.find(s => s.id === item.subcategory_id);
-                        if (sub) {
-                            categoryName = cat.name;
-                            subcategoryName = sub.name;
-                            break;
-                        }
-                    }
-                }
-
-                const downloadStatus = item.download_enabled ? 
-                    '<div class="content-metadata"><strong>Download:</strong> ✅ Enabled</div>' : '';
-
-                return `
-                    <div class="content-item">
-                        <div class="content-item-header">
-                            <div>
-                                <h3>${item.title}</h3>
-                                ${item.subtitle ? `<p class="content-subtitle">${item.subtitle}</p>` : ''}
-                                <div class="content-meta">
-                                    <span class="content-type">${item.type}</span>
-                                    <span class="content-category">${categoryName} → ${subcategoryName}</span>
-                                </div>
-                                ${item.author_name ? `<div class="content-metadata"><strong>Author:</strong> ${item.author_name}</div>` : ''}
-                                ${item.publication_name ? `<div class="content-metadata"><strong>Published in:</strong> ${item.publication_name}</div>` : ''}
-                                ${item.publication_date ? `<div class="content-metadata"><strong>Date:</strong> ${item.publication_date}</div>` : ''}
-                                ${downloadStatus}
-                            </div>
-                            <div class="content-actions">
-                                <button class="btn-edit" data-content-id="${item.id}">Edit</button>
-                                <button class="btn-delete" data-content-id="${item.id}">Delete</button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-            
-            list.querySelectorAll('.btn-edit').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    editContent(this.getAttribute('data-content-id'));
-                });
-            });
-            
-            list.querySelectorAll('.btn-delete').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    deleteContentItem(this.getAttribute('data-content-id'));
-                });
-            });
-        }
-
-        document.getElementById('contentForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const editId = document.getElementById('editContentId').value;
-            const contentType = document.getElementById('contentType').value;
-            
-            let contentValue = '';
-            let audioUrlValue = '';
-            
-            if (contentType === 'article') {
-                contentValue = document.getElementById('contentBody').value;
-            } else if (contentType === 'image') {
-                contentValue = document.getElementById('imageUrl').value;
-            } else if (contentType === 'video') {
-                contentValue = document.getElementById('videoUrl').value;
-            } else if (contentType === 'audio') {
-                audioUrlValue = document.getElementById('audioUrl').value;
-                contentValue = 'Audio file';
-            }
-            
-            const contentData = {
-                type: contentType,
-                subcategoryId: document.getElementById('subcategorySelect').value,
-                title: document.getElementById('contentTitle').value,
-                subtitle: document.getElementById('contentSubtitle').value,
-                sidebarTitle: document.getElementById('sidebarTitle').value,
-                sidebarSubtitle: document.getElementById('sidebarSubtitle').value,
-                authorName: document.getElementById('authorName').value,
-                publicationName: document.getElementById('publicationName').value,
-                publicationDate: document.getElementById('publicationDate').value,
-                sourceLink: document.getElementById('sourceLink').value,
-                copyrightNotice: document.getElementById('copyrightNotice').value,
-                content: contentValue,
-                audioUrl: audioUrlValue,
-                downloadEnabled: document.getElementById('downloadEnabled').checked,
-                externalDownloadUrl: document.getElementById('externalDownloadUrl').value
-            };
-
-            const selectedCollections = getSelectedCollections();
-
-            try {
-                let contentId;
-                
-                if (editId) {
-                    await updateContent(editId, contentData);
-                    contentId = editId;
-                    
-                    const existingCollections = await getContentCollections(contentId);
-                    for (const cc of existingCollections) {
-                        await removeContentFromCollection(contentId, cc.collection_id);
-                    }
-                    
-                    alert('Content updated successfully!');
-                } else {
-                    const newContent = await createContent(contentData);
-                    contentId = newContent.id;
-                    alert('Content created successfully!');
-                }
-                
-                for (const collectionId of selectedCollections) {
-                    await addContentToCollection(contentId, collectionId);
-                }
-                
-                resetForm();
-                await loadContent();
-            } catch (error) {
-                alert('Error: ' + error.message);
-            }
-        });
-
-        async function editContent(contentId) {
-            const content = allContent.find(c => c.id === contentId);
-            if (!content) return;
-
-            let categoryId = null;
-            for (let cat of categories) {
-                if (cat.subcategories) {
-                    const sub = cat.subcategories.find(s => s.id === content.subcategory_id);
-                    if (sub) {
-                        categoryId = cat.id;
-                        break;
-                    }
-                }
-            }
-
-            document.getElementById('editContentId').value = content.id;
-            document.getElementById('contentType').value = content.type;
-            document.getElementById('contentType').dispatchEvent(new Event('change'));
-            document.getElementById('categorySelect').value = categoryId || '';
-            
-            loadSubcategories();
-            
-            setTimeout(async () => {
-                document.getElementById('subcategorySelect').value = content.subcategory_id;
-                document.getElementById('contentTitle').value = content.title;
-                document.getElementById('contentSubtitle').value = content.subtitle || '';
-                document.getElementById('sidebarTitle').value = content.sidebar_title || '';
-                document.getElementById('sidebarSubtitle').value = content.sidebar_subtitle || '';
-                document.getElementById('authorName').value = content.author_name || '';
-                document.getElementById('publicationName').value = content.publication_name || '';
-                document.getElementById('publicationDate').value = content.publication_date || '';
-                document.getElementById('sourceLink').value = content.source_link || '';
-                document.getElementById('copyrightNotice').value = content.copyright_notice || '';
-                
-                if (content.type === 'article') {
-                    document.getElementById('contentBody').value = content.content;
-                } else if (content.type === 'image') {
-                    document.getElementById('imageUrl').value = content.content;
-                } else if (content.type === 'video') {
-                    document.getElementById('videoUrl').value = content.content;
-                } else if (content.type === 'audio') {
-                    document.getElementById('audioUrl').value = content.audio_url || '';
-                }
-                
-                document.getElementById('downloadEnabled').checked = content.download_enabled || false;
-                document.getElementById('externalDownloadUrl').value = content.external_download_url || '';
-                
-                await setSelectedCollections(content.id);
-                
-                document.getElementById('externalDownloadGroup').style.display = content.download_enabled ? 'block' : 'none';
-                document.getElementById('form-title').textContent = 'Edit Content';
-                document.getElementById('submitBtn').textContent = 'Update Content';
-                document.getElementById('cancelBtn').style.display = 'inline-block';
-                
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }, 100);
-        }
-
-        function deleteContentItem(contentId) {
-            const content = allContent.find(c => c.id === contentId);
-            if (!content) return;
-
-            if (!confirm(`Are you sure you want to delete "${content.title}"?\n\nThis cannot be undone.`)) {
-                return;
-            }
-            
-            deleteContent(contentId)
-                .then(() => {
-                    alert('Content deleted successfully!');
-                    loadContent();
-                })
-                .catch(error => alert('Error: ' + error.message));
-        }
-
-        document.getElementById('cancelBtn').addEventListener('click', resetForm);
-        
-        function resetForm() {
-            document.getElementById('contentForm').reset();
-            document.getElementById('editContentId').value = '';
-            document.getElementById('form-title').textContent = 'Add New Content';
-            document.getElementById('submitBtn').textContent = 'Create Content';
-            document.getElementById('cancelBtn').style.display = 'none';
-            document.getElementById('subcategorySelect').disabled = true;
-            document.getElementById('subcategorySelect').innerHTML = '<option value="">Select category first...</option>';
-            
-            document.getElementById('articleBodyGroup').style.display = 'none';
-            document.getElementById('imageUploadGroup').style.display = 'none';
-            document.getElementById('videoUploadGroup').style.display = 'none';
-            document.getElementById('audioUploadGroup').style.display = 'none';
-            document.getElementById('externalDownloadGroup').style.display = 'none';
-            
-            document.getElementById('imageUploadStatus').textContent = '';
-            document.getElementById('videoUploadStatus').textContent = '';
-            document.getElementById('audioUploadStatus').textContent = '';
-            
-            document.querySelectorAll('.collection-checkbox').forEach(cb => cb.checked = false);
-        }
-
+        // Initialize on page load
         window.addEventListener('DOMContentLoaded', async function() {
-            await loadCategories();
-            await loadCollections();
-            await loadContent();
+            console.log('Content Management page loading...');
+            
+            try {
+                // Initialize all handlers
+                window.initializeUploadHandlers();
+                window.initializeFormHandlers();
+                
+                // Load data
+                await window.loadCategories();
+                await window.loadCollections();
+                await window.loadContent();
+                
+                console.log('Content Management page loaded successfully');
+            } catch (error) {
+                console.error('Error initializing page:', error);
+                alert('Error loading page. Please refresh and try again.');
+            }
         });
     </script>
 </body>

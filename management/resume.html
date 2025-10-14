@@ -6,42 +6,46 @@
     <title>Resume Management - Beregovskiy Portfolio</title>
     <link rel="stylesheet" href="shared-styles.css">
     <link rel="stylesheet" href="resume-styles.css">
+    <link rel="stylesheet" href="editor-styles-core.css">
+    <link rel="stylesheet" href="editor-styles-blocks.css">
+    
+    <!-- Editor.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/paragraph@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/header@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/list@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/editorjs-undo"></script>
+    
     <script>const ADMIN_ACTIVE_PAGE = 'resume';</script>
 </head>
 <body>
     <div class="admin-container">
         <header class="admin-header">
             <h1>Resume Management</h1>
-            <nav class="admin-nav" id="adminNavContainer">
-                <!-- Navigation will be inserted by shared-nav.js -->
-            </nav>
+            <nav class="admin-nav" id="adminNavContainer"></nav>
         </header>
 
         <main class="admin-main">
-            <!-- Entry Types Management -->
             <section class="admin-section">
                 <h2 id="entry-type-form-title">Manage Resume Entry Types</h2>
-                <p class="section-description">Create categories for your resume timeline (e.g., Jobs, Education, Projects). These will be used to organize your timeline entries.</p>
+                <p class="section-description">Create categories for your resume timeline (e.g., Jobs, Education).</p>
                 
                 <form id="entryTypeForm" class="admin-form">
                     <input type="hidden" id="editEntryTypeId">
                     
                     <div class="form-group">
                         <label for="entryTypeName">Entry Type Name *</label>
-                        <input type="text" id="entryTypeName" required placeholder="e.g., Jobs, Education, Projects">
-                        <small>Category name for timeline entries</small>
+                        <input type="text" id="entryTypeName" required placeholder="e.g., Jobs, Education">
                     </div>
 
                     <div class="form-group">
                         <label for="entryTypeIcon">Icon/Emoji</label>
-                        <input type="text" id="entryTypeIcon" placeholder="e.g., 💼, 🎓, 🚀" maxlength="5">
-                        <small>Single emoji or icon character (optional)</small>
+                        <input type="text" id="entryTypeIcon" placeholder="e.g., 💼, 🎓" maxlength="5">
                     </div>
 
                     <div class="form-group">
                         <label for="entryTypeOrder">Display Order</label>
-                        <input type="number" id="entryTypeOrder" value="0" min="0" placeholder="0">
-                        <small>Lower numbers appear first (0 = highest priority)</small>
+                        <input type="number" id="entryTypeOrder" value="0" min="0">
                     </div>
 
                     <div class="form-actions">
@@ -49,11 +53,9 @@
                         <button type="button" class="btn-secondary" id="entryTypeCancelBtn" style="display: none;">Cancel</button>
                     </div>
                 </form>
-
                 <div id="entryTypeStatus" class="message" style="display: none;"></div>
             </section>
 
-            <!-- Existing Entry Types List -->
             <section class="admin-section">
                 <h2>Existing Entry Types</h2>
                 <div id="entryTypesList" class="entry-types-list">
@@ -61,52 +63,41 @@
                 </div>
             </section>
 
-            <!-- Divider -->
             <hr class="section-divider">
 
-            <!-- Timeline Entries Section -->
             <section class="admin-section" id="timelineEntriesSection">
                 <h2 id="entry-form-title">Create Timeline Entry</h2>
-                <p class="section-description">Add entries to your resume timeline. Each entry represents a job, education, project, or other achievement.</p>
+                <p class="section-description">Add entries to your resume timeline.</p>
                 
                 <form id="timelineEntryForm" class="admin-form">
                     <input type="hidden" id="editEntryId">
                     
-                    <!-- Entry Type Selection -->
                     <div class="form-group">
                         <label for="entryType">Entry Type *</label>
                         <select id="entryType" required>
                             <option value="">Select entry type...</option>
                         </select>
-                        <small>What category does this entry belong to?</small>
                     </div>
 
-                    <!-- Title -->
                     <div class="form-group">
                         <label for="entryTitle">Title *</label>
                         <input type="text" id="entryTitle" required placeholder="e.g., Senior Marketing Manager">
-                        <small>Job title, degree name, project name, etc.</small>
                     </div>
 
-                    <!-- Subtitle -->
                     <div class="form-group">
                         <label for="entrySubtitle">Subtitle</label>
-                        <input type="text" id="entrySubtitle" placeholder="e.g., Company Name, University Name">
-                        <small>Company, institution, or additional context (optional)</small>
+                        <input type="text" id="entrySubtitle" placeholder="e.g., Company Name">
                     </div>
 
-                    <!-- Date Range -->
                     <div class="form-row">
                         <div class="form-group">
                             <label for="entryDateStart">Start Date *</label>
                             <input type="date" id="entryDateStart" required>
-                            <small>When did this begin?</small>
                         </div>
 
                         <div class="form-group">
                             <label for="entryDateEnd">End Date</label>
                             <input type="date" id="entryDateEnd">
-                            <small>Leave empty for ongoing/present</small>
                         </div>
                     </div>
 
@@ -115,37 +106,30 @@
                             <input type="checkbox" id="entryIsPresent">
                             <span>This is ongoing (Present)</span>
                         </label>
-                        <small>Check this if the entry is current/ongoing. End date will be ignored.</small>
                     </div>
 
-                    <!-- Description -->
                     <div class="form-group">
-                        <label for="entryDescription">Description</label>
-                        <textarea id="entryDescription" rows="6" placeholder="Describe your responsibilities, achievements, or details about this entry..."></textarea>
-                        <small>Rich text editor will be added in Phase 10.5</small>
+                        <label>Description</label>
+                        <div id="entryDescriptionEditor"></div>
+                        <small>Use rich text editor for formatted descriptions</small>
                     </div>
 
-                    <!-- Media URLs -->
                     <div class="form-group">
                         <label for="entryMediaUrls">Media URLs</label>
                         <textarea id="entryMediaUrls" rows="3" placeholder="https://example.com/image1.jpg, https://example.com/video.mp4"></textarea>
-                        <small>Comma-separated URLs for images, videos, or audio files (optional)</small>
+                        <small>Comma-separated URLs (optional)</small>
                     </div>
 
-                    <!-- Featured Checkbox -->
                     <div class="form-group checkbox-group">
                         <label class="checkbox-label">
                             <input type="checkbox" id="entryIsFeatured">
                             <span>Feature in Portfolio PDF</span>
                         </label>
-                        <small>Mark this entry as featured to include it in your downloadable portfolio PDF</small>
                     </div>
 
-                    <!-- Display Order -->
                     <div class="form-group">
                         <label for="entryOrder">Display Order</label>
-                        <input type="number" id="entryOrder" value="0" min="0" placeholder="0">
-                        <small>Manual ordering within date ranges (0 = highest priority)</small>
+                        <input type="number" id="entryOrder" value="0" min="0">
                     </div>
 
                     <div class="form-actions">
@@ -153,11 +137,9 @@
                         <button type="button" class="btn-secondary" id="entryCancelBtn" style="display: none;">Cancel</button>
                     </div>
                 </form>
-
                 <div id="entryStatus" class="message" style="display: none;"></div>
             </section>
 
-            <!-- Existing Timeline Entries -->
             <section class="admin-section">
                 <div class="entries-header">
                     <h2>Timeline Entries</h2>
@@ -176,7 +158,6 @@
         </main>
     </div>
 
-    <!-- Supabase & Dependencies -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../supabase-config.js"></script>
     <script src="../content-categories.js"></script>
@@ -186,9 +167,9 @@
     <script src="../content-resume.js"></script>
     <script src="../content-downloads.js"></script>
     <script src="shared-nav.js"></script>
-    
-    <!-- Resume Management Scripts -->
+    <script src="editor-cloudinary.js"></script>
     <script src="resume-functions.js"></script>
     <script src="resume-ui.js"></script>
+    <script src="resume-editor-setup.js"></script>
 </body>
 </html>

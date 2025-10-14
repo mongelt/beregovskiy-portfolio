@@ -1,0 +1,184 @@
+/* Editor.js Core Styles */
+/* Container, toolbar, and basic UI elements */
+
+/* Editor container */
+#editorjs {
+    background: rgba(13, 17, 35, 0.6);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 12px;
+    padding: 20px;
+    min-height: 400px;
+    backdrop-filter: blur(10px);
+    margin-bottom: 20px;
+}
+
+/* Core editor */
+.codex-editor {
+    color: #E5E7EB;
+}
+
+.codex-editor__redactor {
+    padding-bottom: 100px !important;
+}
+
+/* Block content wrapper */
+.ce-block__content {
+    max-width: 100%;
+}
+
+.ce-block--selected .ce-block__content {
+    background: rgba(59, 130, 246, 0.1);
+    border-radius: 8px;
+}
+
+/* Toolbar */
+.ce-toolbar__content,
+.ce-toolbar__actions {
+    background: rgba(13, 17, 35, 0.9);
+}
+
+.ce-toolbar__plus,
+.ce-toolbar__settings-btn {
+    color: #3B82F6;
+    transition: all 0.3s ease;
+}
+
+.ce-toolbar__plus:hover,
+.ce-toolbar__settings-btn:hover {
+    background: rgba(59, 130, 246, 0.2);
+}
+
+/* Inline toolbar */
+.ce-inline-toolbar {
+    background: rgba(13, 17, 35, 0.95);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.ce-inline-tool,
+.ce-conversion-tool {
+    color: #E5E7EB;
+    transition: all 0.2s ease;
+}
+
+.ce-inline-tool:hover,
+.ce-conversion-tool:hover {
+    background: rgba(59, 130, 246, 0.2);
+}
+
+.ce-inline-tool--active {
+    color: #3B82F6;
+    background: rgba(59, 130, 246, 0.2);
+}
+
+/* Popover (tool menu) */
+.ce-popover {
+    background: rgba(13, 17, 35, 0.95);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.ce-popover__item {
+    color: #E5E7EB;
+    transition: all 0.2s ease;
+}
+
+.ce-popover__item:hover {
+    background: rgba(59, 130, 246, 0.2);
+}
+
+.ce-popover__item-icon {
+    background: rgba(59, 130, 246, 0.2);
+    border-radius: 6px;
+}
+
+/* Block settings */
+.ce-settings {
+    background: rgba(13, 17, 35, 0.95);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 8px;
+}
+
+.ce-settings__button {
+    color: #E5E7EB;
+    transition: all 0.2s ease;
+}
+
+.ce-settings__button:hover {
+    background: rgba(59, 130, 246, 0.2);
+}
+
+/* Conversion toolbar */
+.ce-conversion-toolbar {
+    background: rgba(13, 17, 35, 0.95);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 8px;
+}
+
+/* Input fields */
+input.cdx-input,
+textarea.cdx-input {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    color: #E5E7EB;
+    border-radius: 6px;
+    padding: 10px;
+    transition: all 0.3s ease;
+}
+
+input.cdx-input:focus,
+textarea.cdx-input:focus {
+    border-color: #3B82F6;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+input.cdx-input::placeholder,
+textarea.cdx-input::placeholder {
+    color: rgba(229, 231, 235, 0.4);
+}
+
+/* Buttons */
+.cdx-button {
+    background: rgba(59, 130, 246, 0.2);
+    border: 1px solid #3B82F6;
+    color: #3B82F6;
+    border-radius: 6px;
+    padding: 10px 20px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.cdx-button:hover {
+    background: rgba(59, 130, 246, 0.3);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+/* Loading indicator */
+.cdx-loader {
+    border-color: rgba(59, 130, 246, 0.3);
+    border-top-color: #3B82F6;
+}
+
+/* Scrollbar */
+#editorjs::-webkit-scrollbar {
+    width: 8px;
+}
+
+#editorjs::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+}
+
+#editorjs::-webkit-scrollbar-thumb {
+    background: rgba(59, 130, 246, 0.5);
+    border-radius: 4px;
+}
+
+#editorjs::-webkit-scrollbar-thumb:hover {
+    background: rgba(59, 130, 246, 0.7);
+}
