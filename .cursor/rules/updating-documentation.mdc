@@ -1,0 +1,33 @@
+---
+alwaysApply: false
+---
+# Portfolio Tab Documentation Update Protocol
+
+**Development Log (portfolio-planning.md, always last section)**:
+- Format: `[Step/Stage] ([Name]) – [User Command] – [Comprehensive Details]: [files examined with line counts], [changes made with specific line numbers], [what was tested with results], [decisions made with scores/metrics]. Result: [Stage] COMPLETE with [deliverables], [next status].`
+- Include: Exact line numbers for all changes, quantifiable metrics (line counts, scores, percentages), file names with total lines, test results with exit codes/outcomes, technical specifics (not summaries)
+- Principle: Write assuming zero context - new chat must understand what happened from this entry alone
+- Never add content below development log
+
+**Step Status Updates (portfolio-planning.md)**:
+- Mark `**Status**: ✅ COMPLETE` when all stages finished
+- Update `**Result**` and `**Output**` fields to show concrete achievements (add ✅)
+- Keep Prerequisites/Purpose/Logic Doc Reference/Tech-Ref Lines unchanged
+
+**Phase Completion**:
+- Update phase header: `## PHASE X: [NAME] ✅ COMPLETE`
+- Add `**Status**: ✅ ALL STEPS COMPLETE (list steps)`
+- Add `**Deliverables**:` section with ✅ checkmarks
+- Update tech-ref.md: Mark phase complete in Step Reference Guide and Critical Requirements Checklist
+
+**Development Information Section (portfolio-planning.md after line 878)**:
+- Add analysis/planning details with tables (comparison matrices, complexity scores, decision matrices)
+- Include complete code examples (not snippets), exact line references, metrics
+- Use subsections with clear headers for each stage's findings
+
+**Key Principles**:
+- Reference exact line numbers for all source material
+- Include quantifiable data (line counts, percentages, scores, time estimates)
+- Assume reader has no prior context (comprehensive over concise)
+- Never use abbreviations in development log
+- Document test results explicitly (✅/❌, exit codes, what was verified)

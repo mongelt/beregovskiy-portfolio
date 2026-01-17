@@ -1,0 +1,1 @@
+Clean restart: kill all Node/Next.js processes on port 3000 and other ports if they exist, delete the .next cache folder if it exists, and start a fresh development server. Even if you think that the server is running

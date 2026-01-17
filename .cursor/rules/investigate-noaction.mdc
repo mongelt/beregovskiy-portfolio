@@ -1,0 +1,10 @@
+---
+alwaysApply: false
+---
+Don't make any edits to documents or code.
+User asks you to investigate an issue
+User will explain the issue
+Investigate the issue that the user describes. 
+Find bugs that the user asks to find
+Suggest possible solutions
+Don't take any other action. Don't make any edits. Only suggest. 

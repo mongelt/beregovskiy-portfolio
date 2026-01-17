@@ -1,0 +1,292 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import Link from 'next/link'
+
+type CustomPDF = {
+  id: string
+  title: string
+  description: string | null
+  file_url: string
+  file_name: string
+  category: string
+  order_index: number
+  is_featured: boolean
+  created_at: string
+}
+
+export default function CustomPDFsManagement() {
+  const [pdfs, setPdfs] = useState<CustomPDF[]>([])
+  const [loading, setLoading] = useState(true)
+  const [uploading, setUploading] = useState(false)
+  const [uploadCategory, setUploadCategory] = useState('general')
+  const supabase = createClient()
+
+  useEffect(() => {
+    loadPDFs()
+  }, [])
+
+  async function loadPDFs() {
+    try {
+      const { data, error } = await supabase
+        .from('custom_pdfs')
+        .select('*')
+        .order('order_index', { ascending: true })
+      
+      if (error) {
+        console.error('Error loading PDFs:', error)
+        // Check if table doesn't exist
+        if (error.code === '42P01') {
+          alert('The custom_pdfs table does not exist. Please run the SQL script in create-custom-pdfs-table.sql in your Supabase SQL editor.')
+        }
+        throw error
+      }
+      setPdfs(data || [])
+    } catch (error) {
+      console.error('Error loading PDFs:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    if (file.type !== 'application/pdf') {
+      alert('Please select a PDF file')
+      return
+    }
+
+    setUploading(true)
+    try {
+      // For now, we'll store the file as a data URL
+      // In production, you'd want to use Supabase Storage or another file service
+      const reader = new FileReader()
+      reader.onload = async (e) => {
+        try {
+          const dataUrl = e.target?.result as string
+          
+          // Save to database with data URL
+          const { error } = await supabase
+            .from('custom_pdfs')
+            .insert({
+              title: file.name.replace('.pdf', ''),
+              file_url: dataUrl,
+              file_name: file.name,
+              category: uploadCategory,
+              order_index: pdfs.length
+            })
+
+          if (error) {
+            console.error('Error saving PDF:', error)
+            if (error.code === '42P01') {
+              alert('The custom_pdfs table does not exist. Please run the SQL script in create-custom-pdfs-table.sql in your Supabase SQL editor.')
+            } else {
+              alert(`Failed to save PDF: ${error.message}`)
+            }
+            throw error
+          }
+          
+          // Refresh list
+          await loadPDFs()
+          alert('PDF uploaded successfully!')
+        } catch (error) {
+          console.error('Error saving PDF:', error)
+        } finally {
+          setUploading(false)
+        }
+      }
+      
+      reader.readAsDataURL(file)
+    } catch (error) {
+      console.error('Error uploading PDF:', error)
+      alert('Failed to upload PDF')
+      setUploading(false)
+    }
+  }
+
+  async function deletePDF(id: string) {
+    if (!confirm('Are you sure you want to delete this PDF?')) return
+    
+    try {
+      const { error } = await supabase
+        .from('custom_pdfs')
+        .delete()
+        .eq('id', id)
+      
+      if (error) throw error
+      
+      // Refresh list
+      loadPDFs()
+    } catch (error) {
+      console.error('Error deleting PDF:', error)
+      alert('Failed to delete PDF')
+    }
+  }
+
+  async function updatePDF(id: string, updates: Partial<CustomPDF>) {
+    try {
+      const { error } = await supabase
+        .from('custom_pdfs')
+        .update(updates)
+        .eq('id', id)
+      
+      if (error) throw error
+      
+      // Refresh list
+      loadPDFs()
+    } catch (error) {
+      console.error('Error updating PDF:', error)
+      alert('Failed to update PDF')
+    }
+  }
+
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'resume': return '📄'
+      case 'portfolio': return '📁'
+      case 'certificates': return '🏆'
+      case 'reports': return '📊'
+      default: return '📋'
+    }
+  }
+
+  if (loading) {
+    return <div className="text-white">Loading...</div>
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-bold text-white">Custom PDFs</h1>
+        <Link href="/admin">
+          <Button variant="outline">← Back to Admin</Button>
+        </Link>
+      </div>
+
+      {/* Upload Section */}
+      <div className="bg-gray-900 border border-gray-800 rounded-lg p-6 mb-8">
+        <h2 className="text-xl font-semibold text-white mb-4">Upload New PDF</h2>
+        <div className="space-y-4">
+          <div className="flex items-center gap-4">
+            <input
+              type="file"
+              accept=".pdf"
+              onChange={handleFileUpload}
+              disabled={uploading}
+              className="block w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
+            />
+            {uploading && (
+              <div className="flex items-center gap-2 text-blue-400">
+                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Uploading...
+              </div>
+            )}
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Category
+            </label>
+            <select
+              value={uploadCategory}
+              onChange={(e) => setUploadCategory(e.target.value)}
+              className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500"
+            >
+              <option value="general">General</option>
+              <option value="resume">Resume</option>
+              <option value="portfolio">Portfolio</option>
+              <option value="certificates">Certificates</option>
+              <option value="reports">Reports</option>
+            </select>
+            <p className="text-xs text-gray-500 mt-1">
+              Resume category PDFs will appear as download buttons on the Resume page.
+            </p>
+          </div>
+        </div>
+        <p className="text-xs text-gray-500 mt-2">
+          Upload PDF files that will appear on the Downloads page and can be linked from the Resume page.
+        </p>
+      </div>
+
+      {/* PDFs List */}
+      {pdfs.length === 0 ? (
+        <div className="bg-gray-900 border border-gray-800 rounded-lg p-12 text-center">
+          <p className="text-gray-400 mb-4">No custom PDFs uploaded yet.</p>
+          <p className="text-gray-500 text-sm">Upload your first PDF using the form above.</p>
+        </div>
+      ) : (
+        <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden">
+          <table className="w-full">
+            <thead className="bg-gray-800">
+              <tr>
+                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-300">Title</th>
+                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-300">Category</th>
+                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-300">File</th>
+                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-300">Featured</th>
+                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-300">Created</th>
+                <th className="text-right px-6 py-3 text-sm font-semibold text-gray-300">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-800">
+              {pdfs.map((pdf) => (
+                <tr key={pdf.id} className="hover:bg-gray-800/50">
+                  <td className="px-6 py-4">
+                    <div>
+                      <div className="text-white font-medium">{pdf.title}</div>
+                      {pdf.description && (
+                        <div className="text-gray-400 text-sm">{pdf.description}</div>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-900/50 text-blue-300">
+                      {getCategoryIcon(pdf.category)} {pdf.category}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <a 
+                      href={pdf.file_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-400 hover:text-blue-300 text-sm"
+                    >
+                      {pdf.file_name}
+                    </a>
+                  </td>
+                  <td className="px-6 py-4">
+                    <input
+                      type="checkbox"
+                      checked={pdf.is_featured}
+                      onChange={(e) => updatePDF(pdf.id, { is_featured: e.target.checked })}
+                      className="rounded border-gray-700 bg-gray-950"
+                    />
+                  </td>
+                  <td className="px-6 py-4 text-gray-400 text-sm">
+                    {new Date(pdf.created_at).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-4 text-right space-x-2">
+                    <Button 
+                      variant="destructive" 
+                      size="sm"
+                      onClick={() => deletePDF(pdf.id)}
+                    >
+                      Delete
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  )
+}

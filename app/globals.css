@@ -1,0 +1,637 @@
+@import "tailwindcss";
+@import "video.js/dist/video-js.css";
+
+/* Figma Design System Colors */
+:root {
+  --background: #0f1419; /* Figma background color */
+  --foreground: oklch(0.985 0 0); /* Near white text */
+  --primary: oklch(0.488 0.243 264.376); /* Purple-blue primary */
+  --emerald-400: oklch(0.765 0.177 163.223);
+  --emerald-300: oklch(0.845 0.143 164.978);
+  --gray-300: oklch(0.872 0.01 258.338);
+  --gray-400: oklch(0.707 0.022 261.325);
+  --gray-500: oklch(0.551 0.027 264.364);
+  --gray-800: oklch(0.278 0.033 256.848);
+  --font-size: 16px;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: var(--font-space-grotesk, 'Space Grotesk', system-ui, sans-serif);
+  font-size: var(--font-size);
+}
+
+/* Fixed Layout Variables */
+:root {
+  --business-card-height: 200px;
+  --tab-bar-height: 64px;
+  --sidebar-width: 320px;
+}
+
+/* Fixed Layout Styles */
+.fixed-layout {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+}
+
+.fixed-sidebar {
+  position: fixed;
+  left: 0;
+  top: var(--business-card-height);
+  bottom: var(--tab-bar-height);
+  width: var(--sidebar-width);
+  z-index: 30;
+  overflow-y: auto;
+}
+
+.fixed-tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--tab-bar-height);
+  z-index: 50;
+}
+
+.content-area {
+  margin-top: var(--business-card-height);
+  margin-bottom: var(--tab-bar-height);
+  min-height: calc(100vh - var(--business-card-height) - var(--tab-bar-height));
+  transition: margin-left 0.3s ease;
+}
+
+.content-area.with-sidebar {
+  margin-left: var(--sidebar-width);
+}
+
+/* Line clamp utility for text truncation */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Editor.js Styles */
+.codex-editor {
+  color: #fff;
+}
+
+.codex-editor__redactor {
+  padding-bottom: 5px !important;
+}
+
+.ce-block__content,
+.ce-toolbar__content {
+  max-width: 100%;
+}
+
+.ce-toolbar__plus,
+.ce-toolbar__settings-btn {
+  background: #374151;
+}
+
+/* Step 9.Bug.2.1: Embed Plugin - Responsive Aspect Ratio Fix */
+/* Plugin's default CSS sets width:100% but no aspect-ratio, causing proportion issues */
+/* Add aspect-ratio CSS to maintain proper proportions on all screen sizes */
+
+.embed-tool__content {
+  /* Default to 16:9 aspect ratio (most common: YouTube, Vimeo, Twitch) */
+  aspect-ratio: 16 / 9;
+  /* Limit width to prevent embeds from being too large */
+  max-width: 800px;
+  width: 100%;
+  /* Remove fixed height to allow aspect-ratio to control dimensions */
+  height: auto;
+  /* Ensure iframe fills container */
+  display: block;
+  /* Center embed if smaller than container */
+  margin: 0 auto;
+}
+
+/* Service-specific aspect ratios (if needed, can be added via data attributes) */
+.embed-tool__content[data-service="youtube"],
+.embed-tool__content[data-service="vimeo"],
+.embed-tool__content[data-service="twitch-video"],
+.embed-tool__content[data-service="twitch-channel"] {
+  aspect-ratio: 16 / 9;
+}
+
+.embed-tool__content[data-service="codepen"] {
+  aspect-ratio: 2 / 1; /* 600:300 = 2:1 */
+}
+
+.embed-tool__content[data-service="imgur"] {
+  aspect-ratio: 540 / 500; /* ~1.08:1 */
+}
+
+.embed-tool__content[data-service="gfycat"] {
+  aspect-ratio: 580 / 436; /* ~1.33:1 */
+}
+
+.embed-tool__content[data-service="yandex-music-album"],
+.embed-tool__content[data-service="yandex-music-playlist"] {
+  aspect-ratio: 540 / 400; /* 1.35:1 */
+}
+
+.embed-tool__content[data-service="yandex-music-track"] {
+  aspect-ratio: 540 / 100; /* 5.4:1 */
+}
+
+.embed-tool__content[data-service="instagram"] {
+  aspect-ratio: 400 / 505; /* Instagram posts/reels: ~0.79:1 (portrait) */
+  /* Instagram embeds are typically smaller, so use smaller max-width */
+  max-width: 500px;
+}
+
+.embed-tool__content[data-service="twitter"] {
+  /* Twitter embeds can vary, but typically use a reasonable max-width */
+  max-width: 550px;
+}
+
+.ce-toolbar__plus:hover,
+.ce-toolbar__settings-btn:hover {
+  background: #4b5563;
+}
+
+.ce-block--selected .ce-block__content {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.ce-inline-tool,
+.ce-conversion-toolbar__label {
+  color: #fff;
+}
+
+.ce-popover {
+  background: #1f2937;
+  border: 1px solid #374151;
+}
+
+.ce-popover__item:hover {
+  background: #374151;
+}
+
+.ce-popover__item-icon {
+  background: #374151;
+  color: #fff;
+}
+
+.ce-conversion-tool__icon {
+  background: #374151;
+}
+
+.cdx-settings-button,
+.ce-settings__button {
+  color: #fff;
+}
+
+.cdx-settings-button:hover,
+.ce-settings__button:hover {
+  background: #374151;
+}
+
+.ce-paragraph {
+  color: #d1d5db;
+  line-height: 1.7;
+}
+
+.ce-header {
+  color: #fff;
+  font-weight: 600;
+}
+
+.cdx-input {
+  background: #111827;
+  border: 1px solid #374151;
+  color: #fff;
+}
+
+.cdx-input:focus {
+  border-color: #3b82f6;
+}
+
+.ce-code__textarea {
+  background: #111827;
+  color: #10b981;
+  border: 1px solid #374151;
+}
+
+.cdx-quote {
+  border-left: 3px solid #3b82f6;
+}
+
+.cdx-quote__text {
+  color: #d1d5db;
+  min-height: 30px;
+}
+
+.cdx-list {
+  color: #d1d5db;
+}
+
+/* Table Tool */
+.tc-table {
+  border-collapse: collapse;
+}
+
+.tc-table__cell {
+  border: 1px solid #374151;
+  padding: 8px;
+}
+
+/* Warning Tool */
+.cdx-warning {
+  background: rgba(251, 191, 36, 0.1);
+  border-left: 3px solid #fbbf24;
+}
+
+.cdx-warning__title {
+  color: #fbbf24;
+}
+
+.cdx-warning__message {
+  color: #d1d5db;
+}
+
+/* Alert Tool */
+.cdx-alert {
+  border-left: 3px solid;
+}
+
+/* Delimiter */
+.ce-delimiter {
+  text-align: center;
+  color: #4b5563;
+}
+
+/* Toggle Block */
+.cdx-toggle-block {
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 16px 0;
+}
+
+/* Step 4.Bug.1.2: Fix toggle block heading and arrow layout - use plugin's actual class names */
+.toggle-block__selector {
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  user-select: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.toggle-block__selector:hover {
+  color: #60a5fa;
+}
+
+/* Override plugin's width: 90% on input to prevent line break */
+.toggle-block__selector > div.toggle-block__input {
+  width: auto !important;
+  flex: 1;
+  margin-left: 5px;
+  display: inline-block;
+  vertical-align: middle;
+  padding: 1% 0;
+  outline: none;
+  border: none;
+}
+
+/* Icon styling - keep icon and input on same line */
+.toggle-block__icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  transition: transform 0.3s ease;
+}
+
+.toggle-block__icon > svg {
+  vertical-align: middle;
+  width: 15px;
+  height: auto;
+}
+
+.toggle-block__icon:hover {
+  color: #388ae5;
+  cursor: pointer;
+}
+
+/* Toggle Block Content */
+.toggle-block__content-default {
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease;
+  max-height: 10000px;
+  opacity: 1;
+  padding-top: 12px;
+  margin-left: 20px;
+  color: gray;
+  border-radius: 5px;
+}
+
+.toggle-block__content-default:hover {
+  cursor: pointer;
+  background: rgba(55, 53, 47, 0.08);
+}
+
+/* Step 4.Bug.3.1: Fix toggle block content not hiding when collapsed on public pages */
+/* Plugin uses .toggle-block__hidden class to hide content - match plugin's behavior */
+.toggle-block__hidden {
+  display: none !important;
+}
+
+/* Collapsed State - hide content when toggle is closed (additional support) */
+.toggle-block__selector[status="closed"] ~ .toggle-block__content-default,
+div[status="closed"] .toggle-block__content-default {
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  overflow: hidden;
+}
+
+/* Hide content when parent has closed status */
+div[status="closed"] .toggle-block__content-default.toggle-block__hidden {
+  display: none;
+}
+
+/* Icon rotation for collapsed state */
+div[status="closed"] .toggle-block__icon > svg {
+  transform: rotate(0deg);
+}
+
+/* Icon rotation for expanded state */
+div[status="open"] .toggle-block__icon > svg,
+.toggle-block__selector:not([status="closed"]) .toggle-block__icon > svg {
+  transform: rotate(90deg);
+}
+
+/* Button Tool */
+.cdx-button {
+  display: inline-block;
+}
+
+/* Step 5.2: Button plugin styles for public pages */
+/* Plugin uses .anyButtonContainer, .anyButton__btn classes */
+.anyButtonContainer {
+  position: relative;
+  margin: 16px 0;
+}
+
+.anyButtonContainer__anyButtonHolder {
+  text-align: center;
+  padding: 8px 0;
+}
+
+/* Button styling - ensure buttons are visible and clickable on dark theme */
+.anyButton__btn {
+  display: inline-block;
+  font-weight: 400;
+  line-height: 1.5;
+  text-align: center;
+  text-decoration: none !important;
+  vertical-align: middle;
+  cursor: pointer;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+  padding: 0.375rem 0.75rem;
+  font-size: 1rem;
+  border-radius: 0.25rem;
+  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Default blue button style */
+.anyButton__btn--default {
+  color: #fff;
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+}
+
+.anyButton__btn--default:hover {
+  background-color: #0b5ed7;
+  border-color: #0a58ca;
+}
+
+/* Gray button style */
+.anyButton__btn--gray {
+  color: #fff;
+  background-color: #7c7c7c;
+  border-color: #7c7c7c;
+}
+
+.anyButton__btn--gray:hover {
+  background-color: #6c6c6c;
+  border-color: #666;
+}
+
+/* Attaches Tool */
+.cdx-attaches {
+  background: #1f2937;
+  border: 1px solid #374151;
+}
+
+.cdx-attaches__file-info {
+  color: #d1d5db;
+}
+
+/* Nested List */
+.cdx-nested-list {
+  color: #d1d5db;
+}
+
+.cdx-nested-list__item {
+  padding: 4px 0;
+}
+
+/* Marker (highlight) */
+mark {
+  background-color: rgba(251, 191, 36, 0.3);
+  color: inherit;
+  padding: 2px 4px;
+  border-radius: 2px;
+}
+
+/* Underline */
+u {
+  text-decoration-color: #60a5fa;
+}
+
+/* Inline Code */
+code.inline-code {
+  background: #1f2937;
+  color: #10b981;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+/* Step 16.Bug.3.1: Image Plugin - Control Image Width and Height */
+/* Step 16.Bug.3.2: Image Plugin - Center Images */
+/* @editorjs/image plugin uses .cdx-image class for image blocks */
+/* Add CSS rules to control image dimensions and centering */
+
+/* Step 16.Bug.3.2: Center the entire image block within Editor.js block wrapper */
+/* Attempt 3: Using actual DOM structure from browser DevTools inspection */
+/* Plugin uses .image-tool classes, not .cdx-image as assumed */
+/* Structure: .ce-block > .ce-block__content > .image-tool > .image-tool__image > .image-tool__image-picture */
+
+.ce-block[data-type="image"] {
+  text-align: center !important;
+}
+
+.ce-block[data-type="image"] .ce-block__content {
+  text-align: center !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  width: 100% !important;
+}
+
+/* Target the actual image-tool container */
+.image-tool {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  width: 100% !important;
+}
+
+/* Target the image wrapper */
+.image-tool__image {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  width: 100% !important;
+  text-align: center !important;
+}
+
+.cdx-image {
+  /* Center the image block container */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 16px 0;
+  text-align: center;
+  width: 100%;
+}
+
+/* Control image width - set max-width to 75% to match audio player width */
+/* Step 16.Bug.3.2: Using actual DOM structure - target .image-tool__image-picture */
+/* Step 16.Bug.3.3: Use max-width instead of width - allows small images to display at natural size */
+.image-tool__image-picture {
+  max-width: 75% !important;
+  width: auto !important;
+  height: auto !important;
+  /* Maintain aspect ratio */
+  object-fit: contain !important;
+  /* Center the image */
+  margin-left: auto !important;
+  margin-right: auto !important;
+  display: block !important;
+  /* Add rounded corners for better appearance */
+  border-radius: 8px;
+}
+
+/* Also target .cdx-image for backward compatibility (if used elsewhere) */
+/* Step 16.Bug.3.3: Use max-width instead of width - allows small images to display at natural size */
+.cdx-image img,
+.cdx-image__picture img {
+  max-width: 75% !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  display: block !important;
+  border-radius: 8px;
+}
+
+/* Image container wrapper */
+.cdx-image__picture {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+/* Caption styling */
+.cdx-image__caption {
+  text-align: center;
+  margin-top: 8px;
+  color: #d1d5db;
+  font-size: 0.9em;
+}
+
+/* Step 16.Bug.3.2: Center image tool caption */
+.image-tool__caption {
+  text-align: center !important;
+  margin-top: 8px;
+  color: #d1d5db;
+  font-size: 0.9em;
+}
+
+/* Step 16.Bug.4.4: Hide empty captions ONLY on frontend (read-only mode) */
+/* Admin: Captions always visible (needed for editing) */
+/* Frontend: Hide empty captions, show filled captions */
+/* Use :empty pseudo-class (read-only mode doesn't set data-empty attribute) */
+
+/* Hide empty image captions on frontend only */
+/* Target EditorRenderer context - multiple selectors to ensure frontend targeting */
+/* .prose = ContentViewer, .ce-editor--readonly = Editor.js read-only class */
+/* :empty = matches elements with no children and no text content */
+.prose .image-tool__caption:empty,
+.prose .image-tool__caption[contenteditable="false"]:empty,
+.ce-editor--readonly .image-tool__caption:empty,
+[data-readonly="true"] .image-tool__caption:empty,
+#editorjs-renderer .image-tool__caption:empty,
+[data-editor-renderer] .image-tool__caption:empty {
+  height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  min-height: 0 !important;
+  border: none !important;
+}
+
+/* Hide empty embed captions on frontend only */
+.prose .embed-tool__caption:empty,
+.prose .embed-tool__caption[contenteditable="false"]:empty,
+.ce-editor--readonly .embed-tool__caption:empty,
+[data-readonly="true"] .embed-tool__caption:empty,
+#editorjs-renderer .embed-tool__caption:empty,
+[data-editor-renderer] .embed-tool__caption:empty {
+  height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  min-height: 0 !important;
+  border: none !important;
+}
+
+/* Responsive: On smaller screens, use full width max-width but allow natural size for small images */
+/* Step 16.Bug.3.3: Use max-width instead of width - allows small images to display at natural size */
+@media (max-width: 768px) {
+  .image-tool__image-picture {
+    max-width: 100% !important;
+    width: auto !important;
+  }
+  
+  .cdx-image img,
+  .cdx-image__picture img {
+    max-width: 100%;
+    width: auto;
+  }
+}
+

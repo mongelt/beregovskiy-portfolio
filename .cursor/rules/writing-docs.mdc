@@ -1,0 +1,20 @@
+---
+alwaysApply: false
+---
+Your basic rules for writing documentation: 
+- CRITICAL: you are writing for AI to understand and use first, but the user with the beginner level coding needs to be able to understand it easily 
+- Never assume, if unclear, always ask: When something is unclear to you, don't make any assumptions; instead, ask questions 
+- Add your questions straight into the document into the line where you want information to appear, and I will either address them in following messages or will replace your questions with my answers in the document. 
+-- Use **QUESTION**: for something that you want me to answer immediately. Don't expect me to answer any technical questions (like databases or filtering management) without your detailed guidance
+-- Use **GAP**: for something we can fill in later, like technical information or detailed logic
+- Be very short: I want the document to be as short as possible, so you must be as short as you can.
+- BUT: Also document meticulosuly, be very optimal with how you use language, write all necessary information in fewest number of words
+- Don't go heavy on technical terms, write in natural language
+
+Guidelines for planning (if user asks to plan a phase by breaking it down into steps only):
+- Write out each outlined phase, leave your questions in the document as described before if you have questions or require clarifications
+- Break down each phase into more detailed development steps 
+- Each step should be a meaningful and testable advancement in the phase
+- Each step have stages, where each stage is done in one successful message
+- Break down into as many small steps as possible to simplify the stages
+- For simpler steps, break down into 1-3 stages; for more complex steps, break down to 3-7 stages; for particularly complex steps, break down over 7 stages if needed

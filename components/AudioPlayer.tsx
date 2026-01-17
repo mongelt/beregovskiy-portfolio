@@ -1,0 +1,161 @@
+'use client'
+
+import { useState, useEffect, useRef } from 'react'
+
+type AudioPlayerProps = {
+  audioUrl: string
+}
+
+export default function AudioPlayer({ audioUrl }: AudioPlayerProps) {
+  const [waveformReady, setWaveformReady] = useState(false)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const waveformRef = useRef<HTMLDivElement>(null)
+  const wavesurferRef = useRef<any>(null)
+
+  // Step 13.3: Initialize wavesurfer.js waveform visualization (SSR-safe)
+  useEffect(() => {
+    // Only run on client side
+    if (typeof window === 'undefined' || !waveformRef.current || !audioUrl) {
+      return
+    }
+
+    let isMounted = true
+
+    // Dynamically import wavesurfer.js (SSR safety)
+    const initWaveform = async () => {
+      try {
+        const WaveSurfer = (await import('wavesurfer.js')).default
+
+        // Clean up existing instance if any
+        if (wavesurferRef.current) {
+          wavesurferRef.current.destroy()
+          wavesurferRef.current = null
+        }
+
+        // Clear the container
+        if (waveformRef.current) {
+          waveformRef.current.innerHTML = ''
+        }
+
+        // Create new WaveSurfer instance
+        const wavesurfer = WaveSurfer.create({
+          container: waveformRef.current!,
+          waveColor: '#60a5fa',
+          progressColor: '#3b82f6',
+          cursorColor: '#ffffff',
+          barWidth: 2,
+          barRadius: 3,
+          responsive: true,
+          height: 100,
+          normalize: true,
+          backend: 'WebAudio',
+          mediaControls: false,
+        })
+
+        // Load audio URL
+        await wavesurfer.load(audioUrl)
+        
+        // Add event listeners
+        wavesurfer.on('play', () => {
+          if (isMounted) {
+            setIsPlaying(true)
+          }
+        })
+        
+        wavesurfer.on('pause', () => {
+          if (isMounted) {
+            setIsPlaying(false)
+          }
+        })
+        
+        wavesurfer.on('finish', () => {
+          if (isMounted) {
+            setIsPlaying(false)
+          }
+        })
+        
+        if (isMounted) {
+          wavesurferRef.current = wavesurfer
+          setWaveformReady(true)
+        } else {
+          wavesurfer.destroy()
+        }
+      } catch (error) {
+        console.error('Failed to initialize waveform:', error)
+        if (isMounted) {
+          setWaveformReady(false)
+        }
+      }
+    }
+
+    initWaveform()
+
+    // Cleanup function
+    return () => {
+      isMounted = false
+      if (wavesurferRef.current) {
+        try {
+          wavesurferRef.current.destroy()
+        } catch (error) {
+          console.error('Error destroying wavesurfer:', error)
+        }
+        wavesurferRef.current = null
+      }
+    }
+  }, [audioUrl])
+
+  const handlePlayPause = () => {
+    if (wavesurferRef.current) {
+      wavesurferRef.current.playPause()
+    }
+  }
+
+  const handleStop = () => {
+    if (wavesurferRef.current) {
+      wavesurferRef.current.stop()
+      setIsPlaying(false)
+    }
+  }
+
+  if (!audioUrl) {
+    return null
+  }
+
+  return (
+    <div className="my-8 flex flex-col items-center space-y-4">
+      {/* Waveform Visualization */}
+      <div 
+        ref={waveformRef} 
+        className="w-[75%] bg-gray-900 rounded-md p-4 border border-gray-800"
+      />
+      
+      {/* Playback Controls */}
+      {waveformReady && (
+        <div className="flex items-center justify-center gap-4">
+          <button
+            onClick={handlePlayPause}
+            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors"
+            aria-label={isPlaying ? 'Pause' : 'Play'}
+          >
+            {isPlaying ? 'Pause' : 'Play'}
+          </button>
+          <button
+            onClick={handleStop}
+            className="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md font-medium transition-colors"
+            aria-label="Stop"
+          >
+            Stop
+          </button>
+        </div>
+      )}
+      
+      {/* Loading State */}
+      {!waveformReady && (
+        <div className="text-center text-gray-400 text-sm">
+          Loading waveform...
+        </div>
+      )}
+    </div>
+  )
+}
+
