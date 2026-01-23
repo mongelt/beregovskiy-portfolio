@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -42,6 +42,12 @@ type LinkOption = {
   option_text: string
 }
 
+type CustomPDFOption = {
+  id: string
+  title: string
+  file_name: string
+}
+
 export default function NewContent() {
   const router = useRouter()
   const supabase = createClient()
@@ -71,10 +77,13 @@ export default function NewContent() {
   const [videoUrl, setVideoUrl] = useState('')
   const [audioUrl, setAudioUrl] = useState('')
   const [editorData, setEditorData] = useState<OutputData | undefined>()
+  const editorInstanceRef = useRef<any>(null)
   const [selectedCollections, setSelectedCollections] = useState<string[]>([])
-  const [downloadEnabled, setDownloadEnabled] = useState(false)
-  const [downloadType, setDownloadType] = useState<'external' | 'pdf'>('external')
+  const [downloadEnabled, setDownloadEnabled] = useState(true)
+  const [downloadSource, setDownloadSource] = useState<'generated' | 'external' | 'custom'>('generated')
   const [externalDownloadUrl, setExternalDownloadUrl] = useState('')
+  const [customPdfId, setCustomPdfId] = useState('')
+  const [customPdfs, setCustomPdfs] = useState<CustomPDFOption[]>([])
   const [orderIndex, setOrderIndex] = useState(0)
   const [uploading, setUploading] = useState(false)
   const [featured, setFeatured] = useState(false)
@@ -85,6 +94,7 @@ export default function NewContent() {
     loadCollections()
     loadBylineOptions()
     loadLinkOptions()
+    loadCustomPDFs()
   }, [])
 
   useEffect(() => {
@@ -135,6 +145,19 @@ export default function NewContent() {
       .select('id, option_text')
       .order('created_at')
     setLinkOptions(data || [])
+  }
+
+  async function loadCustomPDFs() {
+    const { data, error } = await supabase
+      .from('custom_pdfs')
+      .select('id, title, file_name')
+      .order('order_index', { ascending: true })
+    if (error) {
+      console.error('Failed to load custom PDFs', error)
+      setCustomPdfs([])
+      return
+    }
+    setCustomPdfs(data || [])
   }
 
   async function handleImageUpload(file: File) {
@@ -208,7 +231,32 @@ export default function NewContent() {
       return
     }
 
+    if (downloadEnabled && downloadSource === 'external' && !externalDownloadUrl) {
+      alert('Please provide an external download link or change the download source.')
+      return
+    }
+
+    if (downloadEnabled && downloadSource === 'custom' && !customPdfId) {
+      alert('Please select a custom PDF or change the download source.')
+      return
+    }
+
     try {
+      const latestEditorData =
+        contentType === 'article' && editorInstanceRef.current
+          ? await (typeof editorInstanceRef.current.getEnrichedData === 'function'
+              ? editorInstanceRef.current.getEnrichedData()
+              : editorInstanceRef.current.save
+                ? editorInstanceRef.current.save()
+                : editorInstanceRef.current.saver?.save?.())
+          : editorData
+      const imageSizeMap =
+        contentType === 'article' && editorInstanceRef.current
+          ? await (typeof editorInstanceRef.current.getImageSizeMap === 'function'
+              ? editorInstanceRef.current.getImageSizeMap()
+              : {})
+          : null
+
       // Insert content
       const { data: contentData, error: contentError } = await supabase
         .from('content')
@@ -220,7 +268,8 @@ export default function NewContent() {
           subtitle: subtitle || null,
           sidebar_title: sidebarTitle || null,
           sidebar_subtitle: sidebarSubtitle || null,
-          content_body: contentType === 'article' ? editorData : null,
+          image_sizes: contentType === 'article' ? imageSizeMap : null,
+          content_body: contentType === 'article' ? (latestEditorData || editorData) : null,
           image_url: contentType === 'image' ? imageUrl : null,
           video_url: contentType === 'video' ? videoUrl : null,
           audio_url: contentType === 'audio' ? audioUrl : null,
@@ -230,7 +279,9 @@ export default function NewContent() {
           source_link: sourceLink || null,
           copyright_notice: copyrightNotice || null,
           download_enabled: downloadEnabled,
-          external_download_url: externalDownloadUrl || null,
+          download_source: downloadEnabled ? downloadSource : 'generated',
+          external_download_url: downloadEnabled && downloadSource === 'external' ? externalDownloadUrl : null,
+          custom_pdf_id: downloadEnabled && downloadSource === 'custom' ? customPdfId : null,
           order_index: orderIndex,
           featured: featured,
           byline_style: selectedBylineStyle || null,
@@ -518,6 +569,9 @@ export default function NewContent() {
                 holder="editorjs"
                 data={editorData}
                 onChange={setEditorData}
+                onReady={(editor) => {
+                  editorInstanceRef.current = editor
+                }}
               />
             </div>
           )}
@@ -656,20 +710,31 @@ export default function NewContent() {
             </label>
           </div>
 
-          {/* Download Type Selection */}
+          {/* Download Source Selection */}
           {downloadEnabled && (
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Download Type
+                Download Source
               </label>
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-gray-300">
                   <input
                     type="radio"
-                    name="downloadType"
+                    name="downloadSource"
+                    value="generated"
+                    checked={downloadSource === 'generated'}
+                    onChange={(e) => setDownloadSource(e.target.value as 'generated' | 'external' | 'custom')}
+                    className="border-gray-700 bg-gray-950"
+                  />
+                  Generate PDF (Articles only)
+                </label>
+                <label className="flex items-center gap-2 text-gray-300">
+                  <input
+                    type="radio"
+                    name="downloadSource"
                     value="external"
-                    checked={downloadType === 'external'}
-                    onChange={(e) => setDownloadType(e.target.value as 'external' | 'pdf')}
+                    checked={downloadSource === 'external'}
+                    onChange={(e) => setDownloadSource(e.target.value as 'generated' | 'external' | 'custom')}
                     className="border-gray-700 bg-gray-950"
                   />
                   External Link
@@ -677,20 +742,20 @@ export default function NewContent() {
                 <label className="flex items-center gap-2 text-gray-300">
                   <input
                     type="radio"
-                    name="downloadType"
-                    value="pdf"
-                    checked={downloadType === 'pdf'}
-                    onChange={(e) => setDownloadType(e.target.value as 'external' | 'pdf')}
+                    name="downloadSource"
+                    value="custom"
+                    checked={downloadSource === 'custom'}
+                    onChange={(e) => setDownloadSource(e.target.value as 'generated' | 'external' | 'custom')}
                     className="border-gray-700 bg-gray-950"
                   />
-                  Generate PDF (Articles only)
+                  Custom PDF
                 </label>
               </div>
             </div>
           )}
 
           {/* External Download URL */}
-          {downloadEnabled && downloadType === 'external' && (
+          {downloadEnabled && downloadSource === 'external' && (
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 External Download Link
@@ -700,7 +765,7 @@ export default function NewContent() {
                 value={externalDownloadUrl}
                 onChange={(e) => setExternalDownloadUrl(e.target.value)}
                 placeholder="https://example.com/download.pdf"
-                required={downloadEnabled && downloadType === 'external'}
+                required={downloadEnabled && downloadSource === 'external'}
               />
               <p className="text-xs text-gray-500 mt-1">
                 URL where users will be redirected when they click the download button
@@ -708,8 +773,32 @@ export default function NewContent() {
             </div>
           )}
 
+          {/* Custom PDF Selection */}
+          {downloadEnabled && downloadSource === 'custom' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Select Custom PDF
+              </label>
+              <select
+                value={customPdfId}
+                onChange={(e) => setCustomPdfId(e.target.value)}
+                className="w-full bg-gray-950 border border-gray-700 text-gray-200 rounded px-3 py-2"
+              >
+                <option value="">Select a custom PDF</option>
+                {customPdfs.map((pdf) => (
+                  <option key={pdf.id} value={pdf.id}>
+                    {pdf.title} ({pdf.file_name})
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                Choose which custom PDF should download for this content item
+              </p>
+            </div>
+          )}
+
           {/* PDF Generation Info */}
-          {downloadEnabled && downloadType === 'pdf' && (
+          {downloadEnabled && downloadSource === 'generated' && (
             <div className="bg-blue-900/20 border border-blue-800 rounded-lg p-4">
               <h4 className="text-blue-300 font-medium mb-2">📄 PDF Generation</h4>
               <p className="text-blue-200 text-sm">

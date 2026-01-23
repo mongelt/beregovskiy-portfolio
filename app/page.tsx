@@ -6,8 +6,10 @@ import ContentViewer from '@/components/ContentViewer'
 import BottomTabBar from '@/components/BottomTabBar'
 import ResumeTab from '@/components/tabs/ResumeTab'
 import PortfolioContent from '@/components/tabs/PortfolioContent'
+import DownloadsTab from '@/components/tabs/DownloadsTab'
 import { Skeleton } from '@/components/ui/skeleton'
-import { generateArticlePDF } from '@/lib/pdf-generator'
+import { createClient } from '@/lib/supabase/client'
+import { generateArticlePDF, generateCollectionPDF } from '@/lib/pdf-generator'
 
 type Collection = {
   slug: string
@@ -25,6 +27,7 @@ const isCollectionTab = (tab: string, collections: Collection[]) =>
 const STORAGE_KEY = 'bottomNavState'
 
 export default function Home() {
+  const supabase = createClient()
   const [activeTab, setActiveTab] = useState<string>('portfolio')
   const [activeCollections, setActiveCollections] = useState<Collection[]>([])
   const [activeContents, setActiveContents] = useState<ContentTab[]>([])
@@ -34,16 +37,21 @@ export default function Home() {
   const [portfolioContentTitle, setPortfolioContentTitle] = useState<string | null>(null)
   const [portfolioContentId, setPortfolioContentId] = useState<string | null>(null)
   const [portfolioContentType, setPortfolioContentType] = useState<string | null>(null)
+  const [portfolioContentDownloadEnabled, setPortfolioContentDownloadEnabled] = useState<boolean | null>(null)
+  const [resumeNowMarkerVisible, setResumeNowMarkerVisible] = useState<boolean>(true)
+  const [resumeHasExpandedSideEntry, setResumeHasExpandedSideEntry] = useState<boolean>(false)
   const [portfolioMenuExpanded, setPortfolioMenuExpanded] = useState<boolean>(true)
   const urlAppliedRef = useRef(false)
   const lastDownloadContextRef = useRef<{
     contentTitle: string | null
     contentId: string | null
     contentType: string | null
+    downloadEnabled: boolean | null
   } | null>(null)
 
   const activeContent = activeContents.find(c => c.id === activeTab) || null
   const activeCollection = activeCollections.find(c => c.slug === activeTab) || null
+  const isActiveContentTab = activeContents.some(c => c.id === activeTab)
   const currentContentTitle =
     activeContent?.title ||
     ((activeTab === 'portfolio' || isCollectionTab(activeTab, activeCollections)) && !portfolioMenuExpanded
@@ -56,6 +64,10 @@ export default function Home() {
       : null)
   const currentContentType =
     portfolioContentType
+  const isPortfolioLikeTab = activeTab === 'portfolio' || isCollectionTab(activeTab, activeCollections) || isActiveContentTab
+  const shouldCondenseProfile =
+    (isPortfolioLikeTab && !portfolioMenuExpanded) ||
+    (activeTab === 'resume' && (!resumeNowMarkerVisible || resumeHasExpandedSideEntry))
 
   // Prevent flash on initial load
   useEffect(() => {
@@ -188,19 +200,76 @@ export default function Home() {
 
     if (target === 'content') {
       const contentId = currentContentId
-      const name = currentContentTitle || 'content'
       if (!contentId) {
         throw new Error('No content selected')
       }
-      const blob = await generateArticlePDF(contentId)
-      const safeName = name.replace(/[^a-z0-9]/gi, '_')
-      const filename = `AndreyBeregovskiy_${safeName}.pdf`
-      downloadBlob(blob, filename)
+      const { data, error } = await supabase
+        .from('content')
+        .select('id, title, type, download_enabled, download_source, external_download_url, custom_pdf_id, image_url, video_url, audio_url')
+        .eq('id', contentId)
+        .single()
+      if (error || !data) {
+        throw new Error('Failed to load content download settings')
+      }
+      if (!data.download_enabled) {
+        alert('Downloads are disabled for this content.')
+        return
+      }
+
+      const resolvedSource =
+        data.download_source ||
+        (data.custom_pdf_id ? 'custom' : data.external_download_url ? 'external' : 'generated')
+
+      if (resolvedSource === 'external') {
+        if (!data.external_download_url) {
+          alert('External download link is missing.')
+          return
+        }
+        window.open(data.external_download_url, '_blank')
+        return
+      }
+
+      if (resolvedSource === 'custom') {
+        const customPdfId = data.custom_pdf_id || null
+        const linkedPdfId = customPdfId || (await getLinkedPdfId('content', contentId))
+        if (!linkedPdfId) {
+          alert('Custom PDF is not set.')
+          return
+        }
+        const didDownload = await downloadCustomPdfById(linkedPdfId)
+        if (!didDownload) {
+          throw new Error('Custom PDF not found')
+        }
+        return
+      }
+
+      if (data.type === 'article') {
+        const blob = await generateArticlePDF(contentId)
+        const safeName = (data.title || 'content').replace(/[^a-z0-9]/gi, '_')
+        const filename = `AndreyBeregovskiy_${safeName}.pdf`
+        downloadBlob(blob, filename)
+        return
+      }
+
+      const mediaUrl = data.image_url || data.video_url || data.audio_url
+      if (mediaUrl) {
+        const link = document.createElement('a')
+        link.href = mediaUrl
+        link.download = data.title || 'content'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+      }
       return
     }
 
     if (target === 'resume') {
       const safeName = 'AndreyBeregovskiy_Resume'
+      const resumePdfId = await getLinkedPdfId('resume', null)
+      if (resumePdfId) {
+        const didDownload = await downloadCustomPdfById(resumePdfId)
+        if (didDownload) return
+      }
       const placeholder = new Blob(
         ['Resume PDF generation is not implemented yet.'],
         { type: 'application/pdf' }
@@ -210,15 +279,68 @@ export default function Home() {
     }
 
     if (target === 'collection') {
-      const collectionName = activeCollection?.name || 'Collection'
+      if (!activeCollection?.slug) {
+        throw new Error('No collection selected')
+      }
+      const { data: collectionData, error: collectionError } = await supabase
+        .from('collections')
+        .select('id, name')
+        .eq('slug', activeCollection.slug)
+        .single()
+      if (collectionError || !collectionData) {
+        throw new Error('Collection not found')
+      }
+      const linkedPdfId = await getLinkedPdfId('collection', collectionData.id)
+      if (linkedPdfId) {
+        const didDownload = await downloadCustomPdfById(linkedPdfId)
+        if (didDownload) return
+      }
+      const collectionName = collectionData.name || activeCollection.name || 'Collection'
       const safeName = collectionName.replace(/[^a-z0-9]/gi, '_') || 'Collection'
-      const placeholder = new Blob(
-        ['Collection PDF generation is not implemented yet.'],
-        { type: 'application/pdf' }
-      )
-      downloadBlob(placeholder, `AndreyBeregovskiy_${safeName}.pdf`)
+      const blob = await generateCollectionPDF(activeCollection.slug)
+      downloadBlob(blob, `AndreyBeregovskiy_${safeName}.pdf`)
       return
     }
+  }
+
+  async function getLinkedPdfId(targetType: 'content' | 'collection' | 'resume', targetId: string | null) {
+    const query = supabase
+      .from('custom_pdf_links')
+      .select('pdf_id')
+      .eq('target_type', targetType)
+      .limit(1)
+    if (targetId) {
+      query.eq('target_id', targetId)
+    } else {
+      query.is('target_id', null)
+    }
+    const { data, error } = await query
+    if (error) {
+      if (error.code === '42P01') {
+        return null
+      }
+      console.error('Failed to load custom PDF link', error)
+      return null
+    }
+    return data?.[0]?.pdf_id || null
+  }
+
+  async function downloadCustomPdfById(pdfId: string) {
+    const { data: customPdf, error } = await supabase
+      .from('custom_pdfs')
+      .select('file_url, file_name')
+      .eq('id', pdfId)
+      .single()
+    if (error || !customPdf) {
+      return false
+    }
+    const link = document.createElement('a')
+    link.href = customPdf.file_url
+    link.download = customPdf.file_name
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    return true
   }
 
   // Check if current tab is portfolio or collection tab
@@ -232,6 +354,8 @@ export default function Home() {
             onOpenCollection={handleOpenCollection}
             onOpenContent={handleOpenContent}
             profileHeight={profileHeight}
+            onNowMarkerInViewChange={setResumeNowMarkerVisible}
+            onSideEntryExpandedChange={setResumeHasExpandedSideEntry}
           />
         )
       
@@ -248,21 +372,23 @@ export default function Home() {
             activeContents={activeContents}
             onCollectionClick={handleCollectionClick}
             profileHeight={profileHeight}
-            onDownloadContextChange={({ contentTitle, contentId, contentType }) => {
+            onDownloadContextChange={({ contentTitle, contentId, contentType, downloadEnabled }) => {
               const prev = lastDownloadContextRef.current
               if (
                 prev &&
                 prev.contentTitle === contentTitle &&
                 prev.contentId === contentId &&
-                prev.contentType === contentType
+                prev.contentType === contentType &&
+                prev.downloadEnabled === downloadEnabled
               ) {
                 return
               }
-              lastDownloadContextRef.current = { contentTitle, contentId, contentType }
+              lastDownloadContextRef.current = { contentTitle, contentId, contentType, downloadEnabled }
 
               setPortfolioContentTitle(contentTitle)
               setPortfolioContentId(contentId)
               setPortfolioContentType(contentType)
+              setPortfolioContentDownloadEnabled(downloadEnabled)
               if (contentId) {
                 setActiveContents(prev =>
                   prev.map(tab => tab.id === contentId && tab.title !== contentTitle && contentTitle
@@ -286,7 +412,11 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#0f1419] text-white flex flex-col">
       {/* Fixed Business Card Header */}
-      <Profile onHeightChange={setProfileHeight} onOpenCollection={handleOpenCollection} />
+      <Profile
+        onHeightChange={setProfileHeight}
+        onOpenCollection={handleOpenCollection}
+        condensedMode={shouldCondenseProfile}
+      />
 
       {/* Main Content Area */}
       {/* PortfolioContent handles its own layout (no padding wrapper needed) */}
@@ -311,6 +441,7 @@ export default function Home() {
         currentContentTitle={currentContentTitle}
         currentContentType={portfolioContentType}
         currentContentId={currentContentId}
+        currentContentDownloadEnabled={portfolioContentDownloadEnabled}
         currentCollectionName={activeCollection?.name || null}
         currentCollectionSlug={activeCollection?.slug || null}
         onDownload={handleDownload}

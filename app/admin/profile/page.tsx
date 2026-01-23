@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -49,6 +49,7 @@ export default function ProfileManagement() {
   const [collections, setCollections] = useState<CollectionOption[]>([])
   const [languages, setLanguages] = useState('')
   const [education, setEducation] = useState('')
+  const fullBioEditorRef = useRef<any>(null)
 
   useEffect(() => {
     loadProfile()
@@ -171,6 +172,11 @@ export default function ProfileManagement() {
       }
     }
 
+    const fullBioImageSizes =
+      fullBioEditorRef.current && typeof fullBioEditorRef.current.getImageSizeMap === 'function'
+        ? await fullBioEditorRef.current.getImageSizeMap()
+        : null
+
     const profileData = {
       full_name: fullName,
       location: location,
@@ -181,6 +187,7 @@ export default function ProfileManagement() {
       profile_image: profileImage,
       short_bio: shortBioData,
       full_bio: fullBioData,
+      full_bio_image_sizes: fullBioImageSizes,
       executive_summary: executiveSummaryData,
       collapsed_profile_height: parsedHeight,
       email: email,
@@ -387,6 +394,9 @@ export default function ProfileManagement() {
               holder="full-bio-editor"
               data={fullBioData}
               onChange={setFullBioData}
+              onReady={(editor) => {
+                fullBioEditorRef.current = editor
+              }}
             />
           </div>
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -78,6 +78,7 @@ export default function ResumeManagement() {
   const [dateEnd, setDateEnd] = useState('')
   const [shortDescription, setShortDescription] = useState('')
   const [descriptionData, setDescriptionData] = useState<OutputData | undefined>()
+  const descriptionEditorRef = useRef<any>(null)
   const [selectedCollection, setSelectedCollection] = useState('')
   const [assets, setAssets] = useState<ResumeAsset[]>([])
   const [isFeatured, setIsFeatured] = useState(false)
@@ -136,6 +137,11 @@ export default function ResumeManagement() {
       return
     }
 
+    const descriptionImageSizes =
+      descriptionEditorRef.current && typeof descriptionEditorRef.current.getImageSizeMap === 'function'
+        ? await descriptionEditorRef.current.getImageSizeMap()
+        : null
+
     const { data: entryData, error } = await supabase
       .from('resume_entries')
       .insert({
@@ -146,6 +152,7 @@ export default function ResumeManagement() {
         date_end: dateEnd || null,
         short_description: shortDescription || null,
         description: descriptionData || null,
+        description_image_sizes: descriptionImageSizes,
         collection_id: selectedCollection || null,
         is_featured: isFeatured,
         order_index: entries.length,
@@ -183,6 +190,11 @@ export default function ResumeManagement() {
     console.log('Updating entry with description:', descriptionData)
     console.log('Updating entry with assets:', assets)
 
+    const descriptionImageSizes =
+      descriptionEditorRef.current && typeof descriptionEditorRef.current.getImageSizeMap === 'function'
+        ? await descriptionEditorRef.current.getImageSizeMap()
+        : null
+
     const { error } = await supabase
       .from('resume_entries')
       .update({
@@ -193,6 +205,7 @@ export default function ResumeManagement() {
         date_end: dateEnd || null,
         short_description: shortDescription || null,
         description: descriptionData || null,
+        description_image_sizes: descriptionImageSizes,
         collection_id: selectedCollection || null,
         is_featured: isFeatured,
       })
@@ -524,6 +537,9 @@ export default function ResumeManagement() {
               holder={editingId ? `resume-description-edit-${editingId}` : 'resume-description-new'}
               data={descriptionData}
               onChange={setDescriptionData}
+              onReady={(editor) => {
+                descriptionEditorRef.current = editor
+              }}
             />
             <p className="text-xs text-gray-500 mt-1">
               Detailed description that shows when expanded. Uses rich text editor.

@@ -2,12 +2,15 @@
 
 import { useState, useEffect, useRef } from 'react'
 
+type ImageSizeMap = Record<string, { width?: number; height?: number }>
+
 type EditorRendererProps = {
   data: any // EditorJS OutputData JSON
+  imageSizes?: ImageSizeMap
   onReady?: () => void // Optional callback when editor is ready
 }
 
-export default function EditorRenderer({ data, onReady }: EditorRendererProps) {
+export default function EditorRenderer({ data, imageSizes, onReady }: EditorRendererProps) {
   const [initStatus, setInitStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle')
   const [pluginWarnings, setPluginWarnings] = useState<string[]>([])
   const editorRef = useRef<any>(null)
@@ -15,15 +18,76 @@ export default function EditorRenderer({ data, onReady }: EditorRendererProps) {
   const isInitializingRef = useRef(false)
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null)
   const onReadyRef = useRef(onReady)
+  const imageSizesRef = useRef<ImageSizeMap | null>(imageSizes || null)
 
   const addWarning = (msg: string) => {
     setPluginWarnings((prev) => (prev.includes(msg) ? prev : [...prev, msg]))
+  }
+
+  const hideEmptyCaptions = () => {
+    const holder = holderRef.current
+    if (!holder) return
+    const captions = holder.querySelectorAll('.image-tool__caption, .embed-tool__caption')
+    captions.forEach((caption) => {
+      const el = caption as HTMLElement
+      const text = (el.textContent || '')
+        .replace(/\u00a0/g, ' ')
+        .replace(/[\u200B-\u200D\uFEFF]/g, '')
+        .trim()
+      const placeholder = (el.dataset.placeholder || '').replace(/\u00a0/g, ' ').trim()
+      const normalizedText = text.replace(/\s+/g, ' ').trim()
+      const normalizedPlaceholder = placeholder.replace(/\s+/g, ' ').trim()
+      const html = (el.innerHTML || '')
+        .replace(/<br\s*\/?>/gi, '')
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/[\u200B-\u200D\uFEFF]/g, '')
+        .trim()
+      const isEmpty = text.length === 0 && html.length === 0
+      const isPlaceholder = normalizedPlaceholder.length > 0 && normalizedText === normalizedPlaceholder
+      const shouldHide = isEmpty || isPlaceholder
+      if (shouldHide) {
+        el.style.display = 'none'
+        el.setAttribute('data-empty-caption', 'true')
+        el.setAttribute('data-has-text', 'false')
+      } else if (el.getAttribute('data-empty-caption') === 'true') {
+        el.style.removeProperty('display')
+        el.removeAttribute('data-empty-caption')
+        el.setAttribute('data-has-text', 'true')
+      }
+    })
+  }
+
+  const applyImageSizesFromMap = () => {
+    const holder = holderRef.current
+    const sizes = imageSizesRef.current
+    if (!holder || !sizes) return
+    const images = holder.querySelectorAll('img.image-tool__image-picture')
+    images.forEach((node) => {
+      const img = node as HTMLImageElement
+      const src = img.getAttribute('src') || ''
+      if (!src) return
+      const size = sizes[src]
+      if (!size) return
+      img.setAttribute('data-has-custom-size', 'true')
+      if (size.width) {
+        img.setAttribute('width', String(size.width))
+        img.style.width = `${size.width}px`
+      }
+      if (size.height) {
+        img.setAttribute('height', String(size.height))
+        img.style.height = `${size.height}px`
+      }
+    })
   }
 
   // Keep onReady callback ref up to date
   useEffect(() => {
     onReadyRef.current = onReady
   }, [onReady])
+
+  useEffect(() => {
+    imageSizesRef.current = imageSizes || null
+  }, [imageSizes])
 
   // Initialize Editor.js when component mounts
   useEffect(() => {
@@ -36,7 +100,8 @@ export default function EditorRenderer({ data, onReady }: EditorRendererProps) {
     }
 
     debounceTimerRef.current = setTimeout(() => {
-      if (!holderRef.current || !data) {
+      const holderEl = holderRef.current
+      if (!holderEl || !data) {
         return
       }
 
@@ -106,7 +171,7 @@ export default function EditorRenderer({ data, onReady }: EditorRendererProps) {
       RawModule
     ]) => {
       // Check if component was unmounted during import
-      if (!isMounted || !holderRef.current) {
+      if (!isMounted || !holderEl || !holderEl.isConnected) {
         console.log('⚠️ Component unmounted during import, aborting initialization')
         isInitializingRef.current = false
         return
@@ -135,8 +200,9 @@ export default function EditorRenderer({ data, onReady }: EditorRendererProps) {
       if (typeof window !== 'undefined') {
         try {
           const ButtonModule = await import('editorjs-button')
+          const ButtonModuleAny = ButtonModule as unknown as { default?: any; AnyButton?: any }
           // Plugin exports as default or named export
-          AnyButton = ButtonModule.default || ButtonModule.AnyButton || ButtonModule
+          AnyButton = ButtonModuleAny.default || ButtonModuleAny.AnyButton || ButtonModuleAny
           // Read-only safety: declare support to prevent renderer errors
           if (AnyButton && !AnyButton.isReadOnlySupported) {
             AnyButton.isReadOnlySupported = true
@@ -155,6 +221,51 @@ export default function EditorRenderer({ data, onReady }: EditorRendererProps) {
           ImageTool = ImageToolModule.default
           // Note: Image plugin supports read-only mode (isReadOnlySupported: true)
           // No uploader needed in renderer - images are already uploaded and stored
+          if (ImageTool && ImageTool.prototype && ImageTool.prototype.render) {
+            const originalRender = ImageTool.prototype.render
+            ImageTool.prototype.render = function() {
+              const wrapper = originalRender.call(this)
+              const widthValue = Number(this.data?.width ?? this._data?.width)
+              const heightValue = Number(this.data?.height ?? this._data?.height)
+              const applySize = (targetEl: HTMLElement) => {
+                if (Number.isFinite(widthValue) && widthValue > 0) {
+                  targetEl.setAttribute('width', String(widthValue))
+                  targetEl.style.setProperty('width', `${widthValue}px`, 'important')
+                }
+                if (Number.isFinite(heightValue) && heightValue > 0) {
+                  targetEl.setAttribute('height', String(heightValue))
+                  targetEl.style.setProperty('height', `${heightValue}px`, 'important')
+                }
+                if ((Number.isFinite(widthValue) && widthValue > 0) || (Number.isFinite(heightValue) && heightValue > 0)) {
+                  targetEl.setAttribute('data-has-custom-size', 'true')
+                } else {
+                  targetEl.removeAttribute('data-has-custom-size')
+                }
+                targetEl.style.setProperty('max-width', 'none', 'important')
+                targetEl.style.setProperty('max-height', 'none', 'important')
+                targetEl.style.setProperty('object-fit', 'fill', 'important')
+                targetEl.style.setProperty('display', 'block', 'important')
+              }
+
+              const imageEl = this.ui?.nodes?.imageEl as HTMLElement | undefined
+              const domImageEl = (this.ui?.nodes?.wrapper as HTMLElement | undefined)
+                ?.querySelector?.('.image-tool__image-picture') as HTMLElement | undefined
+              const targetEl = domImageEl || imageEl
+              if (targetEl) {
+                applySize(targetEl)
+              } else if (wrapper && wrapper.querySelector) {
+                const observer = new MutationObserver(() => {
+                  const found = wrapper.querySelector('.image-tool__image-picture') as HTMLElement | null
+                  if (found) {
+                    applySize(found)
+                    observer.disconnect()
+                  }
+                })
+                observer.observe(wrapper, { childList: true, subtree: true })
+              }
+              return wrapper
+            }
+          }
         } catch (error) {
           console.warn('Image plugin failed to load in EditorRenderer:', error)
           ImageTool = null
@@ -166,7 +277,8 @@ export default function EditorRenderer({ data, onReady }: EditorRendererProps) {
       if (typeof window !== 'undefined') {
         try {
           const ImageGalleryModule = await import('@rodrigoodhin/editorjs-image-gallery')
-          ImageGallery = ImageGalleryModule.default || ImageGalleryModule.ImageGallery || ImageGalleryModule
+          const ImageGalleryModuleAny = ImageGalleryModule as unknown as { default?: any; ImageGallery?: any }
+          ImageGallery = ImageGalleryModuleAny.default || ImageGalleryModuleAny.ImageGallery || ImageGalleryModuleAny
           
           // Step 10.Bug.3.1: Add isReadOnlySupported property if missing (plugin doesn't declare it)
           // Editor.js requires all tools to have isReadOnlySupported: true when readOnly: true is set
@@ -255,10 +367,22 @@ export default function EditorRenderer({ data, onReady }: EditorRendererProps) {
                   // Responsive wrapper with dynamic aspect ratio (defaults to 16:9)
                   const responsiveWrapper = document.createElement('div')
                   responsiveWrapper.classList.add('embed-responsive')
-                  const ratio = this.data?.width && this.data?.height
-                    ? (Number(this.data.height) / Number(this.data.width)) * 100
+                  const widthValue = Number(this.data?.width)
+                  const heightValue = Number(this.data?.height)
+                  const hasCustomSize = Number.isFinite(widthValue) && widthValue > 0 &&
+                    Number.isFinite(heightValue) && heightValue > 0
+                  const ratio = hasCustomSize
+                    ? (heightValue / widthValue) * 100
                     : 56.25
-                  responsiveWrapper.style.paddingTop = `${ratio}%`
+                  if (hasCustomSize) {
+                    responsiveWrapper.style.paddingTop = '0'
+                    responsiveWrapper.style.width = `${widthValue}px`
+                    responsiveWrapper.style.height = `${heightValue}px`
+                    responsiveWrapper.style.margin = '0 auto'
+                  } else {
+                    responsiveWrapper.style.paddingTop = `${ratio}%`
+                    responsiveWrapper.style.width = '100%'
+                  }
                   
                   // Prepare media element (template child or fallback)
                   let mediaEl: HTMLElement | null = null
@@ -316,32 +440,13 @@ export default function EditorRenderer({ data, onReady }: EditorRendererProps) {
         }
       }
 
-      // Step 12.2: Strikethrough plugin - strikethrough text formatting inline tool for public display
-      // Plugin: @sotaproject/strikethrough (https://github.com/sotaproject/strikethrough)
-      // Plugin provides strikethrough text formatting inline tool
-      let Strikethrough: any = null
-      if (typeof window !== 'undefined') {
-        try {
-          const StrikethroughModule = await import('@sotaproject/strikethrough')
-          Strikethrough = StrikethroughModule.default || StrikethroughModule.Strikethrough || StrikethroughModule
-          
-          // Step 12.Bug.1.2: Add isReadOnlySupported property if missing (plugin doesn't declare it)
-          // Editor.js requires all tools to have isReadOnlySupported: true when readOnly: true is set
-          if (Strikethrough && !Strikethrough.isReadOnlySupported) {
-            Strikethrough.isReadOnlySupported = true
-          }
-        } catch (error) {
-          console.warn('Strikethrough plugin failed to load in EditorRenderer:', error)
-          Strikethrough = null
-        }
-      }
-
       // Step 11.3: Columns plugin - multi-column layout display for public pages (read-only mode)
       let EditorjsColumns: any = null
       if (typeof window !== 'undefined') {
         try {
           const ColumnsModule = await import('@calumk/editorjs-columns')
-          EditorjsColumns = ColumnsModule.default || ColumnsModule.EditorjsColumns || ColumnsModule
+          const ColumnsModuleAny = ColumnsModule as unknown as { default?: any; EditorjsColumns?: any }
+          EditorjsColumns = ColumnsModuleAny.default || ColumnsModuleAny.EditorjsColumns || ColumnsModuleAny
           
           // Note: Plugin supports read-only mode (isReadOnlySupported: true - declared in plugin source)
           // Plugin requires EditorJs library class and separate column_tools configuration
@@ -349,6 +454,21 @@ export default function EditorRenderer({ data, onReady }: EditorRendererProps) {
           console.warn('Columns plugin failed to load in EditorRenderer:', error)
           addWarning('Columns failed to load; column blocks may not display')
           EditorjsColumns = null
+        }
+      }
+
+      // Step 12.3: Attaches plugin - file attachments display (read-only mode)
+      let AttachesTool: any = null
+      if (typeof window !== 'undefined') {
+        try {
+          const AttachesModule = await import('@editorjs/attaches')
+          AttachesTool = AttachesModule.default || AttachesModule
+          if (AttachesTool && !AttachesTool.isReadOnlySupported) {
+            AttachesTool.isReadOnlySupported = true
+          }
+        } catch (error) {
+          console.warn('Attaches plugin failed to load in EditorRenderer:', error)
+          AttachesTool = null
         }
       }
 
@@ -395,10 +515,9 @@ export default function EditorRenderer({ data, onReady }: EditorRendererProps) {
 
       try {
         const inlineBase = ['link', 'marker', 'inlineCode', 'underline', 'bold', 'italic']
-        const inlineWithStrike = Strikethrough ? [...inlineBase, 'strikethrough'] : inlineBase
 
         const editor = new EditorJSClass({
-          holder: holderRef.current!,
+          holder: holderEl,
           data: data,
           readOnly: true, // Read-only mode for frontend display
           minHeight: 0,
@@ -411,11 +530,11 @@ export default function EditorRenderer({ data, onReady }: EditorRendererProps) {
                 levels: [1, 2, 3, 4, 5, 6],
                 defaultLevel: 2
               },
-              inlineToolbar: inlineWithStrike
+              inlineToolbar: inlineBase
             },
             paragraph: {
               class: Paragraph as any,
-              inlineToolbar: inlineWithStrike
+              inlineToolbar: inlineBase
             },
             list: {
               class: List as any,
@@ -518,19 +637,18 @@ export default function EditorRenderer({ data, onReady }: EditorRendererProps) {
                 headers: {}
               }
             },
-            // Step 12.2: Conditionally register strikethrough plugin only if loaded successfully
-            // Plugin provides strikethrough text formatting inline tool
-            ...(Strikethrough && {
-              strikethrough: {
-                class: Strikethrough as any
-              }
-            }),
             // Step 14.3: Conditionally register AudioBlock only if loaded successfully
             // Custom block tool for embedding audio with wavesurfer.js waveform visualization
             ...(AudioBlock && {
               audio: {
                 class: AudioBlock as any,
                 inlineToolbar: false // Audio blocks don't need inline formatting
+              }
+            }),
+            ...(AttachesTool && {
+              attaches: {
+                class: AttachesTool as any,
+                inlineToolbar: false
               }
             })
           }
@@ -609,6 +727,43 @@ export default function EditorRenderer({ data, onReady }: EditorRendererProps) {
     }
   }, [data])
 
+  useEffect(() => {
+    if (initStatus !== 'ready') return
+    if (typeof window === 'undefined') return
+    const holder = holderRef.current
+    if (!holder) return
+    const timer = window.setTimeout(hideEmptyCaptions, 0)
+    const raf = window.requestAnimationFrame(hideEmptyCaptions)
+    const delayed = window.setTimeout(hideEmptyCaptions, 80)
+    const observer = new MutationObserver(() => hideEmptyCaptions())
+    observer.observe(holder, { childList: true, subtree: true, characterData: true })
+    return () => {
+      window.clearTimeout(timer)
+      window.clearTimeout(delayed)
+      window.cancelAnimationFrame(raf)
+      observer.disconnect()
+    }
+  }, [initStatus, data])
+
+  useEffect(() => {
+    if (initStatus !== 'ready') return
+    if (typeof window === 'undefined') return
+    const holder = holderRef.current
+    if (!holder) return
+    const apply = () => applyImageSizesFromMap()
+    const timer = window.setTimeout(apply, 0)
+    const raf = window.requestAnimationFrame(apply)
+    const delayed = window.setTimeout(apply, 80)
+    const observer = new MutationObserver(() => applyImageSizesFromMap())
+    observer.observe(holder, { childList: true, subtree: true })
+    return () => {
+      window.clearTimeout(timer)
+      window.clearTimeout(delayed)
+      window.cancelAnimationFrame(raf)
+      observer.disconnect()
+    }
+  }, [initStatus, data, imageSizes])
+
             return (
     <div className="w-full">
       {/* Minimal styles to align image/embed display with admin expectations */}
@@ -618,11 +773,19 @@ export default function EditorRenderer({ data, onReady }: EditorRendererProps) {
           .ce-block .cdx-image {
             margin: 1rem 0;
           }
-          .cdx-image__caption {
+          .image-tool__caption {
             margin-top: 0.5rem;
             color: #d1d5db;
             font-size: 0.9rem;
             line-height: 1.4;
+          }
+          .image-tool__caption:empty,
+          .embed-tool__caption:empty,
+          .image-tool__caption[data-empty-caption="true"],
+          .embed-tool__caption[data-empty-caption="true"],
+          .image-tool__caption[data-has-text="false"],
+          .embed-tool__caption[data-has-text="false"] {
+            display: none;
           }
           .cdx-image.image-tool--withBackground {
             background: #0f172a;

@@ -44,6 +44,7 @@ interface ContentItemRaw {
   sidebar_subtitle: string | null
   type: string
   content_body: any
+  image_sizes?: Record<string, { width?: number; height?: number }>
   image_url: string | null
   video_url: string | null
   audio_url: string | null
@@ -79,6 +80,7 @@ interface ContentItem {
   link_style: string | null
   // Additional fields for full content rendering (added in later phases)
   content_body?: any
+  image_sizes?: Record<string, { width?: number; height?: number }>
   image_url?: string
   video_url?: string
   audio_url?: string
@@ -239,6 +241,7 @@ export default function PortfolioTab() {
         sidebar_subtitle,
         type,
         content_body,
+        image_sizes,
         image_url,
         video_url,
         audio_url,
@@ -380,6 +383,7 @@ export default function PortfolioTab() {
       sidebar_subtitle: raw.sidebar_subtitle || null,
       type: raw.type,
       content_body: raw.content_body,
+      image_sizes: raw.image_sizes || undefined,
       image_url: raw.image_url || undefined,
       video_url: raw.video_url || undefined,
       audio_url: raw.audio_url || undefined,

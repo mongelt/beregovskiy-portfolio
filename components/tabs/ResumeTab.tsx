@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
+import type { RefObject } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import EditorRenderer from '@/components/EditorRenderer'
 
@@ -23,6 +24,7 @@ type ResumeEntryRaw = {
   date_end: string | null
   short_description: string | null
   description: any
+  description_image_sizes?: Record<string, { width?: number; height?: number }>
   collection_id: string | null
   is_featured: boolean
   order_index: number
@@ -60,11 +62,15 @@ type ResumeEntryRaw = {
 export default function ResumeTab({
   onOpenCollection,
   onOpenContent,
-  profileHeight = 0
+  profileHeight = 0,
+  onNowMarkerInViewChange,
+  onSideEntryExpandedChange
 }: {
   onOpenCollection?: (slug: string, name: string) => void
   onOpenContent?: (id: string, title: string) => void
   profileHeight?: number
+  onNowMarkerInViewChange?: (inView: boolean) => void
+  onSideEntryExpandedChange?: (hasExpanded: boolean) => void
 } = {}) {
   // Debug settings state
   const [debugSettings, setDebugSettings] = useState<DebugSettings>({
@@ -85,6 +91,7 @@ export default function ResumeTab({
   
   // Expansion state tracking
   const [expandedEntries, setExpandedEntries] = useState<Set<string>>(new Set())
+  const nowMarkerRef = useRef<HTMLDivElement | null>(null)
   
 // Shared layout offsets
 const TIMELINE_TOP_OFFSET = 35
@@ -155,6 +162,43 @@ const TIMELINE_TOP_OFFSET = 35
       return next
     })
   }, [])
+
+  const hasExpandedSideEntry = useMemo(() => {
+    if (!sideEntries.length) return false
+    return sideEntries.some(entry => expandedEntries.has(entry.id))
+  }, [sideEntries, expandedEntries])
+
+  useEffect(() => {
+    if (!onSideEntryExpandedChange) return
+    onSideEntryExpandedChange(hasExpandedSideEntry)
+  }, [hasExpandedSideEntry, onSideEntryExpandedChange])
+
+  useEffect(() => {
+    if (!onNowMarkerInViewChange) return
+    let observer: IntersectionObserver | null = null
+    let retryTimer: number | null = null
+
+    const attachObserver = () => {
+      const element = nowMarkerRef.current
+      if (!element) {
+        retryTimer = window.setTimeout(attachObserver, 100)
+        return
+      }
+      observer = new IntersectionObserver(
+        ([entry]) => {
+          onNowMarkerInViewChange(entry.isIntersecting)
+        },
+        { root: null, threshold: 0 }
+      )
+      observer.observe(element)
+    }
+
+    attachObserver()
+    return () => {
+      if (retryTimer) window.clearTimeout(retryTimer)
+      if (observer) observer.disconnect()
+    }
+  }, [onNowMarkerInViewChange])
   
   // Load resume entries from Supabase
   useEffect(() => {
@@ -1435,6 +1479,7 @@ const TIMELINE_TOP_OFFSET = 35
             }}
           >
             <Timeline 
+              nowMarkerRef={nowMarkerRef}
               debugSettings={debugSettings}
               operationalMonths={operationalMonths}
               activatedMarkers={activatedMarkers}
@@ -2194,7 +2239,7 @@ function EntryCard({
         {/* Expanded EditorJS content - conditional, with smooth transition */}
         {isExpanded && entry.description && (
           <div className="transition-all duration-300 ease-in-out overflow-hidden mb-4">
-            <EditorRenderer data={entry.description} onReady={handleEditorReady} />
+            <EditorRenderer data={entry.description} imageSizes={entry.description_image_sizes} onReady={handleEditorReady} />
           </div>
         )}
         
@@ -2322,7 +2367,7 @@ function EntryCard({
         {/* Expanded EditorJS content - conditional, with smooth transition */}
         {isExpanded && entry.description && (
           <div className="transition-all duration-300 ease-in-out overflow-hidden mb-4">
-            <EditorRenderer data={entry.description} onReady={handleEditorReady} />
+            <EditorRenderer data={entry.description} imageSizes={entry.description_image_sizes} onReady={handleEditorReady} />
           </div>
         )}
         
@@ -2738,6 +2783,7 @@ function MonthMarker({
 
 // Timeline component - basic structure for Phase 2
 function Timeline({ 
+  nowMarkerRef,
   debugSettings,
   operationalMonths,
   activatedMarkers,
@@ -2751,6 +2797,7 @@ function Timeline({
   startMarkerLabelOffset,
   startMarkerLabelBufferBottom
 }: { 
+  nowMarkerRef: RefObject<HTMLDivElement | null>
   debugSettings: DebugSettings
   operationalMonths: Date[]
   activatedMarkers: Set<string>
@@ -2818,7 +2865,7 @@ function Timeline({
   return (
     <div className="relative w-full">
       {/* Now marker - reference point at top (position 0) */}
-      <div className="absolute left-1/2 -translate-x-1/2 top-0">
+      <div ref={nowMarkerRef} className="absolute left-1/2 -translate-x-1/2 top-0">
         <span className="text-emerald-400 font-semibold text-lg">Now</span>
       </div>
       

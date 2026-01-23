@@ -6,10 +6,11 @@ import { OutputData } from '@editorjs/editorjs'
 interface EditorJSProps {
   data?: OutputData
   onChange?: (data: OutputData) => void
+  onReady?: (editor: any) => void
   holder: string
 }
 
-export default function EditorJSComponent({ data, onChange, holder }: EditorJSProps) {
+export default function EditorJSComponent({ data, onChange, onReady, holder }: EditorJSProps) {
   const editorRef = useRef<any>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [isEditorReady, setIsEditorReady] = useState(false)
@@ -137,8 +138,9 @@ export default function EditorJSComponent({ data, onChange, holder }: EditorJSPr
                 
                 // Step 9.Bug.1.2: Add null check before setAttribute (FIXES THE ERROR)
                 if (o.content && o.content.firstChild) {
-                  o.content.firstChild.setAttribute("src", this.data.embed)
-                  o.content.firstChild.classList.add(CSS.content)
+                  const firstChildEl = o.content.firstChild as HTMLElement
+                  firstChildEl.setAttribute("src", this.data.embed)
+                  firstChildEl.classList.add(CSS.content)
                 } else {
                   console.warn('Embed plugin: Template firstChild is null, creating fallback iframe')
                   // Create a fallback iframe if template content is invalid
@@ -151,12 +153,101 @@ export default function EditorJSComponent({ data, onChange, holder }: EditorJSPr
                   o.content.appendChild(fallbackIframe)
                 }
                 
+                const getSizeValue = (rawValue: unknown) => {
+                  const value = Number(rawValue)
+                  return Number.isFinite(value) && value > 0 ? value : null
+                }
+
+                let mediaEl: HTMLElement | null = null
+                if (o.content && o.content.firstChild) {
+                  mediaEl = o.content.firstChild as HTMLElement
+                } else if (r.querySelector(`.${CSS.content}`)) {
+                  mediaEl = r.querySelector(`.${CSS.content}`) as HTMLElement
+                }
+
+                const applySize = () => {
+                  if (!mediaEl) return
+                  const widthValue = getSizeValue(this.data?.width)
+                  const heightValue = getSizeValue(this.data?.height)
+                  if (widthValue) {
+                    mediaEl.setAttribute('width', String(widthValue))
+                    mediaEl.style.width = `${widthValue}px`
+                  } else {
+                    mediaEl.removeAttribute('width')
+                    mediaEl.style.removeProperty('width')
+                  }
+                  if (heightValue) {
+                    mediaEl.setAttribute('height', String(heightValue))
+                    mediaEl.style.height = `${heightValue}px`
+                  } else {
+                    mediaEl.removeAttribute('height')
+                    mediaEl.style.removeProperty('height')
+                  }
+                }
+
                 // Handle embed ready state
                 const embedIsReady = this.embedIsReady ? this.embedIsReady(r) : Promise.resolve()
                 
                 // Append elements (with null check)
                 if (o.content && o.content.firstChild) {
                   r.appendChild(o.content.firstChild)
+                }
+                if (!this.readOnly) {
+                  const controls = document.createElement('div')
+                  controls.style.display = 'flex'
+                  controls.style.gap = '8px'
+                  controls.style.marginTop = '8px'
+                  controls.style.marginBottom = '6px'
+                  
+                  const widthInput = document.createElement('input')
+                  widthInput.type = 'text'
+                  widthInput.inputMode = 'numeric'
+                  widthInput.pattern = '[0-9]*'
+                  widthInput.placeholder = 'Width (px)'
+                  widthInput.value = this.data?.width ? String(this.data.width) : ''
+                  widthInput.style.flex = '1'
+                  widthInput.style.background = '#0f172a'
+                  widthInput.style.border = '1px solid #1f2937'
+                  widthInput.style.color = '#e5e7eb'
+                  widthInput.style.borderRadius = '6px'
+                  widthInput.style.padding = '6px 8px'
+                  
+                  const heightInput = document.createElement('input')
+                  heightInput.type = 'text'
+                  heightInput.inputMode = 'numeric'
+                  heightInput.pattern = '[0-9]*'
+                  heightInput.placeholder = 'Height (px)'
+                  heightInput.value = this.data?.height ? String(this.data.height) : ''
+                  heightInput.style.flex = '1'
+                  heightInput.style.background = '#0f172a'
+                  heightInput.style.border = '1px solid #1f2937'
+                  heightInput.style.color = '#e5e7eb'
+                  heightInput.style.borderRadius = '6px'
+                  heightInput.style.padding = '6px 8px'
+
+                  widthInput.addEventListener('input', () => {
+                    const widthValue = getSizeValue(widthInput.value)
+                    if (widthValue) {
+                      this.data.width = widthValue
+                    } else {
+                      this.data.width = undefined
+                    }
+                    applySize()
+                  })
+
+                  heightInput.addEventListener('input', () => {
+                    const heightValue = getSizeValue(heightInput.value)
+                    if (heightValue) {
+                      this.data.height = heightValue
+                    } else {
+                      this.data.height = undefined
+                    }
+                    applySize()
+                  })
+
+                  controls.appendChild(widthInput)
+                  controls.appendChild(heightInput)
+                  r.appendChild(controls)
                 }
                 r.appendChild(e)
                 
@@ -167,6 +258,7 @@ export default function EditorJSComponent({ data, onChange, holder }: EditorJSPr
                   r.classList.remove(CSS.containerLoading)
                 })
                 
+                applySize()
                 this.element = r
                 return r
               } catch (error) {
@@ -178,6 +270,19 @@ export default function EditorJSComponent({ data, onChange, holder }: EditorJSPr
                 return fallbackElement
               }
             }
+          }
+        }
+
+        // Step 12.3: Attaches plugin - file attachments (PDFs, docs, etc.)
+        // Plugin: @editorjs/attaches (https://github.com/editor-js/attaches)
+        let AttachesTool: any = null
+        if (typeof window !== 'undefined') {
+          try {
+            const AttachesModule = await import('@editorjs/attaches')
+            AttachesTool = AttachesModule.default || AttachesModule
+          } catch (error) {
+            console.warn('Attaches plugin failed to load:', error)
+            AttachesTool = null
           }
         }
         
@@ -266,6 +371,191 @@ export default function EditorJSComponent({ data, onChange, holder }: EditorJSPr
             }
           }
         }
+
+        // Step 8.Size.1: Add per-image width/height inputs in admin editor
+        if (ImageTool && ImageTool.prototype) {
+          const originalRender = ImageTool.prototype.render
+          const originalSave = ImageTool.prototype.save
+          const originalDataDescriptor = Object.getOwnPropertyDescriptor(ImageTool.prototype, 'data')
+          if (originalRender) {
+            ImageTool.prototype.render = function() {
+              const wrapper = originalRender.call(this)
+              if (this.readOnly) {
+                return wrapper
+              }
+
+              const getSizeValue = (rawValue: unknown) => {
+                const value = Number(rawValue)
+                return Number.isFinite(value) && value > 0 ? value : null
+              }
+
+              const applySize = () => {
+                const imageEl = this.ui?.nodes?.imageEl as HTMLElement | undefined
+                const domImageEl = (this.ui?.nodes?.wrapper as HTMLElement | undefined)
+                  ?.querySelector?.('.image-tool__image-picture') as HTMLElement | undefined
+                const targetEl = domImageEl || imageEl
+                if (!targetEl) return
+                const widthValue = getSizeValue(this._data?.width)
+                const heightValue = getSizeValue(this._data?.height)
+                const wrapperEl = this.ui?.nodes?.wrapper as HTMLElement | undefined
+                if (widthValue) {
+                  targetEl.setAttribute('width', String(widthValue))
+                  targetEl.style.setProperty('width', `${widthValue}px`, 'important')
+                  if (wrapperEl) {
+                    wrapperEl.dataset.imageWidth = String(widthValue)
+                  }
+                } else {
+                  targetEl.removeAttribute('width')
+                  targetEl.style.removeProperty('width')
+                  if (wrapperEl) {
+                    delete wrapperEl.dataset.imageWidth
+                  }
+                }
+                if (heightValue) {
+                  targetEl.setAttribute('height', String(heightValue))
+                  targetEl.style.setProperty('height', `${heightValue}px`, 'important')
+                  if (wrapperEl) {
+                    wrapperEl.dataset.imageHeight = String(heightValue)
+                  }
+                } else {
+                  targetEl.removeAttribute('height')
+                  targetEl.style.removeProperty('height')
+                  if (wrapperEl) {
+                    delete wrapperEl.dataset.imageHeight
+                  }
+                }
+                targetEl.style.setProperty('max-width', 'none', 'important')
+                targetEl.style.setProperty('max-height', 'none', 'important')
+                targetEl.style.setProperty('object-fit', 'fill', 'important')
+                targetEl.style.setProperty('display', 'block', 'important')
+              }
+
+              const existingControls = wrapper?.querySelector?.('[data-image-size-controls="true"]')
+              if (!existingControls && wrapper) {
+                const controls = document.createElement('div')
+                controls.setAttribute('data-image-size-controls', 'true')
+                controls.style.display = 'flex'
+                controls.style.gap = '8px'
+                controls.style.marginTop = '8px'
+                controls.style.marginBottom = '6px'
+
+                const widthInput = document.createElement('input')
+                widthInput.type = 'text'
+                widthInput.inputMode = 'numeric'
+                widthInput.pattern = '[0-9]*'
+                widthInput.placeholder = 'Width (px)'
+                widthInput.value = this._data?.width ? String(this._data.width) : ''
+                widthInput.style.flex = '1'
+                widthInput.style.background = '#0f172a'
+                widthInput.style.border = '1px solid #1f2937'
+                widthInput.style.color = '#e5e7eb'
+                widthInput.style.borderRadius = '6px'
+                widthInput.style.padding = '6px 8px'
+
+                const heightInput = document.createElement('input')
+                heightInput.type = 'text'
+                heightInput.inputMode = 'numeric'
+                heightInput.pattern = '[0-9]*'
+                heightInput.placeholder = 'Height (px)'
+                heightInput.value = this._data?.height ? String(this._data.height) : ''
+                heightInput.style.flex = '1'
+                heightInput.style.background = '#0f172a'
+                heightInput.style.border = '1px solid #1f2937'
+                heightInput.style.color = '#e5e7eb'
+                heightInput.style.borderRadius = '6px'
+                heightInput.style.padding = '6px 8px'
+
+                widthInput.addEventListener('input', () => {
+                  const widthValue = getSizeValue(widthInput.value)
+                  if (widthValue) {
+                    this._data.width = widthValue
+                    this.data.width = widthValue
+                  } else {
+                    this._data.width = undefined
+                    this.data.width = undefined
+                  }
+                  applySize()
+                  if (this.block && typeof this.block.dispatchChange === 'function') {
+                    this.block.dispatchChange()
+                  }
+                })
+
+                heightInput.addEventListener('input', () => {
+                  const heightValue = getSizeValue(heightInput.value)
+                  if (heightValue) {
+                    this._data.height = heightValue
+                    this.data.height = heightValue
+                  } else {
+                    this._data.height = undefined
+                    this.data.height = undefined
+                  }
+                  applySize()
+                  if (this.block && typeof this.block.dispatchChange === 'function') {
+                    this.block.dispatchChange()
+                  }
+                })
+
+                controls.appendChild(widthInput)
+                controls.appendChild(heightInput)
+                wrapper.appendChild(controls)
+              }
+
+              applySize()
+              return wrapper
+            }
+          }
+
+          if (originalSave) {
+            ImageTool.prototype.save = function() {
+              const data = originalSave.call(this) || {}
+              if (this._data?.width) {
+                data.width = this._data.width
+              }
+              if (this._data?.height) {
+                data.height = this._data.height
+              }
+              const wrapperEl = this.ui?.nodes?.wrapper as HTMLElement | undefined
+              if (wrapperEl?.dataset?.imageWidth) {
+                data.width = Number(wrapperEl.dataset.imageWidth)
+              }
+              if (wrapperEl?.dataset?.imageHeight) {
+                data.height = Number(wrapperEl.dataset.imageHeight)
+              }
+              return data
+            }
+          }
+
+          if (originalDataDescriptor && originalDataDescriptor.set) {
+            Object.defineProperty(ImageTool.prototype, 'data', {
+              ...originalDataDescriptor,
+              set: function(value: any) {
+                originalDataDescriptor.set?.call(this, value)
+                if (value?.width) {
+                  this._data.width = value.width
+                }
+                if (value?.height) {
+                  this._data.height = value.height
+                }
+                const wrapper = this.ui?.nodes?.wrapper as HTMLElement | undefined
+                const targetEl = wrapper?.querySelector?.('.image-tool__image-picture') as HTMLElement | undefined
+                if (targetEl) {
+                  if (this._data?.width) {
+                    targetEl.setAttribute('width', String(this._data.width))
+                    targetEl.style.setProperty('width', `${this._data.width}px`, 'important')
+                  }
+                  if (this._data?.height) {
+                    targetEl.setAttribute('height', String(this._data.height))
+                    targetEl.style.setProperty('height', `${this._data.height}px`, 'important')
+                  }
+                  targetEl.style.setProperty('max-width', 'none', 'important')
+                  targetEl.style.setProperty('max-height', 'none', 'important')
+                  targetEl.style.setProperty('object-fit', 'fill', 'important')
+                  targetEl.style.setProperty('display', 'block', 'important')
+                }
+              }
+            })
+          }
+        }
         // Step 11.1: Columns plugin - multi-column layout functionality
         // Plugin provides 2-column and 3-column layouts with nested Editor.js instances
         // Source: https://github.com/calumk/editorjs-columns
@@ -274,7 +564,8 @@ export default function EditorJSComponent({ data, onChange, holder }: EditorJSPr
         if (typeof window !== 'undefined') {
           try {
             const ColumnsModule = await import('@calumk/editorjs-columns')
-            EditorjsColumns = ColumnsModule.default || ColumnsModule.EditorjsColumns || ColumnsModule
+            const ColumnsModuleAny = ColumnsModule as unknown as { default?: any; EditorjsColumns?: any }
+            EditorjsColumns = ColumnsModuleAny.default || ColumnsModuleAny.EditorjsColumns || ColumnsModuleAny
             
             // Step 11.Bug.1.1: Patch columns plugin to fix 'setAttribute' error
             // The error occurs when plugin tries to set attributes on null DOM elements
@@ -358,7 +649,8 @@ export default function EditorJSComponent({ data, onChange, holder }: EditorJSPr
         if (typeof window !== 'undefined') {
           try {
             const ImageGalleryModule = await import('@rodrigoodhin/editorjs-image-gallery')
-            ImageGallery = ImageGalleryModule.default || ImageGalleryModule.ImageGallery || ImageGalleryModule
+            const ImageGalleryModuleAny = ImageGalleryModule as unknown as { default?: any; ImageGallery?: any }
+            ImageGallery = ImageGalleryModuleAny.default || ImageGalleryModuleAny.ImageGallery || ImageGalleryModuleAny
             
             // Step 10.Bug.4.1: Patch _acceptTuneView to handle missing textarea for existing galleries
             // When editing an existing gallery, textarea doesn't exist, causing classList error
@@ -369,7 +661,7 @@ export default function EditorJSComponent({ data, onChange, holder }: EditorJSPr
                 ImageGallery.prototype._acceptTuneView = function() {
                   try {
                     // Get textarea element
-                    let n = document.querySelector("textarea.image-gallery-"+this.blockIndex)
+                    let n = document.querySelector("textarea.image-gallery-"+this.blockIndex) as HTMLTextAreaElement | null
                     
                     // If textarea doesn't exist and editImages is being enabled, create it
                     if (!n && this.data.editImages) {
@@ -381,8 +673,11 @@ export default function EditorJSComponent({ data, onChange, holder }: EditorJSPr
                       // Add event listeners (matching plugin's render() method)
                       let e
                       ["paste","change","keyup"].forEach((a) => {
-                        n.addEventListener(a, (r) => {
-                          e = "paste" === a ? r.clipboardData.getData("text").split("\n") : n.value.split("\n")
+                        n?.addEventListener(a, (r) => {
+                          const event = r as ClipboardEvent
+                          e = "paste" === a
+                            ? (event.clipboardData?.getData("text") || "").split("\n")
+                            : (n?.value || "").split("\n")
                           if (this._imageGallery) {
                             this._imageGallery(e)
                           }
@@ -390,7 +685,7 @@ export default function EditorJSComponent({ data, onChange, holder }: EditorJSPr
                       })
                       
                       // Set initial value from current URLs
-                      if (this.data && this.data.urls) {
+                      if (this.data && this.data.urls && n) {
                         if (Array.isArray(this.data.urls)) {
                           n.value = this.data.urls.join("\n")
                         } else if (typeof this.data.urls === 'string') {
@@ -403,10 +698,14 @@ export default function EditorJSComponent({ data, onChange, holder }: EditorJSPr
                         // Find gallery container or insert at beginning
                         const galleryContainer = this.wrapper.querySelector("#image-gallery-"+this.blockIndex)
                         if (galleryContainer) {
-                          this.wrapper.insertBefore(n, galleryContainer)
+                          if (n) {
+                            this.wrapper.insertBefore(n, galleryContainer)
+                          }
                         } else {
                           // If no container, append to wrapper
-                          this.wrapper.appendChild(n)
+                          if (n) {
+                            this.wrapper.appendChild(n)
+                          }
                         }
                       }
                     }
@@ -457,7 +756,8 @@ export default function EditorJSComponent({ data, onChange, holder }: EditorJSPr
         if (typeof window !== 'undefined') {
           try {
             const StrikethroughModule = await import('@sotaproject/strikethrough')
-            Strikethrough = StrikethroughModule.default || StrikethroughModule.Strikethrough || StrikethroughModule
+            const StrikethroughModuleAny = StrikethroughModule as unknown as { default?: any; Strikethrough?: any }
+            Strikethrough = StrikethroughModuleAny.default || StrikethroughModuleAny.Strikethrough || StrikethroughModuleAny
             
             // Step 12.Bug.1.1: Patch strikethrough plugin to fix 'setAttribute' error
             // The error occurs when plugin tries to access button element before it's created
@@ -550,8 +850,9 @@ export default function EditorJSComponent({ data, onChange, holder }: EditorJSPr
         if (typeof window !== 'undefined') {
           try {
             const ButtonModule = await import('editorjs-button')
+            const ButtonModuleAny = ButtonModule as unknown as { default?: any; AnyButton?: any }
             // Plugin exports as default or named export
-            AnyButton = ButtonModule.default || ButtonModule.AnyButton || ButtonModule
+            AnyButton = ButtonModuleAny.default || ButtonModuleAny.AnyButton || ButtonModuleAny
             
             // Step 5.Bug.1.1 Solution 1 & 2: Patch show method to fix "Cannot read properties of null (reading 'setAttribute')" error
             // Fixes error when clicking button by ensuring anyButton exists and adding null check
@@ -630,8 +931,9 @@ export default function EditorJSComponent({ data, onChange, holder }: EditorJSPr
         if (typeof window !== 'undefined') {
           try {
             const DragDropModule = await import('editorjs-drag-drop')
+            const DragDropModuleAny = DragDropModule as unknown as { default?: any; DragDrop?: any }
             // Plugin exports as default
-            DragDrop = DragDropModule.default || DragDropModule.DragDrop || DragDropModule
+            DragDrop = DragDropModuleAny.default || DragDropModuleAny.DragDrop || DragDropModuleAny
           } catch (error) {
             console.warn('Drag-drop plugin failed to load:', error)
             DragDrop = null
@@ -645,8 +947,9 @@ export default function EditorJSComponent({ data, onChange, holder }: EditorJSPr
         if (typeof window !== 'undefined') {
           try {
             const UndoModule = await import('editorjs-undo')
+            const UndoModuleAny = UndoModule as unknown as { default?: any; Undo?: any }
             // Plugin exports as default
-            Undo = UndoModule.default || UndoModule.Undo || UndoModule
+            Undo = UndoModuleAny.default || UndoModuleAny.Undo || UndoModuleAny
           } catch (error) {
             console.warn('Undo plugin failed to load:', error)
             Undo = null
@@ -736,6 +1039,54 @@ export default function EditorJSComponent({ data, onChange, holder }: EditorJSPr
           }
         }
 
+        const cloudinaryRawUploader = {
+          /**
+           * Upload file to Cloudinary (raw) and return file data
+           * @param {File} file - file selected from device
+           * @return {Promise.<{success, file: {url, size, name, extension}}>}
+           */
+          async uploadByFile(file: File): Promise<{ success: number; file: { url: string; size?: number; name?: string; extension?: string } }> {
+            try {
+              if (!cloudName || !uploadPreset) {
+                throw new Error('Cloudinary config missing: set NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME and NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET')
+              }
+
+              const formData = new FormData()
+              formData.append('file', file)
+              formData.append('upload_preset', uploadPreset)
+
+              const response = await fetch(
+                `https://api.cloudinary.com/v1_1/${cloudName}/raw/upload`,
+                { method: 'POST', body: formData }
+              )
+
+              if (!response.ok) {
+                throw new Error(`Upload failed: ${response.statusText}`)
+              }
+
+              const data = await response.json()
+
+              return {
+                success: 1,
+                file: {
+                  url: data.secure_url,
+                  size: data.bytes,
+                  name: data.original_filename,
+                  extension: data.format
+                }
+              }
+            } catch (error) {
+              console.error('Attaches upload error:', error)
+              return {
+                success: 0,
+                file: {
+                  url: ''
+                }
+              }
+            }
+          }
+        }
+
         // Step 11.1: Define column_tools - tools available inside columns (subset of main tools)
         // These tools are used in nested Editor.js instances within columns
         // Important: Don't include columns plugin in column_tools to avoid circular reference
@@ -758,6 +1109,56 @@ export default function EditorJSComponent({ data, onChange, holder }: EditorJSPr
             config: {
               defaultStyle: 'unordered'
             }
+          }
+        }
+
+        const injectImageSizes = (outputData: OutputData) => {
+          if (!outputData?.blocks || !editor?.blocks?.getBlockByIndex) {
+            return outputData
+          }
+
+          const parseSize = (raw?: string | null) => {
+            if (!raw) return undefined
+            const value = Number(String(raw).replace('px', ''))
+            return Number.isFinite(value) && value > 0 ? value : undefined
+          }
+
+          const updatedBlocks = outputData.blocks.map((block, index) => {
+            if (block.type !== 'image') {
+              return block
+            }
+
+            const blockApi = editor.blocks.getBlockByIndex(index) as { holder?: HTMLElement } | null
+            const holderEl = blockApi?.holder
+            const wrapperEl = holderEl?.querySelector('.image-tool') as HTMLElement | null
+            const imageEl = holderEl?.querySelector('.image-tool__image-picture') as HTMLImageElement | null
+
+            const widthValue =
+              parseSize(wrapperEl?.dataset?.imageWidth) ??
+              parseSize(imageEl?.getAttribute('width')) ??
+              parseSize(imageEl?.style?.width)
+            const heightValue =
+              parseSize(wrapperEl?.dataset?.imageHeight) ??
+              parseSize(imageEl?.getAttribute('height')) ??
+              parseSize(imageEl?.style?.height)
+
+            if (!widthValue && !heightValue) {
+              return block
+            }
+
+            return {
+              ...block,
+              data: {
+                ...(block.data || {}),
+                ...(widthValue ? { width: widthValue } : {}),
+                ...(heightValue ? { height: heightValue } : {})
+              }
+            }
+          })
+
+          return {
+            ...outputData,
+            blocks: updatedBlocks
           }
         }
 
@@ -906,6 +1307,16 @@ export default function EditorJSComponent({ data, onChange, holder }: EditorJSPr
                 captionPlaceholder: 'Enter image caption'
               }
             },
+            ...(AttachesTool && {
+              attaches: {
+                class: AttachesTool as any,
+                config: {
+                  uploader: cloudinaryRawUploader,
+                  buttonText: 'Select file',
+                  errorMessage: 'File upload failed'
+                }
+              }
+            }),
             // Step 9.1: Embed plugin - video/audio embed functionality
             // Supports: YouTube, Vimeo, Twitter/X, Instagram, Facebook, Twitch, CodePen, etc.
             // No special configuration needed - plugin handles URL detection automatically
@@ -925,7 +1336,8 @@ export default function EditorJSComponent({ data, onChange, holder }: EditorJSPr
           onChange: (api: any) => {
             if (onChange) {
               api.saver.save().then((outputData: OutputData) => {
-                onChange(outputData)
+                const enrichedData = injectImageSizes(outputData)
+                onChange(enrichedData)
               })
             }
           },
@@ -1000,13 +1412,6 @@ export default function EditorJSComponent({ data, onChange, holder }: EditorJSPr
               }
             }
             
-            // Step 11.Bug.1.3: Drag-drop plugin DISABLED
-            // Drag-drop plugin has fundamental incompatibility with columns plugin
-            // Multiple patch attempts failed (Step 11.Bug.1.1, 11.Bug.1.2, 11.Bug.1.3)
-            // Disabling drag-drop entirely to eliminate errors
-            // Users can still reorder blocks using other methods (cut/paste, delete/recreate)
-            // To re-enable: Uncomment the code below and remove this comment block
-            /*
             // Initialize drag-drop plugin (if available)
             if (DragDrop && editor) {
               try {
@@ -1018,14 +1423,76 @@ export default function EditorJSComponent({ data, onChange, holder }: EditorJSPr
                 // Don't break editor if drag-drop fails to initialize
               }
             }
-            */
           },
           placeholder: 'Start writing...',
           readOnly: false,
           minHeight: 200
         })
 
+        const collectImageSizeMap = async () => {
+          if (!editor?.saver?.save || !editor?.blocks?.getBlockByIndex) {
+            return {}
+          }
+
+          const outputData = await editor.saver.save()
+          if (!outputData?.blocks) {
+            return {}
+          }
+
+          const parseSize = (raw?: string | null) => {
+            if (!raw) return undefined
+            const value = Number(String(raw).replace('px', ''))
+            return Number.isFinite(value) && value > 0 ? value : undefined
+          }
+
+          const sizes: Record<string, { width?: number; height?: number }> = {}
+
+          outputData.blocks.forEach((block, index) => {
+            if (block.type !== 'image') {
+              return
+            }
+
+            const imageUrl = block?.data?.file?.url || block?.data?.url
+            if (!imageUrl) {
+              return
+            }
+
+            const blockApi = editor.blocks.getBlockByIndex(index) as { holder?: HTMLElement } | null
+            const holderEl = blockApi?.holder
+            const wrapperEl = holderEl?.querySelector('.image-tool') as HTMLElement | null
+            const imageEl = holderEl?.querySelector('.image-tool__image-picture') as HTMLImageElement | null
+
+            const widthValue =
+              parseSize(wrapperEl?.dataset?.imageWidth) ??
+              parseSize(imageEl?.getAttribute('width')) ??
+              parseSize(imageEl?.style?.width)
+            const heightValue =
+              parseSize(wrapperEl?.dataset?.imageHeight) ??
+              parseSize(imageEl?.getAttribute('height')) ??
+              parseSize(imageEl?.style?.height)
+
+            if (!widthValue && !heightValue) {
+              return
+            }
+
+            sizes[imageUrl] = {
+              ...(widthValue ? { width: widthValue } : {}),
+              ...(heightValue ? { height: heightValue } : {})
+            }
+          })
+
+          return sizes
+        }
+
         editorRef.current = editor
+        editor.getEnrichedData = async () => {
+          const outputData = await editor.saver.save()
+          return injectImageSizes(outputData)
+        }
+        editor.getImageSizeMap = collectImageSizeMap
+        if (onReady) {
+          onReady(editor)
+        }
         setIsEditorReady(true)
       } catch (error) {
         console.error('Error initializing EditorJS:', error)

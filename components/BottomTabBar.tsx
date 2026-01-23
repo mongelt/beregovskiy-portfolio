@@ -32,6 +32,7 @@ type BottomTabBarProps = {
   currentContentTitle?: string | null
   currentContentType?: string | null
   currentContentId?: string | null
+  currentContentDownloadEnabled?: boolean | null
   currentCollectionName?: string | null
   currentCollectionSlug?: string | null
   loadingTabs?: string[]
@@ -49,6 +50,7 @@ export default function BottomTabBar({
   currentContentTitle = null,
   currentContentType = null,
   currentContentId = null,
+  currentContentDownloadEnabled = null,
   currentCollectionName = null,
   currentCollectionSlug = null,
   loadingTabs = [],
@@ -127,7 +129,12 @@ export default function BottomTabBar({
   const allowContentDownload =
     normalizedType !== 'audio' && normalizedType !== 'video'
 
-  if (isContentContext && currentContentTitle && allowContentDownload) {
+  if (
+    isContentContext &&
+    currentContentTitle &&
+    allowContentDownload &&
+    currentContentDownloadEnabled !== false
+  ) {
     downloadMenuRows.push({
       key: 'content',
       left: downloadStatus === 'loading' ? 'Generating Download…' : `Download ${currentContentTitle}`,

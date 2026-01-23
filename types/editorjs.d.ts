@@ -90,3 +90,17 @@ declare module 'editorjs-drag-drop' {
   export default DragDrop
 }
 
+declare module '@rodrigoodhin/editorjs-image-gallery' {
+  const ImageGallery: any
+  export default ImageGallery
+}
+
+declare module '@sotaproject/strikethrough' {
+  const Strikethrough: any
+  export default Strikethrough
+}
+
+declare module '@calumk/editorjs-columns' {
+  const EditorjsColumns: any
+  export default EditorjsColumns
+}

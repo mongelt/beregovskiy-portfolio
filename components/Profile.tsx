@@ -18,6 +18,7 @@ type ProfileData = {
   profile_image: string | null
   short_bio: any
   full_bio: any
+  full_bio_image_sizes?: Record<string, { width?: number; height?: number }>
   email: string | null
   phone: string | null
   linkedin: string | null
@@ -42,9 +43,14 @@ interface ProfileProps {
   // to align the Main menu directly under the Profile bottom edge)
   onHeightChange?: (height: number) => void
   onOpenCollection?: (slug: string, name: string) => void
+  condensedMode?: boolean
 }
 
-export default function Profile({ onHeightChange, onOpenCollection }: ProfileProps) {
+export default function Profile({
+  onHeightChange,
+  onOpenCollection,
+  condensedMode = false
+}: ProfileProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [skills, setSkills] = useState<ProfileSkill[]>([])
@@ -92,6 +98,7 @@ export default function Profile({ onHeightChange, onOpenCollection }: ProfilePro
     }
   }, [onHeightChange, profile, isExpanded]) // Added profile and isExpanded to dependencies
 
+
   async function loadProfile() {
     const { data } = await supabase
       .from('profile')
@@ -122,74 +129,24 @@ export default function Profile({ onHeightChange, onOpenCollection }: ProfilePro
   }
 
   if (!profile) return null
+  const isCondensed = condensedMode && !isExpanded
 
   return (
     <header
       ref={headerRef}
       className="border-b border-gray-800 transition-all duration-300 sticky top-0 z-40 bg-[#0f1419] relative"
       style={
-        !isExpanded && profile?.collapsed_profile_height
+        !isExpanded && !isCondensed && profile?.collapsed_profile_height
           ? { height: `${profile.collapsed_profile_height}px`, overflow: 'hidden' }
           : undefined
       }
     >
-      <div
-        className="px-8 py-6 relative"
-        style={
-          profile?.collapsed_profile_height
-            ? { height: `${profile.collapsed_profile_height}px`, overflow: 'hidden' }
-            : undefined
-        }
-      >
-        <div className="flex items-start relative">
-          {/* Left side - Name and roles (50%) */}
-          <div className="w-[50%]">
-            <h1 className="text-white text-2xl font-bold mb-1">
+      {isCondensed ? (
+        <div className="px-8 py-4">
+          <div className="flex items-center justify-between">
+            <h1 className="text-white text-2xl font-bold">
               {profile.full_name?.toUpperCase() || 'YOUR NAME'}
             </h1>
-            
-            {/* Location with icon */}
-            {profile.location && (
-              <div className="flex items-center gap-1 text-gray-400 text-sm mb-3">
-                <MapPin size={14} />
-                <p>{profile.location}</p>
-              </div>
-            )}
-
-            {/* Job titles */}
-            <div className="space-y-0.5 text-sm text-gray-300">
-              {profile.job_title_1 && <p>{profile.job_title_1}</p>}
-              {profile.job_title_2 && <p>{profile.job_title_2}</p>}
-              {profile.job_title_3 && <p>{profile.job_title_3}</p>}
-              {profile.job_title_4 && <p>{profile.job_title_4}</p>}
-            </div>
-          </div>
-
-          {/* Right side - Short Bio (from 50% to 75%, extended 15% = 40%) */}
-          <div className="w-[40%]">
-                    <div className="text-gray-300 text-sm leading-relaxed">
-              {profile.short_bio ? (
-                profile.short_bio.blocks ? (
-                  <EditorRenderer data={profile.short_bio} />
-                ) : (
-                  <p>{profile.short_bio}</p>
-                )
-              ) : (
-                <p>No bio available</p>
-              )}
-            </div>
-          </div>
-          
-          {/* Spacer for remaining space (10%) */}
-          <div className="w-[10%]"></div>
-        </div>
-
-        {/* Expand/Collapse button - Collapsed position (absolute) */}
-        {!isExpanded && (
-          <div
-            className="flex justify-center"
-            style={{ position: 'absolute', left: 0, right: 0, bottom: 15 }}
-          >
             <motion.button
               onClick={() => setIsExpanded(true)}
               whileHover={{ scale: 1.05 }}
@@ -200,8 +157,78 @@ export default function Profile({ onHeightChange, onOpenCollection }: ProfilePro
               <ChevronDown size={16} />
             </motion.button>
           </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div
+          className="px-8 py-6 relative"
+          style={
+            !isExpanded && profile?.collapsed_profile_height
+              ? { height: `${profile.collapsed_profile_height}px`, overflow: 'hidden' }
+              : undefined
+          }
+        >
+          <div className="flex items-start relative">
+            {/* Left side - Name and roles (50%) */}
+            <div className="w-[50%]">
+              <h1 className="text-white text-2xl font-bold mb-1">
+                {profile.full_name?.toUpperCase() || 'YOUR NAME'}
+              </h1>
+              
+              {/* Location with icon */}
+              {profile.location && (
+                <div className="flex items-center gap-1 text-gray-400 text-sm mb-3">
+                  <MapPin size={14} />
+                  <p>{profile.location}</p>
+                </div>
+              )}
+
+              {/* Job titles */}
+              <div className="space-y-0.5 text-sm text-gray-300">
+                {profile.job_title_1 && <p>{profile.job_title_1}</p>}
+                {profile.job_title_2 && <p>{profile.job_title_2}</p>}
+                {profile.job_title_3 && <p>{profile.job_title_3}</p>}
+                {profile.job_title_4 && <p>{profile.job_title_4}</p>}
+              </div>
+            </div>
+
+            {/* Right side - Short Bio (from 50% to 75%, extended 15% = 40%) */}
+            <div className="w-[40%]">
+                      <div className="text-gray-300 text-sm leading-relaxed">
+                {profile.short_bio ? (
+                  profile.short_bio.blocks ? (
+                    <EditorRenderer data={profile.short_bio} />
+                  ) : (
+                    <p>{profile.short_bio}</p>
+                  )
+                ) : (
+                  <p>No bio available</p>
+                )}
+              </div>
+            </div>
+            
+            {/* Spacer for remaining space (10%) */}
+            <div className="w-[10%]"></div>
+          </div>
+
+          {/* Expand/Collapse button - Collapsed position (absolute) */}
+          {!isExpanded && (
+            <div
+              className="flex justify-center"
+              style={{ position: 'absolute', left: 0, right: 0, bottom: 15 }}
+            >
+              <motion.button
+                onClick={() => setIsExpanded(true)}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="flex items-center gap-2 text-emerald-400 hover:text-emerald-300 transition-colors"
+              >
+                <span className="text-sm tracking-wider font-medium">EXPAND</span>
+                <ChevronDown size={16} />
+              </motion.button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Expanded Content */}
       <AnimatePresence>
@@ -224,7 +251,7 @@ export default function Profile({ onHeightChange, onOpenCollection }: ProfilePro
                       <div className="text-gray-300 text-sm leading-relaxed">
                         {profile.full_bio ? (
                           profile.full_bio.blocks ? (
-                            <EditorRenderer data={profile.full_bio} />
+                            <EditorRenderer data={profile.full_bio} imageSizes={profile.full_bio_image_sizes} />
                           ) : (
                             <p>{profile.full_bio}</p>
                           )

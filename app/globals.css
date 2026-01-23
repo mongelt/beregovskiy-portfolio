@@ -168,9 +168,50 @@ body {
   color: #fff;
 }
 
+.ce-inline-toolbar {
+  background: #1f2937;
+  border: 1px solid #374151;
+}
+
+.ce-inline-toolbar:empty {
+  display: none;
+}
+
+.ce-inline-toolbar__buttons {
+  background: transparent;
+}
+
+.ce-inline-tool {
+  background: transparent;
+  color: #e5e7eb;
+}
+
+.ce-inline-tool__icon {
+  color: inherit;
+}
+
+.ce-inline-tool svg,
+.ce-inline-toolbar__dropdown svg {
+  fill: currentColor;
+  stroke: currentColor;
+}
+
+.ce-inline-toolbar__dropdown {
+  color: #e5e7eb;
+}
+
+.ce-inline-tool:hover,
+.ce-inline-tool--active {
+  background: #374151;
+}
+
 .ce-popover {
   background: #1f2937;
   border: 1px solid #374151;
+}
+
+.ce-popover__item {
+  color: #e5e7eb;
 }
 
 .ce-popover__item:hover {
@@ -180,6 +221,29 @@ body {
 .ce-popover__item-icon {
   background: #374151;
   color: #fff;
+}
+
+.ce-popover__item-icon svg {
+  fill: currentColor;
+  stroke: currentColor;
+}
+
+.ce-popover__search input,
+.ce-popover__search-input,
+.cdx-search__input {
+  color: #e5e7eb;
+  background: #111827;
+  border: 1px solid #374151;
+}
+
+.ce-popover__search input::placeholder,
+.ce-popover__search-input::placeholder,
+.cdx-search__input::placeholder {
+  color: #9ca3af;
+}
+
+.ce-popover__search-icon {
+  color: #9ca3af;
 }
 
 .ce-conversion-tool__icon {
@@ -530,7 +594,7 @@ code.inline-code {
 /* Control image width - set max-width to 75% to match audio player width */
 /* Step 16.Bug.3.2: Using actual DOM structure - target .image-tool__image-picture */
 /* Step 16.Bug.3.3: Use max-width instead of width - allows small images to display at natural size */
-.image-tool__image-picture {
+.image-tool__image-picture:not([data-has-custom-size="true"]) {
   max-width: 75% !important;
   width: auto !important;
   height: auto !important;
@@ -623,7 +687,7 @@ code.inline-code {
 /* Responsive: On smaller screens, use full width max-width but allow natural size for small images */
 /* Step 16.Bug.3.3: Use max-width instead of width - allows small images to display at natural size */
 @media (max-width: 768px) {
-  .image-tool__image-picture {
+  .image-tool__image-picture:not([data-has-custom-size="true"]) {
     max-width: 100% !important;
     width: auto !important;
   }

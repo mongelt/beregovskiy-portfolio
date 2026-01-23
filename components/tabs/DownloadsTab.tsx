@@ -16,7 +16,9 @@ type DownloadableContent = {
   author_name: string | null
   publication_name: string | null
   publication_date: string | null
+  download_source: 'generated' | 'external' | 'custom' | null
   external_download_url: string | null
+  custom_pdf_id: string | null
   image_url: string | null
   video_url: string | null
   audio_url: string | null
@@ -60,7 +62,9 @@ export default function DownloadsTab() {
           author_name,
           publication_name,
           publication_date,
+          download_source,
           external_download_url,
+          custom_pdf_id,
           image_url,
           video_url,
           audio_url,
@@ -109,11 +113,38 @@ export default function DownloadsTab() {
   const handleDownload = async (item: DownloadableContent) => {
     setDownloading(item.id)
     try {
-      if (item.external_download_url) {
-        // External link - open in new tab
+      const resolvedSource =
+        item.download_source ||
+        (item.custom_pdf_id ? 'custom' : item.external_download_url ? 'external' : 'generated')
+
+      if (resolvedSource === 'external') {
+        if (!item.external_download_url) {
+          alert('External download link is missing.')
+          return
+        }
         window.open(item.external_download_url, '_blank')
-      } else if (item.type === 'article') {
-        // Generate PDF for articles
+        return
+      }
+
+      if (resolvedSource === 'custom') {
+        const linkedPdfId = item.custom_pdf_id || (await getLinkedPdfId(item.id))
+        if (!linkedPdfId) {
+          alert('Custom PDF is not set.')
+          return
+        }
+        const customPdf = customPDFs.find(pdf => pdf.id === linkedPdfId)
+        if (customPdf) {
+          handleCustomPDFDownload(customPdf)
+          return
+        }
+        const didDownload = await downloadCustomPdfById(linkedPdfId)
+        if (!didDownload) {
+          throw new Error('Custom PDF not found')
+        }
+        return
+      }
+
+      if (item.type === 'article') {
         const pdfBlob = await generateArticlePDF(item.id)
         const url = URL.createObjectURL(pdfBlob)
         const link = document.createElement('a')
@@ -123,17 +154,17 @@ export default function DownloadsTab() {
         link.click()
         document.body.removeChild(link)
         URL.revokeObjectURL(url)
-      } else {
-        // For other types, download the media file directly
-        const url = item.image_url || item.video_url || item.audio_url
-        if (url) {
-          const link = document.createElement('a')
-          link.href = url
-          link.download = item.title
-          document.body.appendChild(link)
-          link.click()
-          document.body.removeChild(link)
-        }
+        return
+      }
+
+      const url = item.image_url || item.video_url || item.audio_url
+      if (url) {
+        const link = document.createElement('a')
+        link.href = url
+        link.download = item.title
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
       }
     } catch (error) {
       console.error('Download failed:', error)
@@ -150,6 +181,41 @@ export default function DownloadsTab() {
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
+  }
+
+  async function getLinkedPdfId(contentId: string) {
+    const { data, error } = await supabase
+      .from('custom_pdf_links')
+      .select('pdf_id')
+      .eq('target_type', 'content')
+      .eq('target_id', contentId)
+      .limit(1)
+    if (error) {
+      if (error.code === '42P01') {
+        return null
+      }
+      console.error('Failed to load custom PDF link', error)
+      return null
+    }
+    return data?.[0]?.pdf_id || null
+  }
+
+  async function downloadCustomPdfById(pdfId: string) {
+    const { data, error } = await supabase
+      .from('custom_pdfs')
+      .select('file_url, file_name')
+      .eq('id', pdfId)
+      .single()
+    if (error || !data) {
+      return false
+    }
+    const link = document.createElement('a')
+    link.href = data.file_url
+    link.download = data.file_name
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    return true
   }
 
   const getTypeIcon = (type: string) => {
@@ -170,6 +236,16 @@ export default function DownloadsTab() {
       case 'audio': return 'bg-orange-900/50 text-orange-300'
       default: return 'bg-gray-900/50 text-gray-300'
     }
+  }
+
+  const getDownloadLabel = (item: DownloadableContent) => {
+    const resolvedSource =
+      item.download_source ||
+      (item.custom_pdf_id ? 'custom' : item.external_download_url ? 'external' : 'generated')
+    if (resolvedSource === 'external') return '🔗 Open Link'
+    if (resolvedSource === 'custom') return '📄 Download PDF'
+    if (item.type === 'article') return '📄 Download PDF'
+    return '⬇️ Download'
   }
 
   if (loading) {
@@ -363,17 +439,9 @@ export default function DownloadsTab() {
                           </svg>
                           Generating...
                         </>
-                      ) : item.external_download_url ? (
-                        <>
-                          🔗 Open Link
-                        </>
-                      ) : item.type === 'article' ? (
-                        <>
-                          📄 Download PDF
-                        </>
                       ) : (
                         <>
-                          ⬇️ Download
+                          {getDownloadLabel(item)}
                         </>
                       )}
                     </Button>

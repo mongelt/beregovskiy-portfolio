@@ -26,6 +26,7 @@ interface ContentItem {
   link_style: string | null
   // Additional fields for full content rendering (added in later phases)
   content_body?: any
+  image_sizes?: Record<string, { width?: number; height?: number }>
   image_url?: string
   video_url?: string
   audio_url?: string
@@ -194,7 +195,8 @@ export default function ContentReader({ content, isVisible, positioning, onTitle
         className="text-[#e5e7eb]"
         style={{
           position: 'relative',
-          zIndex: 2
+          zIndex: 2,
+          paddingBottom: 'calc(var(--tab-bar-height, 64px) + 24px)'
         }}
       >
         {/* Title display - Step 4.2 Stage 1 */}
@@ -205,7 +207,7 @@ export default function ContentReader({ content, isVisible, positioning, onTitle
         )}
         {/* Article content - Step 4.3 Stage 2 */}
         {content.type === 'article' && content.content_body && (
-          <EditorRenderer data={content.content_body} />
+          <EditorRenderer data={content.content_body} imageSizes={content.image_sizes} />
         )}
         {/* Image content - Step 4.4 Stage 1 */}
         {content.type === 'image' && content.image_url && (

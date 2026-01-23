@@ -16,6 +16,7 @@ type ContentData = {
   title: string
   subtitle: string | null
   content_body: any
+  image_sizes?: Record<string, { width?: number; height?: number }>
   image_url: string | null
   video_url: string | null
   audio_url: string | null
@@ -25,7 +26,9 @@ type ContentData = {
   source_link: string | null
   copyright_notice: string | null
   download_enabled: boolean
+  download_source: 'generated' | 'external' | 'custom' | null
   external_download_url: string | null
+  custom_pdf_id: string | null
 }
 
 type ContentViewerProps = {
@@ -63,11 +66,38 @@ export default function ContentViewer({ contentId }: ContentViewerProps) {
 
     setDownloading(true)
     try {
-      if (content.external_download_url) {
-        // External link - open in new tab
+      if (!content.download_enabled) {
+        alert('Downloads are disabled for this content.')
+        return
+      }
+
+      const resolvedSource =
+        content.download_source ||
+        (content.custom_pdf_id ? 'custom' : content.external_download_url ? 'external' : 'generated')
+
+      if (resolvedSource === 'external') {
+        if (!content.external_download_url) {
+          alert('External download link is missing.')
+          return
+        }
         window.open(content.external_download_url, '_blank')
-      } else if (content.type === 'article') {
-        // Generate PDF for articles
+        return
+      }
+
+      if (resolvedSource === 'custom') {
+        const linkedPdfId = content.custom_pdf_id || (await getLinkedPdfId('content', content.id))
+        if (!linkedPdfId) {
+          alert('Custom PDF is not set.')
+          return
+        }
+        const didDownload = await downloadCustomPdfById(linkedPdfId)
+        if (!didDownload) {
+          throw new Error('Custom PDF not found')
+        }
+        return
+      }
+
+      if (content.type === 'article') {
         const pdfBlob = await generateArticlePDF(content.id)
         const url = URL.createObjectURL(pdfBlob)
         const link = document.createElement('a')
@@ -77,17 +107,17 @@ export default function ContentViewer({ contentId }: ContentViewerProps) {
         link.click()
         document.body.removeChild(link)
         URL.revokeObjectURL(url)
-      } else {
-        // For other types, download the media file directly
-        const url = content.image_url || content.video_url || content.audio_url
-        if (url) {
-          const link = document.createElement('a')
-          link.href = url
-          link.download = content.title
-          document.body.appendChild(link)
-          link.click()
-          document.body.removeChild(link)
-        }
+        return
+      }
+
+      const url = content.image_url || content.video_url || content.audio_url
+      if (url) {
+        const link = document.createElement('a')
+        link.href = url
+        link.download = content.title
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
       }
     } catch (error) {
       console.error('Download failed:', error)
@@ -95,6 +125,41 @@ export default function ContentViewer({ contentId }: ContentViewerProps) {
     } finally {
       setDownloading(false)
     }
+  }
+
+  async function getLinkedPdfId(targetType: 'content', targetId: string) {
+    const { data, error } = await supabase
+      .from('custom_pdf_links')
+      .select('pdf_id')
+      .eq('target_type', targetType)
+      .eq('target_id', targetId)
+      .limit(1)
+    if (error) {
+      if (error.code === '42P01') {
+        return null
+      }
+      console.error('Failed to load custom PDF link', error)
+      return null
+    }
+    return data?.[0]?.pdf_id || null
+  }
+
+  async function downloadCustomPdfById(pdfId: string) {
+    const { data, error } = await supabase
+      .from('custom_pdfs')
+      .select('file_url, file_name')
+      .eq('id', pdfId)
+      .single()
+    if (error || !data) {
+      return false
+    }
+    const link = document.createElement('a')
+    link.href = data.file_url
+    link.download = data.file_name
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    return true
   }
 
   if (!contentId) {
@@ -196,7 +261,7 @@ export default function ContentViewer({ contentId }: ContentViewerProps) {
                 </>
               ) : (
                 <>
-                  {content.external_download_url ? '🔗 Open Link' : '⬇️ Download'}
+                  {content.download_source === 'external' ? '🔗 Open Link' : '⬇️ Download'}
                 </>
               )}
             </button>
@@ -206,8 +271,8 @@ export default function ContentViewer({ contentId }: ContentViewerProps) {
 
       {/* Content Body */}
       <div className="prose prose-invert max-w-none">
-        {content.type === 'article' && content.content_body && (
-          <EditorRenderer data={content.content_body} />
+      {content.type === 'article' && content.content_body && (
+        <EditorRenderer data={content.content_body} imageSizes={content.image_sizes} />
         )}
 
         {content.type === 'image' && content.image_url && (
@@ -251,7 +316,7 @@ export default function ContentViewer({ contentId }: ContentViewerProps) {
               </>
             ) : (
               <>
-                {content.external_download_url ? '🔗 Open Link' : '⬇️ Download'}
+                {content.download_source === 'external' ? '🔗 Open Link' : '⬇️ Download'}
               </>
             )}
           </button>
