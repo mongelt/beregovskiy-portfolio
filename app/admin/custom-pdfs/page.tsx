@@ -53,7 +53,6 @@ export default function CustomPDFsManagement() {
       
       if (error) {
         console.error('Error loading PDFs:', error)
-        // Check if table doesn't exist
         if (error.code === '42P01') {
           alert('The custom_pdfs table does not exist. Please run the SQL script in create-custom-pdfs-table.sql in your Supabase SQL editor.')
         }
@@ -154,14 +153,11 @@ export default function CustomPDFsManagement() {
 
     setUploading(true)
     try {
-      // For now, we'll store the file as a data URL
-      // In production, you'd want to use Supabase Storage or another file service
       const reader = new FileReader()
       reader.onload = async (e) => {
         try {
           const dataUrl = e.target?.result as string
           
-          // Save to database with data URL
           const { error } = await supabase
             .from('custom_pdfs')
             .insert({
@@ -182,7 +178,6 @@ export default function CustomPDFsManagement() {
             throw error
           }
           
-          // Refresh list
           await loadPDFs()
           alert('PDF uploaded successfully!')
         } catch (error) {
@@ -211,7 +206,6 @@ export default function CustomPDFsManagement() {
       
       if (error) throw error
       
-      // Refresh list
       loadPDFs()
     } catch (error) {
       console.error('Error deleting PDF:', error)
@@ -228,7 +222,6 @@ export default function CustomPDFsManagement() {
       
       if (error) throw error
       
-      // Refresh list
       loadPDFs()
     } catch (error) {
       console.error('Error updating PDF:', error)
@@ -259,7 +252,6 @@ export default function CustomPDFsManagement() {
         </Link>
       </div>
 
-      {/* Upload Section */}
       <div className="bg-gray-900 border border-gray-800 rounded-lg p-6 mb-8">
         <h2 className="text-xl font-semibold text-white mb-4">Upload New PDF</h2>
         <div className="space-y-4">
@@ -307,7 +299,6 @@ export default function CustomPDFsManagement() {
         </p>
       </div>
 
-      {/* PDFs List */}
       {pdfs.length === 0 ? (
         <div className="bg-gray-900 border border-gray-800 rounded-lg p-12 text-center">
           <p className="text-gray-400 mb-4">No custom PDFs uploaded yet.</p>

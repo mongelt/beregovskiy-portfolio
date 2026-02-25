@@ -11,33 +11,31 @@ export default function AudioPlayer({ audioUrl }: AudioPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false)
   const waveformRef = useRef<HTMLDivElement>(null)
   const wavesurferRef = useRef<any>(null)
+  const lastUrlRef = useRef<string | null>(null)
 
-  // Step 13.3: Initialize wavesurfer.js waveform visualization (SSR-safe)
   useEffect(() => {
-    // Only run on client side
     if (typeof window === 'undefined' || !waveformRef.current || !audioUrl) {
       return
     }
 
     let isMounted = true
 
-    // Dynamically import wavesurfer.js (SSR safety)
     const initWaveform = async () => {
       try {
+        if (lastUrlRef.current === audioUrl && wavesurferRef.current) {
+          return
+        }
         const WaveSurfer = (await import('wavesurfer.js')).default
 
-        // Clean up existing instance if any
         if (wavesurferRef.current) {
           wavesurferRef.current.destroy()
           wavesurferRef.current = null
         }
 
-        // Clear the container
         if (waveformRef.current) {
           waveformRef.current.innerHTML = ''
         }
 
-        // Create new WaveSurfer instance
         const wavesurfer = WaveSurfer.create({
           container: waveformRef.current!,
           waveColor: '#60a5fa',
@@ -45,17 +43,15 @@ export default function AudioPlayer({ audioUrl }: AudioPlayerProps) {
           cursorColor: '#ffffff',
           barWidth: 2,
           barRadius: 3,
-          responsive: true,
           height: 100,
           normalize: true,
           backend: 'WebAudio',
           mediaControls: false,
         })
 
-        // Load audio URL
         await wavesurfer.load(audioUrl)
+        lastUrlRef.current = audioUrl
         
-        // Add event listeners
         wavesurfer.on('play', () => {
           if (isMounted) {
             setIsPlaying(true)
@@ -90,7 +86,6 @@ export default function AudioPlayer({ audioUrl }: AudioPlayerProps) {
 
     initWaveform()
 
-    // Cleanup function
     return () => {
       isMounted = false
       if (wavesurferRef.current) {
@@ -123,13 +118,11 @@ export default function AudioPlayer({ audioUrl }: AudioPlayerProps) {
 
   return (
     <div className="my-8 flex flex-col items-center space-y-4">
-      {/* Waveform Visualization */}
       <div 
         ref={waveformRef} 
         className="w-[75%] bg-gray-900 rounded-md p-4 border border-gray-800"
       />
       
-      {/* Playback Controls */}
       {waveformReady && (
         <div className="flex items-center justify-center gap-4">
           <button
@@ -149,7 +142,6 @@ export default function AudioPlayer({ audioUrl }: AudioPlayerProps) {
         </div>
       )}
       
-      {/* Loading State */}
       {!waveformReady && (
         <div className="text-center text-gray-400 text-sm">
           Loading waveform...

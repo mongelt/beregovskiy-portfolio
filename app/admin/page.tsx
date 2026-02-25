@@ -7,7 +7,6 @@ export default function AdminDashboard() {
       <h1 className="text-3xl font-bold text-white mb-8">Admin Dashboard</h1>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Content Card */}
         <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
           <h2 className="text-xl font-semibold text-white mb-2">Content</h2>
           <p className="text-gray-400 mb-4">
@@ -18,7 +17,6 @@ export default function AdminDashboard() {
           </Link>
         </div>
 
-        {/* Categories Card */}
         <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
           <h2 className="text-xl font-semibold text-white mb-2">Categories</h2>
           <p className="text-gray-400 mb-4">
@@ -29,7 +27,6 @@ export default function AdminDashboard() {
           </Link>
         </div>
 
-        {/* Collections Card */}
         <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
           <h2 className="text-xl font-semibold text-white mb-2">Collections</h2>
           <p className="text-gray-400 mb-4">
@@ -40,7 +37,6 @@ export default function AdminDashboard() {
           </Link>
         </div>
 
-        {/* Resume Card */}
         <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
           <h2 className="text-xl font-semibold text-white mb-2">Resume</h2>
           <p className="text-gray-400 mb-4">
@@ -51,7 +47,6 @@ export default function AdminDashboard() {
           </Link>
         </div>
 
-        {/* Profile Card */}
         <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
           <h2 className="text-xl font-semibold text-white mb-2">Profile</h2>
           <p className="text-gray-400 mb-4">
@@ -62,19 +57,8 @@ export default function AdminDashboard() {
           </Link>
         </div>
 
-        {/* Downloads Card */}
-        <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
-          <h2 className="text-xl font-semibold text-white mb-2">Downloads</h2>
-          <p className="text-gray-400 mb-4">
-            Manage downloadable files (resume PDFs, portfolios)
-          </p>
-          <Link href="/admin/downloads">
-            <Button variant="secondary">Coming Soon</Button>
-          </Link>
-        </div>
       </div>
 
-      {/* Quick Stats */}
       <div className="mt-12">
         <h2 className="text-2xl font-bold text-white mb-4">Quick Stats</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

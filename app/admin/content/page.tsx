@@ -61,7 +61,6 @@ export default function ContentManagement() {
       
       if (error) throw error
       
-      // Refresh list
       loadContent()
     } catch (error) {
       console.error('Error deleting content:', error)

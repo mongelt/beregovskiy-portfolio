@@ -13,7 +13,6 @@ export default function AdminLayout({
     <AdminAuthProvider>
       <AdminRouteGuard>
         <div className="min-h-screen bg-gray-950">
-          {/* Admin Header */}
           <header className="border-b border-gray-800 bg-gray-900">
             <div className="container mx-auto px-4 py-4">
               <div className="flex items-center justify-between">
@@ -80,7 +79,6 @@ export default function AdminLayout({
             </div>
           </header>
 
-          {/* Main Content */}
           <main className="container mx-auto px-4 py-8">
             {children}
           </main>

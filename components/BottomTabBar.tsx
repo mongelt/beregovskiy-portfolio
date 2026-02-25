@@ -76,7 +76,6 @@ export default function BottomTabBar({
   const [mainTabsWidth, setMainTabsWidth] = useState<number>(0)
   const [downloadStatus, setDownloadStatus] = useState<'idle' | 'loading' | 'error'>('idle')
 
-  // Close downloads on tab change
   useEffect(() => {
     setDownloadsOpen(false)
     setShareOpen(false)
@@ -84,7 +83,6 @@ export default function BottomTabBar({
     setDownloadStatus('idle')
   }, [activeTab])
 
-  // Close on outside click
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       const downloadBtn = downloadBtnRef.current
@@ -163,7 +161,6 @@ export default function BottomTabBar({
   ]
   if (isContentContext && currentContentTitle) {
     if (isMenuExpanded && activeTab === 'portfolio') {
-      // hide Share Content when menu is expanded in Portfolio view
     } else {
     shareMenuRows.push({
       key: 'content',
@@ -183,13 +180,13 @@ export default function BottomTabBar({
   }
 
   function isContentTab(activeTab: string, contents: ContentTab[]): boolean {
-    const mainTabs = ['portfolio', 'resume', 'downloads']
+    const mainTabs = ['portfolio', 'resume']
     if (mainTabs.includes(activeTab)) return false
     return contents.some(c => c.id === activeTab)
   }
 
   function isCollectionTab(activeTab: string, cols: Collection[]): boolean {
-    const mainTabs = ['portfolio', 'resume', 'downloads']
+    const mainTabs = ['portfolio', 'resume']
     if (mainTabs.includes(activeTab)) return false
     return cols.some(c => c.slug === activeTab)
   }
@@ -208,7 +205,6 @@ export default function BottomTabBar({
     } catch (err) {
       console.error('Download failed', err)
       setDownloadStatus('error')
-      // keep menu open for retry
     }
   }
 
@@ -239,7 +235,6 @@ export default function BottomTabBar({
         document.execCommand('copy')
         document.body.removeChild(el)
       }
-      // keep menu open; show "Copied" until menu closes
     } catch (err) {
       console.error('Share copy failed', err)
     }
@@ -248,7 +243,6 @@ export default function BottomTabBar({
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-[#0f1419] border-t border-gray-800 z-50 backdrop-blur-lg bg-opacity-95">
       <div className="relative flex items-center justify-center h-16 px-4">
-        {/* Left: downloads only, anchored 25px from left */}
         <div className="absolute left-[25px]">
           <div className="relative">
             <button
@@ -296,7 +290,6 @@ export default function BottomTabBar({
           </div>
         </div>
 
-        {/* Right: share button/menu */}
         <div className="absolute right-[25px]">
           <div className="relative">
             <button
@@ -330,7 +323,6 @@ export default function BottomTabBar({
           </div>
         </div>
 
-        {/* Center: main tabs absolutely centered */}
         <div
           className="flex items-center gap-2 absolute left-1/2 -translate-x-1/2"
           ref={mainTabsRef}
@@ -373,7 +365,6 @@ export default function BottomTabBar({
           ))}
         </div>
 
-        {/* Collections anchored flush to left of Portfolio */}
         <div
           className="flex items-center gap-2 absolute"
           ref={collectionsRef}
@@ -435,7 +426,6 @@ export default function BottomTabBar({
           </AnimatePresence>
         </div>
 
-        {/* Active Content tabs immediately to the right of Portfolio/Resume */}
         <div
           className="flex items-center gap-2 absolute"
           ref={contentsRef}

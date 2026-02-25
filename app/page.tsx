@@ -1,13 +1,10 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import Profile from '@/components/Profile'
-import ContentViewer from '@/components/ContentViewer'
 import BottomTabBar from '@/components/BottomTabBar'
 import ResumeTab from '@/components/tabs/ResumeTab'
 import PortfolioContent from '@/components/tabs/PortfolioContent'
-import DownloadsTab from '@/components/tabs/DownloadsTab'
-import { Skeleton } from '@/components/ui/skeleton'
 import { createClient } from '@/lib/supabase/client'
 import { generateArticlePDF, generateCollectionPDF } from '@/lib/pdf-generator'
 
@@ -49,6 +46,44 @@ export default function Home() {
     downloadEnabled: boolean | null
   } | null>(null)
 
+  const handleDownloadContextChange = useCallback(({
+    contentTitle,
+    contentId,
+    contentType,
+    downloadEnabled
+  }: {
+    contentTitle: string | null
+    contentId: string | null
+    contentType: string | null
+    downloadEnabled: boolean | null
+  }) => {
+    const prev = lastDownloadContextRef.current
+    if (
+      prev &&
+      prev.contentTitle === contentTitle &&
+      prev.contentId === contentId &&
+      prev.contentType === contentType &&
+      prev.downloadEnabled === downloadEnabled
+    ) {
+      return
+    }
+    lastDownloadContextRef.current = { contentTitle, contentId, contentType, downloadEnabled }
+
+    setPortfolioContentTitle(contentTitle)
+    setPortfolioContentId(contentId)
+    setPortfolioContentType(contentType)
+    setPortfolioContentDownloadEnabled(downloadEnabled)
+
+    if (contentId) {
+      setActiveContents(prevTabs =>
+        prevTabs.map(tab => tab.id === contentId && tab.title !== contentTitle && contentTitle
+          ? { ...tab, title: contentTitle }
+          : tab
+        )
+      )
+    }
+  }, [])
+
   const activeContent = activeContents.find(c => c.id === activeTab) || null
   const activeCollection = activeCollections.find(c => c.slug === activeTab) || null
   const isActiveContentTab = activeContents.some(c => c.id === activeTab)
@@ -69,12 +104,10 @@ export default function Home() {
     (isPortfolioLikeTab && !portfolioMenuExpanded) ||
     (activeTab === 'resume' && (!resumeNowMarkerVisible || resumeHasExpandedSideEntry))
 
-  // Prevent flash on initial load
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  // Restore tab state from localStorage
   useEffect(() => {
     if (!mounted || typeof window === 'undefined') return
     try {
@@ -92,7 +125,6 @@ export default function Home() {
     }
   }, [mounted])
 
-  // Apply URL parameters once on load (content/collection/resume)
   useEffect(() => {
     if (!mounted || typeof window === 'undefined') return
     if (urlAppliedRef.current) return
@@ -127,7 +159,6 @@ export default function Home() {
     }
   }, [mounted])
 
-  // Persist tab state to localStorage
   useEffect(() => {
     if (!mounted || typeof window === 'undefined') return
     try {
@@ -144,13 +175,11 @@ export default function Home() {
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab)
-    // Clear selected content when switching tabs
     setSelectedContentId(null)
   }
 
   const handleCollectionClose = (slug: string) => {
     setActiveCollections(prev => prev.filter(c => c.slug !== slug))
-    // If we're currently viewing this collection, switch to portfolio
     if (activeTab === slug) {
       setActiveTab('portfolio')
     }
@@ -164,15 +193,12 @@ export default function Home() {
   }
 
   const handleOpenCollection = (slug: string, name: string) => {
-    // Check if collection is already open
     if (!activeCollections.find(c => c.slug === slug)) {
       setActiveCollections(prev => [...prev, { slug, name }])
     }
-    // Switch to this collection tab
     setActiveTab(slug)
   }
 
-  // Placeholder for future Active Content opening (Phase 3 will call this)
   const handleOpenContent = (id: string, title: string) => {
     if (!activeContents.find(c => c.id === id)) {
       setActiveContents(prev => [...prev, { id, title }])
@@ -180,8 +206,6 @@ export default function Home() {
     setActiveTab(id)
   }
 
-  // Handle collection click from PortfolioContent
-  // PortfolioContent passes full Collection object, we extract slug and name
   const handleCollectionClick = (collection: { id: string; slug: string; name: string }) => {
     handleOpenCollection(collection.slug, collection.name)
   }
@@ -343,8 +367,7 @@ export default function Home() {
     return true
   }
 
-  // Check if current tab is portfolio or collection tab
-  const isPortfolioOrCollection = activeTab === 'portfolio' || (!['portfolio', 'resume', 'downloads'].includes(activeTab) && !activeContents.find(c => c.id === activeTab))
+  const isPortfolioOrCollection = activeTab === 'portfolio' || (!['portfolio', 'resume'].includes(activeTab) && !activeContents.find(c => c.id === activeTab))
 
   const renderContent = () => {
     switch (activeTab) {
@@ -359,12 +382,8 @@ export default function Home() {
           />
         )
       
-      case 'downloads':
-        return <DownloadsTab />
-      
       case 'portfolio':
       default:
-        // Portfolio or collection tab - use PortfolioContent component
         return (
           <PortfolioContent
             activeTab={activeTab}
@@ -372,54 +391,25 @@ export default function Home() {
             activeContents={activeContents}
             onCollectionClick={handleCollectionClick}
             profileHeight={profileHeight}
-            onDownloadContextChange={({ contentTitle, contentId, contentType, downloadEnabled }) => {
-              const prev = lastDownloadContextRef.current
-              if (
-                prev &&
-                prev.contentTitle === contentTitle &&
-                prev.contentId === contentId &&
-                prev.contentType === contentType &&
-                prev.downloadEnabled === downloadEnabled
-              ) {
-                return
-              }
-              lastDownloadContextRef.current = { contentTitle, contentId, contentType, downloadEnabled }
-
-              setPortfolioContentTitle(contentTitle)
-              setPortfolioContentId(contentId)
-              setPortfolioContentType(contentType)
-              setPortfolioContentDownloadEnabled(downloadEnabled)
-              if (contentId) {
-                setActiveContents(prev =>
-                  prev.map(tab => tab.id === contentId && tab.title !== contentTitle && contentTitle
-                    ? { ...tab, title: contentTitle }
-                    : tab
-                  )
-                )
-              }
-            }}
+            onDownloadContextChange={handleDownloadContextChange}
             onMenuExpandedChange={setPortfolioMenuExpanded}
           />
         )
     }
   }
 
-  // Don't render until mounted to prevent flash
   if (!mounted) {
     return null
   }
 
   return (
     <div className="min-h-screen bg-[#0f1419] text-white flex flex-col">
-      {/* Fixed Business Card Header */}
       <Profile
         onHeightChange={setProfileHeight}
         onOpenCollection={handleOpenCollection}
         condensedMode={shouldCondenseProfile}
       />
 
-      {/* Main Content Area */}
-      {/* PortfolioContent handles its own layout (no padding wrapper needed) */}
       {isPortfolioOrCollection ? (
         renderContent()
       ) : (
@@ -430,7 +420,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* Fixed Bottom Tab Bar */}
       <BottomTabBar
         activeTab={activeTab}
         collections={activeCollections}

@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase/client'
 
-// Dynamic import for html2pdf to avoid SSR issues
 const getHtml2Pdf = async () => {
   if (typeof window === 'undefined') return null
   const html2pdf = (await import('html2pdf.js')).default
@@ -36,7 +35,6 @@ type CollectionContentItem = {
 export async function generateArticlePDF(contentId: string): Promise<Blob> {
   const supabase = createClient()
   
-  // Fetch content data
   const { data: content, error } = await supabase
     .from('content')
     .select(`
@@ -56,16 +54,13 @@ export async function generateArticlePDF(contentId: string): Promise<Blob> {
     throw new Error('Content not found')
   }
 
-  // Create HTML content for PDF
   const htmlContent = createPDFHTML(content)
   
-  // Get html2pdf dynamically
   const html2pdf = await getHtml2Pdf()
   if (!html2pdf) {
     throw new Error('PDF generation not available in this environment')
   }
   
-  // Configure PDF options
   const options = {
     margin: [0.5, 0.5, 0.5, 0.5] as [number, number, number, number],
     filename: `${content.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`,
@@ -85,7 +80,6 @@ export async function generateArticlePDF(contentId: string): Promise<Blob> {
     }
   }
 
-  // Generate PDF
   const pdfBlob = await html2pdf().set(options).from(htmlContent).outputPdf('blob')
   
   return pdfBlob
@@ -707,12 +701,52 @@ function createCollectionPDFHTML(collection: CollectionData, items: CollectionCo
 
 function renderEditorJSContent(data: any): string {
   if (!data || !data.blocks) return '<p>No content available</p>'
-  return renderEditorJSBlocks(data.blocks)
+  const html = renderEditorJSBlocks(data.blocks)
+  return html.trim() ? html : '<p>No content available</p>'
+}
+
+function isRenderableBlock(block: any): boolean {
+  if (!block || typeof block !== 'object') return false
+  switch (block.type) {
+    case 'paragraph':
+      return !!block.data?.text
+    case 'header':
+      return !!block.data?.text
+    case 'list':
+      return Array.isArray(block.data?.items) && block.data.items.length > 0
+    case 'quote':
+      return !!block.data?.text
+    case 'code':
+      return !!block.data?.code
+    case 'table':
+      return Array.isArray(block.data?.content) && block.data.content.length > 0
+    case 'warning':
+      return !!(block.data?.title || block.data?.message)
+    case 'delimiter':
+      return true
+    case 'image':
+      return !!(block.data?.file?.url || block.data?.url)
+    case 'audio':
+      return !!block.data?.url
+    case 'AnyButton':
+      return !!(block.data?.text || block.data?.name || block.data?.link || block.data?.url)
+    case 'linkTool':
+      return !!block.data?.link
+    case 'embed':
+      return !!(block.data?.embed || block.data?.source)
+    case 'columns': {
+      const cols = block.data?.cols || block.data?.columns
+      return Array.isArray(cols) && cols.length > 0
+    }
+    default:
+      return false
+  }
 }
 
 function renderEditorJSBlocks(blocks: any[]): string {
   if (!Array.isArray(blocks)) return ''
-  return blocks.map((block: any) => {
+  const renderable = blocks.filter(isRenderableBlock)
+  return renderable.map((block: any) => {
     let html = ''
     switch (block.type) {
       case 'paragraph':
@@ -771,7 +805,6 @@ function renderEditorJSBlocks(blocks: any[]): string {
         break
       
       case 'audio':
-        // Step 14.4: Audio block - render as HTML5 audio tag (wavesurfer.js won't work in PDF)
         const audioUrl = block.data.url || ''
         if (!audioUrl) {
           return `<p style="color: #999; text-align: center; padding: 20px;">[Audio block - no URL provided]</p>`
@@ -836,7 +869,7 @@ function renderEditorJSBlocks(blocks: any[]): string {
       }
       
       default:
-        html = `<p>[Unsupported block type: ${block.type}]</p>`
+        html = ''
         break
     }
     if (!html) return ''

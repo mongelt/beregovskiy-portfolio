@@ -1,131 +1,71 @@
-# Beregovskiy Portfolio - Modern Next.js Edition
+# Beregovskiy Portfolio Website
 
-Professional portfolio website built with Next.js 14, TypeScript, Tailwind CSS, and Supabase.
+Beginner-friendly guide to understand the system, where key files live, and how the admin side works.
 
-## 🚀 Tech Stack
+## What this project includes
+- Public site with Profile, Portfolio, and Resume tabs.
+- Admin panel to manage content, collections, resume entries, and profile data.
+- Small backend services for link preview and PDFs.
 
-- **Framework:** Next.js 14 (App Router)
-- **Language:** TypeScript
-- **Styling:** Tailwind CSS + Shadcn/ui
-- **Database:** Supabase (PostgreSQL)
-- **Storage:** Cloudinary
-- **Rich Text:** Editor.js
-- **Authentication:** Supabase Auth
+## Tech stack
+- Framework: Next.js 14 (App Router)
+- Language: TypeScript
+- Styling: Tailwind CSS
+- Database and auth: Supabase (PostgreSQL + Auth)
+- Media storage: Cloudinary
+- Rich text: Editor.js
 
-## 📁 Project Structure
+## Project structure (where to look)
+- `app/` — All routes and pages.
+  - `app/page.tsx` — Main public page.
+  - `app/layout.tsx` — Root layout.
+  - `app/globals.css` — Global styles.
+  - `app/admin/*` — Admin pages.
+  - `app/api/link-preview/route.ts` — Link preview API for Editor.js.
+- `components/` — UI and page logic.
+  - `components/BottomTabBar.tsx` — Main tab navigation.
+  - `components/Profile.tsx` — Profile header.
+  - `components/tabs/PortfolioContent.tsx` — Portfolio menus and reader.
+  - `components/tabs/ResumeTab.tsx` — Resume timeline and cards.
+  - `components/ContentReader.tsx` — Displays selected content.
+  - `components/InfoMenu.tsx` — Content metadata panel.
+  - `components/EditorRenderer.tsx` — Renders Editor.js blocks.
+  - `components/editor/EditorJS.tsx` — Admin editor setup.
+- `lib/` — Shared helpers.
+  - `lib/supabase/*` — Supabase client/server setup.
+  - `lib/pdf-generator.ts` — PDF generation.
+- Setup and database docs:
+  - `DATABASE_SETUP.md`
+  - `CUSTOM_PDFS_SETUP.md`
+  - `create-custom-pdfs-table.sql`
 
-```
-beregovskiy-portfolio/
-├── app/                    # Next.js app directory
-│   ├── (public)/          # Public pages
-│   ├── admin/             # Admin panel (protected)
-│   ├── globals.css        # Global styles
-│   ├── layout.tsx         # Root layout
-│   └── page.tsx           # Home page
-├── components/            # React components
-│   └── ui/               # Shadcn/ui components
-├── lib/                   # Utilities and helpers
-│   └── supabase/         # Supabase client setup
-├── DATABASE_SETUP.md      # Database schema instructions
-├── CUSTOM_PDFS_SETUP.md   # Custom PDFs feature setup
-├── create-custom-pdfs-table.sql  # SQL script for custom PDFs
-└── .env.local            # Environment variables
-```
+## Admin panel (what it manages)
+- Content items (articles, media, and metadata).
+- Categories and subcategories.
+- Collections (curated groups of content).
+- Resume entries and resume assets.
+- Profile information and contact details.
+- Custom PDFs for download.
 
-## 🔧 Setup Instructions
+Admin pages live under `app/admin/*` and use Supabase Auth for access control.
 
-### 1. Install Dependencies
-```bash
-npm install
-```
+## Backend and API
+- Supabase provides the database, auth, and storage.
+- Next.js API route at `app/api/link-preview/route.ts` supports Editor.js link previews.
 
-### 2. Set Up Environment Variables
-Copy `.env.local.example` to `.env.local` and fill in:
-- Supabase URL and Key (already configured)
-- Cloudinary credentials
+## Databases and storage
+- Supabase tables store content, categories, collections, resume entries, and profile data.
+- Cloudinary stores uploaded media (images, audio, video).
+- RLS policies should be configured in Supabase (see `DATABASE_SETUP.md`).
 
-### 3. Set Up Database
-Follow instructions in `DATABASE_SETUP.md`
+## Editor.js usage
+- Public renderer: `components/EditorRenderer.tsx`
+- Admin editor: `components/editor/EditorJS.tsx`
+- Link tool API: `app/api/link-preview/route.ts`
 
-### 4. Set Up Custom PDFs Feature (Optional)
-Follow instructions in `CUSTOM_PDFS_SETUP.md` to enable PDF uploads
-
-### 5. Run Development Server
-```bash
-npm run dev
-```
-
-Visit: http://localhost:3000
-
-## 📊 Features
-
-### Content Management
-- ✅ Articles with rich text (Editor.js)
-- ✅ Image galleries
-- ✅ Video embeds
-- ✅ Audio players
-- ✅ Categories & subcategories
-- ✅ Collections (curated content)
-
-### Resume & Profile
-- ✅ Expandable business card header
-- ✅ Interactive timeline (2025→2010)
-- ✅ Multiple resume entry types
-- ✅ PDF downloads
-
-### Admin Panel
-- ✅ Full CRUD operations
-- ✅ Content editor with Editor.js
-- ✅ Media uploads
-- ✅ Profile management
-- ✅ Collections manager
-
-## 🎨 Design System
-
-Using Shadcn/ui components with dark mode support.
-Color scheme and typography can be customized in:
-- `app/globals.css` - CSS variables
-- `tailwind.config.ts` - Tailwind theme
-
-## 🔐 Authentication
-
-Admin panel protected with Supabase Auth (not implemented).
-Public content is accessible without authentication.
-
-## 🚢 Deployment
-
-Ready to deploy to:
-- Vercel (recommended)
-- Netlify
-- Any Node.js hosting
-
-## 📝 Development Workflow
-
-1. Create features in phases (see roadmap)
-2. Test locally with `npm run dev`
-3. Build for production: `npm run build`
-4. Deploy to production
-
-## 🐛 Troubleshooting
-
-**Build Errors:**
-- Check Node.js version (18+)
-- Clear `.next` folder: `rm -rf .next`
-- Reinstall: `rm -rf node_modules package-lock.json && npm install`
-
-**Database Issues:**
-- Verify environment variables
-- Check Supabase SQL editor for errors
-- Ensure RLS policies are set correctly
-
-## 📚 Resources
-
-- [Next.js Docs](https://nextjs.org/docs)
-- [Supabase Docs](https://supabase.com/docs)
-- [Tailwind CSS](https://tailwindcss.com/docs)
-- [Shadcn/ui](https://ui.shadcn.com)
-- [Editor.js](https://editorjs.io)
-
----
-
-Built with ❤️ using modern web technologies
+## Quick start (if you need to run the project)
+1. Install dependencies: `npm install`
+2. Copy `.env.local.example` to `.env.local` and fill in Supabase + Cloudinary keys.
+3. Follow `DATABASE_SETUP.md` and `CUSTOM_PDFS_SETUP.md` if needed.
+4. Run dev server: `npm run dev`
+5. Open http://localhost:3000

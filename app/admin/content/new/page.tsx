@@ -11,7 +11,6 @@ import type { OutputData } from '@editorjs/editorjs'
 import AudioEditor from '@/components/AudioEditor'
 import VideoEditor from '@/components/VideoEditor'
 
-// Dynamically import Editor.js (client-side only)
 const EditorJS = dynamic(() => import('@/components/editor/EditorJS'), {
   ssr: false,
 })
@@ -257,7 +256,6 @@ export default function NewContent() {
               : {})
           : null
 
-      // Insert content
       const { data: contentData, error: contentError } = await supabase
         .from('content')
         .insert({
@@ -292,7 +290,6 @@ export default function NewContent() {
       
       if (contentError) throw contentError
 
-      // Add to collections if any selected
       if (selectedCollections.length > 0 && contentData) {
         const collectionInserts = selectedCollections.map((collectionId, index) => ({
           content_id: contentData.id,
@@ -326,7 +323,6 @@ export default function NewContent() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="bg-gray-900 border border-gray-800 rounded-lg p-6 space-y-6">
-          {/* Content Type */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Content Type *
@@ -344,7 +340,6 @@ export default function NewContent() {
             </select>
           </div>
 
-          {/* Category */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Category *
@@ -362,7 +357,6 @@ export default function NewContent() {
             </select>
           </div>
 
-          {/* Subcategory */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Subcategory *
@@ -387,7 +381,6 @@ export default function NewContent() {
             <h3 className="text-lg font-semibold text-white mb-4">Main Content Information</h3>
           </div>
 
-          {/* Title */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Content Title *
@@ -403,7 +396,6 @@ export default function NewContent() {
             </p>
           </div>
 
-          {/* Subtitle */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Content Subtitle
@@ -419,7 +411,6 @@ export default function NewContent() {
             <h3 className="text-lg font-semibold text-white mb-4">Sidebar Display (Optional)</h3>
           </div>
 
-          {/* Sidebar Title */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Sidebar Title
@@ -434,7 +425,6 @@ export default function NewContent() {
             </p>
           </div>
 
-          {/* Sidebar Subtitle */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Sidebar Subtitle
@@ -450,7 +440,6 @@ export default function NewContent() {
             <h3 className="text-lg font-semibold text-white mb-4">Publication Metadata (Optional)</h3>
           </div>
 
-          {/* Byline Style */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Byline Style (Optional)
@@ -472,7 +461,6 @@ export default function NewContent() {
             </p>
           </div>
 
-          {/* Author */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Author Name
@@ -484,7 +472,6 @@ export default function NewContent() {
             />
           </div>
 
-          {/* Publication */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Publication Name
@@ -496,7 +483,6 @@ export default function NewContent() {
             />
           </div>
 
-          {/* Publication Date */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Publication Date
@@ -508,7 +494,6 @@ export default function NewContent() {
             />
           </div>
 
-          {/* Link Style */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Link Style (Optional)
@@ -530,7 +515,6 @@ export default function NewContent() {
             </p>
           </div>
 
-          {/* Source Link */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Link to Original Source
@@ -543,7 +527,6 @@ export default function NewContent() {
             />
           </div>
 
-          {/* Copyright */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Copyright Notice
@@ -559,7 +542,6 @@ export default function NewContent() {
             <h3 className="text-lg font-semibold text-white mb-4">Content Body *</h3>
           </div>
 
-          {/* Article Editor */}
           {contentType === 'article' && (
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -576,7 +558,6 @@ export default function NewContent() {
             </div>
           )}
 
-          {/* Image Upload */}
           {contentType === 'image' && (
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -600,7 +581,6 @@ export default function NewContent() {
             </div>
           )}
 
-          {/* Step 15.5: Video Upload - replaced with VideoEditor component */}
           {contentType === 'video' && (
             <VideoEditor
               videoUrl={videoUrl}
@@ -610,7 +590,6 @@ export default function NewContent() {
             />
           )}
 
-          {/* Audio Upload - Step 13.2: Replaced with AudioEditor component */}
           {contentType === 'audio' && (
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -629,7 +608,6 @@ export default function NewContent() {
             <h3 className="text-lg font-semibold text-white mb-4">Collections (Optional)</h3>
           </div>
 
-          {/* Collections */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Assign to Collections
@@ -659,7 +637,6 @@ export default function NewContent() {
             <h3 className="text-lg font-semibold text-white mb-4">Display Settings</h3>
           </div>
 
-          {/* Display Order */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Display Order
@@ -697,7 +674,6 @@ export default function NewContent() {
             <h3 className="text-lg font-semibold text-white mb-4">Download Settings (Optional)</h3>
           </div>
 
-          {/* Download Enabled */}
           <div>
             <label className="flex items-center gap-2 text-gray-300">
               <input
@@ -710,7 +686,6 @@ export default function NewContent() {
             </label>
           </div>
 
-          {/* Download Source Selection */}
           {downloadEnabled && (
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -754,7 +729,6 @@ export default function NewContent() {
             </div>
           )}
 
-          {/* External Download URL */}
           {downloadEnabled && downloadSource === 'external' && (
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -773,7 +747,6 @@ export default function NewContent() {
             </div>
           )}
 
-          {/* Custom PDF Selection */}
           {downloadEnabled && downloadSource === 'custom' && (
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -797,7 +770,6 @@ export default function NewContent() {
             </div>
           )}
 
-          {/* PDF Generation Info */}
           {downloadEnabled && downloadSource === 'generated' && (
             <div className="bg-blue-900/20 border border-blue-800 rounded-lg p-4">
               <h4 className="text-blue-300 font-medium mb-2">📄 PDF Generation</h4>
@@ -813,7 +785,6 @@ export default function NewContent() {
             </div>
           )}
 
-          {/* Featured Content */}
           <div>
             <label className="flex items-center gap-2 text-gray-300">
               <input
@@ -830,7 +801,6 @@ export default function NewContent() {
           </div>
         </div>
 
-        {/* Submit Buttons */}
         <div className="flex gap-4">
           <Button type="submit">Create Content</Button>
           <Link href="/admin/content">

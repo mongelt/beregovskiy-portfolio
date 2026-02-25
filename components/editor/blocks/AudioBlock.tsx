@@ -1,18 +1,4 @@
-/**
- * Editor.js Audio Block Tool
- * Custom block tool for embedding audio with wavesurfer.js waveform visualization
- * 
- * Implements Editor.js Block Tool API:
- * - static get toolbox() - Block icon and title
- * - constructor({ data, api, readOnly }) - Initialize block
- * - render() - Render block in edit mode
- * - save(blockContent) - Extract and return block data
- * - static get sanitize() - Define allowed HTML
- * - static get isReadOnlySupported() - Enable read-only mode
- * - destroy() - Cleanup wavesurfer instance
- */
 
-// Step 14.1: AudioBlock - Custom Editor.js block tool for audio content
 
 export default class AudioBlock {
   private data: {
@@ -23,6 +9,7 @@ export default class AudioBlock {
   private readOnly: boolean
   private wrapper: HTMLElement | null = null
   private wavesurferInstance: any = null
+  private lastAudioUrl: string | null = null
   private waveformContainer: HTMLElement | null = null
   private urlInput: HTMLInputElement | null = null
   private captionInput: HTMLInputElement | null = null
@@ -60,16 +47,13 @@ export default class AudioBlock {
   }
 
   render(): HTMLElement {
-    // Create wrapper element
     this.wrapper = document.createElement('div')
     this.wrapper.classList.add('audio-block')
     this.wrapper.style.cssText = 'padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; margin: 10px 0;'
 
     if (this.readOnly) {
-      // Read-only mode: just show waveform and controls
       this.renderReadOnly()
     } else {
-      // Edit mode: show upload, URL input, caption, and waveform
       this.renderEdit()
     }
 
@@ -84,11 +68,9 @@ export default class AudioBlock {
       return
     }
 
-    // Create waveform container
     this.waveformContainer = document.createElement('div')
     this.waveformContainer.style.cssText = 'width: 100%; height: 100px; background: #1a1a1a; border-radius: 4px; margin-bottom: 10px;'
 
-    // Create controls container
     const controlsContainer = document.createElement('div')
     controlsContainer.style.cssText = 'display: flex; gap: 10px; justify-content: center; margin-top: 10px;'
 
@@ -105,7 +87,9 @@ export default class AudioBlock {
     controlsContainer.appendChild(this.playButton)
     controlsContainer.appendChild(this.stopButton)
 
-    // Caption
+    this.wrapper.appendChild(this.waveformContainer)
+    this.wrapper.appendChild(controlsContainer)
+
     if (this.data.caption) {
       const caption = document.createElement('p')
       caption.textContent = this.data.caption
@@ -113,17 +97,12 @@ export default class AudioBlock {
       this.wrapper.appendChild(caption)
     }
 
-    this.wrapper.appendChild(this.waveformContainer)
-    this.wrapper.appendChild(controlsContainer)
-
-    // Initialize wavesurfer in read-only mode
     this.initWaveform(this.data.url)
   }
 
   private renderEdit(): void {
     if (!this.wrapper) return
 
-    // File upload section
     const uploadSection = document.createElement('div')
     uploadSection.style.cssText = 'margin-bottom: 15px;'
 
@@ -151,7 +130,6 @@ export default class AudioBlock {
     uploadSection.appendChild(uploadLabel)
     uploadSection.appendChild(uploadContainer)
 
-    // URL input section
     const urlSection = document.createElement('div')
     urlSection.style.cssText = 'margin-bottom: 15px;'
 
@@ -169,7 +147,6 @@ export default class AudioBlock {
     urlSection.appendChild(urlLabel)
     urlSection.appendChild(this.urlInput)
 
-    // Caption input section
     const captionSection = document.createElement('div')
     captionSection.style.cssText = 'margin-bottom: 15px;'
 
@@ -187,11 +164,9 @@ export default class AudioBlock {
     captionSection.appendChild(captionLabel)
     captionSection.appendChild(this.captionInput)
 
-    // Waveform container
     this.waveformContainer = document.createElement('div')
     this.waveformContainer.style.cssText = 'width: 100%; height: 100px; background: #1a1a1a; border-radius: 4px; margin-bottom: 10px; min-height: 100px;'
 
-    // Controls container
     const controlsContainer = document.createElement('div')
     controlsContainer.style.cssText = 'display: flex; gap: 10px; justify-content: center; margin-top: 10px;'
 
@@ -210,14 +185,12 @@ export default class AudioBlock {
     controlsContainer.appendChild(this.playButton)
     controlsContainer.appendChild(this.stopButton)
 
-    // Assemble wrapper
     this.wrapper.appendChild(uploadSection)
     this.wrapper.appendChild(urlSection)
     this.wrapper.appendChild(captionSection)
     this.wrapper.appendChild(this.waveformContainer)
     this.wrapper.appendChild(controlsContainer)
 
-    // Initialize waveform if URL exists
     if (this.data.url) {
       this.initWaveform(this.data.url)
     }
@@ -227,7 +200,9 @@ export default class AudioBlock {
     if (!this.waveformContainer || typeof window === 'undefined') return
 
     try {
-      // Clean up existing instance
+      if (this.lastAudioUrl === url && this.wavesurferInstance) {
+        return
+      }
       if (this.wavesurferInstance) {
         try {
           this.wavesurferInstance.destroy()
@@ -237,13 +212,10 @@ export default class AudioBlock {
         this.wavesurferInstance = null
       }
 
-      // Clear container
       this.waveformContainer.innerHTML = ''
 
-      // Dynamically import wavesurfer.js (SSR safety)
       const WaveSurfer = (await import('wavesurfer.js')).default
 
-      // Create new WaveSurfer instance
       this.wavesurferInstance = WaveSurfer.create({
         container: this.waveformContainer,
         waveColor: '#60a5fa',
@@ -251,17 +223,15 @@ export default class AudioBlock {
         cursorColor: '#ffffff',
         barWidth: 2,
         barRadius: 3,
-        responsive: true,
         height: 100,
         normalize: true,
         backend: 'WebAudio',
         mediaControls: false,
       })
 
-      // Load audio URL
       await this.wavesurferInstance.load(url)
+      this.lastAudioUrl = url
 
-      // Add event listeners
       this.wavesurferInstance.on('play', () => {
         this.isPlaying = true
         if (this.playButton) {
@@ -395,7 +365,6 @@ export default class AudioBlock {
   }
 
   destroy(): void {
-    // Clean up wavesurfer instance
     if (this.wavesurferInstance) {
       try {
         this.wavesurferInstance.destroy()
@@ -405,7 +374,6 @@ export default class AudioBlock {
       this.wavesurferInstance = null
     }
 
-    // Clear references
     this.wrapper = null
     this.waveformContainer = null
     this.urlInput = null

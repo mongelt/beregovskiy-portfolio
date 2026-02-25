@@ -39,8 +39,6 @@ type ProfileSkill = {
 }
 
 interface ProfileProps {
-  // Optional callback to report the rendered header height (used by PortfolioTab
-  // to align the Main menu directly under the Profile bottom edge)
   onHeightChange?: (height: number) => void
   onOpenCollection?: (slug: string, name: string) => void
   condensedMode?: boolean
@@ -56,44 +54,52 @@ export default function Profile({
   const [skills, setSkills] = useState<ProfileSkill[]>([])
   const supabase = createClient()
   const headerRef = useRef<HTMLElement | null>(null)
+  const resizeDebounceTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     loadProfile()
   }, [])
 
-  // Report the sticky header height to any parent that cares about it (optional)
-  // This effect runs when profile data loads, when expanded state changes, or when onHeightChange callback changes
   useEffect(() => {
     if (!onHeightChange) return
     if (!profile) return // Don't measure if profile hasn't loaded yet
 
     const element = headerRef.current
     if (!element) {
-      console.log('[Profile] headerRef.current is null, cannot measure height')
       return
     }
 
     const updateHeight = () => {
       const rect = element.getBoundingClientRect()
       const height = rect.height
-      console.log('[Profile] Height measured:', height, 'px')
       onHeightChange(height)
     }
 
-    // Use setTimeout to ensure measurement happens after DOM is fully rendered
-    // This is especially important when profile data first loads
     const timeoutId = setTimeout(() => {
       updateHeight()
     }, 0)
 
     const resizeObserver = new ResizeObserver(() => {
-      updateHeight()
+      // Debounce ResizeObserver callbacks to prevent rapid re-renders
+      // Clear any existing timer
+      if (resizeDebounceTimerRef.current) {
+        clearTimeout(resizeDebounceTimerRef.current)
+      }
+      // Set new timer with ~100ms delay
+      resizeDebounceTimerRef.current = setTimeout(() => {
+        updateHeight()
+        resizeDebounceTimerRef.current = null
+      }, 100)
     })
 
     resizeObserver.observe(element)
 
     return () => {
       clearTimeout(timeoutId)
+      if (resizeDebounceTimerRef.current) {
+        clearTimeout(resizeDebounceTimerRef.current)
+        resizeDebounceTimerRef.current = null
+      }
       resizeObserver.disconnect()
     }
   }, [onHeightChange, profile, isExpanded]) // Added profile and isExpanded to dependencies
@@ -168,13 +174,11 @@ export default function Profile({
           }
         >
           <div className="flex items-start relative">
-            {/* Left side - Name and roles (50%) */}
             <div className="w-[50%]">
               <h1 className="text-white text-2xl font-bold mb-1">
                 {profile.full_name?.toUpperCase() || 'YOUR NAME'}
               </h1>
               
-              {/* Location with icon */}
               {profile.location && (
                 <div className="flex items-center gap-1 text-gray-400 text-sm mb-3">
                   <MapPin size={14} />
@@ -182,7 +186,6 @@ export default function Profile({
                 </div>
               )}
 
-              {/* Job titles */}
               <div className="space-y-0.5 text-sm text-gray-300">
                 {profile.job_title_1 && <p>{profile.job_title_1}</p>}
                 {profile.job_title_2 && <p>{profile.job_title_2}</p>}
@@ -191,7 +194,6 @@ export default function Profile({
               </div>
             </div>
 
-            {/* Right side - Short Bio (from 50% to 75%, extended 15% = 40%) */}
             <div className="w-[40%]">
                       <div className="text-gray-300 text-sm leading-relaxed">
                 {profile.short_bio ? (
@@ -206,11 +208,9 @@ export default function Profile({
               </div>
             </div>
             
-            {/* Spacer for remaining space (10%) */}
             <div className="w-[10%]"></div>
           </div>
 
-          {/* Expand/Collapse button - Collapsed position (absolute) */}
           {!isExpanded && (
             <div
               className="flex justify-center"
@@ -230,7 +230,6 @@ export default function Profile({
         </div>
       )}
 
-      {/* Expanded Content */}
       <AnimatePresence>
         {isExpanded && (
           <motion.div 
@@ -244,7 +243,6 @@ export default function Profile({
             <div className="flex-1 overflow-auto">
               <div className="px-8 pb-3 border-t border-gray-800 mt-4 pt-4">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  {/* Left Column: Bio (2/3 width) */}
                   <div className="lg:col-span-2">
                     <div className="mb-3">
                       <h3 className="text-sm font-semibold text-gray-400 uppercase mb-2">About</h3>
@@ -268,7 +266,6 @@ export default function Profile({
                     </div>
                   </div>
 
-                  {/* Right Column: Education → Skills → Languages (1/3 width) */}
                   <div className="space-y-6 lg:col-span-1">
                     {profile.education && (
                       <div>
@@ -327,7 +324,6 @@ export default function Profile({
               </div>
             </div>
 
-            {/* Contact row pinned at bottom of expanded area */}
             {(profile.show_phone && profile.phone) ||
              (profile.show_email && profile.email) ||
              (profile.show_social_media && profile.linkedin) ? (
@@ -362,7 +358,6 @@ export default function Profile({
               </div>
             ) : null}
 
-            {/* Expand/Collapse button - Expanded position (at bottom of expanded content) */}
             <div className="px-8 pb-4 flex justify-center">
               <motion.button
                 onClick={() => setIsExpanded(false)}

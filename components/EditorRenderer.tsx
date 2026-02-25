@@ -19,6 +19,7 @@ export default function EditorRenderer({ data, imageSizes, onReady }: EditorRend
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null)
   const onReadyRef = useRef(onReady)
   const imageSizesRef = useRef<ImageSizeMap | null>(imageSizes || null)
+  const lastDataSerializedRef = useRef<string | null>(null)
 
   const addWarning = (msg: string) => {
     setPluginWarnings((prev) => (prev.includes(msg) ? prev : [...prev, msg]))
@@ -80,7 +81,28 @@ export default function EditorRenderer({ data, imageSizes, onReady }: EditorRend
     })
   }
 
-  // Keep onReady callback ref up to date
+  const applyLazyMedia = () => {
+    const holder = holderRef.current
+    if (!holder) return
+    const images = holder.querySelectorAll('img')
+    images.forEach((node) => {
+      const img = node as HTMLImageElement
+      if (!img.getAttribute('loading')) {
+        img.setAttribute('loading', 'lazy')
+      }
+      if (!img.getAttribute('decoding')) {
+        img.setAttribute('decoding', 'async')
+      }
+    })
+    const iframes = holder.querySelectorAll('iframe')
+    iframes.forEach((node) => {
+      const iframe = node as HTMLIFrameElement
+      if (!iframe.getAttribute('loading')) {
+        iframe.setAttribute('loading', 'lazy')
+      }
+    })
+  }
+
   useEffect(() => {
     onReadyRef.current = onReady
   }, [onReady])
@@ -89,56 +111,102 @@ export default function EditorRenderer({ data, imageSizes, onReady }: EditorRend
     imageSizesRef.current = imageSizes || null
   }, [imageSizes])
 
-  // Initialize Editor.js when component mounts
   useEffect(() => {
     let isMounted = true
 
-    // Debounce to reduce flicker on rapid content changes
+    // Suppress Editor.js EventDispatcher warnings for "editor mobile layout toggled" event
+    // This is a known library quirk in read-only mode - the event is never registered but cleanup still tries to unsubscribe
+    const suppressEditorJSWarning = () => {
+      if (typeof window === 'undefined' || !console.warn) return null
+      
+      const originalWarn = console.warn
+      const warningFilter = (...args: any[]) => {
+        const message = args[0]?.toString() || ''
+        // Suppress the specific EventDispatcher warning about mobile layout toggle
+        if (message.includes('EventDispatcher') && message.includes('editor mobile layout toggled')) {
+          return // Suppress this warning
+        }
+        // Allow all other warnings through
+        originalWarn.apply(console, args)
+      }
+      
+      console.warn = warningFilter
+      return originalWarn
+    }
+
+    const restoreConsoleWarn = (originalWarn: typeof console.warn | null) => {
+      if (originalWarn && typeof window !== 'undefined') {
+        console.warn = originalWarn
+      }
+    }
+
+    // Serialize data to JSON string for comparison (avoids reinitializing on object reference changes)
+    // Only compare if we have data and an existing editor instance
+    if (editorRef.current && data) {
+      const dataSerialized = JSON.stringify(data)
+      // Skip reinitialization if data content hasn't actually changed
+      if (dataSerialized === lastDataSerializedRef.current) {
+        return
+      }
+      // Update the stored serialized data
+      lastDataSerializedRef.current = dataSerialized
+    } else if (data) {
+      // First initialization or editor doesn't exist yet - store serialized data
+      lastDataSerializedRef.current = JSON.stringify(data)
+    } else {
+      // No data - clear stored value
+      lastDataSerializedRef.current = null
+    }
+
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current)
       debounceTimerRef.current = null
     }
 
     debounceTimerRef.current = setTimeout(() => {
-      const holderEl = holderRef.current
-      if (!holderEl || !data) {
-        return
-      }
+      // Suppress warnings during Editor.js initialization
+      const originalWarn = suppressEditorJSWarning()
+      
+      try {
+        const holderEl = holderRef.current
+        if (!holderEl || !data) {
+          restoreConsoleWarn(originalWarn)
+          return
+        }
 
-      // Check if we're in browser environment (SSR prevention)
-      if (typeof window === 'undefined') {
-        console.error('❌ SSR ISSUE: Trying to initialize Editor.js on server')
-        setInitStatus('error')
-        return
-      }
+        if (typeof window === 'undefined') {
+          console.error('❌ SSR ISSUE: Trying to initialize Editor.js on server')
+          setInitStatus('error')
+          restoreConsoleWarn(originalWarn)
+          return
+        }
 
-      // Prevent multiple simultaneous initializations
-      if (isInitializingRef.current) {
-        console.log('⚠️ EditorRenderer already initializing, skipping...')
-        return
-      }
+        if (isInitializingRef.current) {
+          restoreConsoleWarn(originalWarn)
+          return
+        }
 
-      // Clean up any existing editor instance before initializing
       if (editorRef.current && editorRef.current.destroy) {
-        console.log('🧹 Cleaning up existing EditorRenderer before re-init...')
+        // Suppress warnings during cleanup
+        const originalWarnBeforeInit = suppressEditorJSWarning()
         try {
           editorRef.current.destroy()
           editorRef.current = null
         } catch (error) {
           console.error('❌ Error destroying existing EditorRenderer:', error)
+        } finally {
+          // Restore console.warn after cleanup
+          restoreConsoleWarn(originalWarnBeforeInit)
         }
       }
 
-      // Clear the holder element to ensure clean slate
       if (holderRef.current) {
         holderRef.current.innerHTML = ''
       }
 
-      console.log('🔧 Initializing EditorRenderer...')
       setInitStatus('loading')
       isInitializingRef.current = true
 
-      // Dynamically import Editor.js and all necessary tools (SSR prevention)
       Promise.all([
       import('@editorjs/editorjs'),
       import('@editorjs/header'),
@@ -170,9 +238,7 @@ export default function EditorRenderer({ data, imageSizes, onReady }: EditorRend
       DelimiterModule,
       RawModule
     ]) => {
-      // Check if component was unmounted during import
       if (!isMounted || !holderEl || !holderEl.isConnected) {
-        console.log('⚠️ Component unmounted during import, aborting initialization')
         isInitializingRef.current = false
         return
       }
@@ -192,18 +258,13 @@ export default function EditorRenderer({ data, imageSizes, onReady }: EditorRend
       const Delimiter = DelimiterModule.default
       const Raw = RawModule.default
 
-      // Step 4.2: Toggle block plugin - REMOVED
-      // Plugin was removed due to persistent bugs (setAttribute, querySelector errors)
 
-      // Step 5.2: Button plugin - call-to-action buttons with links for public display
       let AnyButton: any = null
       if (typeof window !== 'undefined') {
         try {
           const ButtonModule = await import('editorjs-button')
           const ButtonModuleAny = ButtonModule as unknown as { default?: any; AnyButton?: any }
-          // Plugin exports as default or named export
           AnyButton = ButtonModuleAny.default || ButtonModuleAny.AnyButton || ButtonModuleAny
-          // Read-only safety: declare support to prevent renderer errors
           if (AnyButton && !AnyButton.isReadOnlySupported) {
             AnyButton.isReadOnlySupported = true
           }
@@ -213,14 +274,11 @@ export default function EditorRenderer({ data, imageSizes, onReady }: EditorRend
         }
       }
 
-      // Step 8.2: Image plugin - single image display for public pages (read-only mode)
       let ImageTool: any = null
       if (typeof window !== 'undefined') {
         try {
           const ImageToolModule = await import('@editorjs/image')
           ImageTool = ImageToolModule.default
-          // Note: Image plugin supports read-only mode (isReadOnlySupported: true)
-          // No uploader needed in renderer - images are already uploaded and stored
           if (ImageTool && ImageTool.prototype && ImageTool.prototype.render) {
             const originalRender = ImageTool.prototype.render
             ImageTool.prototype.render = function() {
@@ -272,7 +330,6 @@ export default function EditorRenderer({ data, imageSizes, onReady }: EditorRend
         }
       }
 
-      // Step 10.4: Image Gallery plugin - image gallery display for public pages (read-only mode)
       let ImageGallery: any = null
       if (typeof window !== 'undefined') {
         try {
@@ -280,14 +337,10 @@ export default function EditorRenderer({ data, imageSizes, onReady }: EditorRend
           const ImageGalleryModuleAny = ImageGalleryModule as unknown as { default?: any; ImageGallery?: any }
           ImageGallery = ImageGalleryModuleAny.default || ImageGalleryModuleAny.ImageGallery || ImageGalleryModuleAny
           
-          // Step 10.Bug.3.1: Add isReadOnlySupported property if missing (plugin doesn't declare it)
-          // Editor.js requires all tools to have isReadOnlySupported: true when readOnly: true is set
           if (ImageGallery && !ImageGallery.isReadOnlySupported) {
             ImageGallery.isReadOnlySupported = true
           }
           
-          // Note: Plugin uses image URLs (doesn't require server-side uploader)
-          // Images are already uploaded and stored, URLs are in block data
         } catch (error) {
           console.warn('Image Gallery plugin failed to load in EditorRenderer:', error)
           addWarning('Image Gallery failed to load; galleries may not display')
@@ -295,40 +348,104 @@ export default function EditorRenderer({ data, imageSizes, onReady }: EditorRend
         }
       }
 
-      // Step 9.2: Embed plugin - video/audio embed display for public pages (read-only mode)
+      let Strikethrough: any = null
+      if (typeof window !== 'undefined') {
+        try {
+          const StrikethroughModule = await import('@sotaproject/strikethrough')
+          const StrikethroughModuleAny = StrikethroughModule as unknown as { default?: any; Strikethrough?: any }
+          Strikethrough = StrikethroughModuleAny.default || StrikethroughModuleAny.Strikethrough || StrikethroughModuleAny
+
+          if (Strikethrough && Strikethrough.prototype) {
+            const originalCheckState = Strikethrough.prototype.checkState
+            if (originalCheckState) {
+              Strikethrough.prototype.checkState = function() {
+                try {
+                  if (!this.button) {
+                    if (this.render) {
+                      this.button = this.render()
+                    } else {
+                      return
+                    }
+                  }
+
+                  return originalCheckState.call(this)
+                } catch (error) {
+                  console.warn('Strikethrough plugin checkState error (non-fatal):', error)
+                }
+              }
+            }
+
+            const originalRender = Strikethrough.prototype.render
+            if (originalRender) {
+              Strikethrough.prototype.render = function() {
+                try {
+                  const button = originalRender.call(this)
+
+                  if (button) {
+                    this.button = button
+                    return button
+                  }
+
+                  if (!this.button) {
+                    this.button = document.createElement("button")
+                    this.button.type = "button"
+                    if (this.iconClasses && this.iconClasses.base) {
+                      this.button.classList.add(this.iconClasses.base)
+                    }
+                    if (this.toolboxIcon) {
+                      this.button.innerHTML = this.toolboxIcon
+                    }
+                  }
+
+                  return this.button
+                } catch (error) {
+                  console.warn('Strikethrough plugin render error (non-fatal):', error)
+                  if (!this.button) {
+                    this.button = document.createElement("button")
+                    this.button.type = "button"
+                    if (this.iconClasses && this.iconClasses.base) {
+                      this.button.classList.add(this.iconClasses.base)
+                    }
+                    if (this.toolboxIcon) {
+                      this.button.innerHTML = this.toolboxIcon
+                    }
+                  }
+                  return this.button
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.warn('Strikethrough plugin failed to load in EditorRenderer:', error)
+          Strikethrough = null
+        }
+      }
+
       let Embed: any = null
       if (typeof window !== 'undefined') {
         try {
           const EmbedModule = await import('@editorjs/embed')
           Embed = EmbedModule.default
           
-          // Step 9.2: Initialize embed plugin with prepare() method (same as admin)
-          // prepare() must be called to initialize m.patterns for URL matching
-          // Note: Plugin supports read-only mode (isReadOnlySupported: true)
           if (Embed && Embed.prepare) {
             try {
-              // Prepare embed plugin with config (empty object = all default services enabled)
               Embed.prepare({ config: {} })
             } catch (error) {
               console.warn('Embed plugin prepare() error in EditorRenderer (non-fatal):', error)
             }
           }
           
-          // Step 9.2: Apply same patch as admin to prevent setAttribute errors
-          // Patch render method to add null check before setAttribute call
           if (Embed && Embed.prototype) {
             const originalRender = Embed.prototype.render
             if (originalRender) {
               Embed.prototype.render = function() {
                 try {
-                  // Early return if no service (matches original behavior)
                   if (!this.data || !this.data.service) {
                     const a = document.createElement("div")
                     this.element = a
                     return a
                   }
                   
-                  // Get service config from plugin's services object
                   const services = (Embed as any).services || {}
                   const serviceConfig = services[this.data.service]
                   if (!serviceConfig || !serviceConfig.html) {
@@ -344,7 +461,6 @@ export default function EditorRenderer({ data, imageSizes, onReady }: EditorRend
                   const o = document.createElement("template")
                   const l = this.createPreloader ? this.createPreloader() : document.createElement("div")
                   
-                  // Apply CSS classes and setup (matching original plugin behavior)
                   const CSS = this.CSS || {
                     baseClass: "embed-tool",
                     container: "embed-tool__container",
@@ -361,10 +477,8 @@ export default function EditorRenderer({ data, imageSizes, onReady }: EditorRend
                   e.dataset.placeholder = this.api?.i18n?.t?.("Enter a caption") || "Enter a caption"
                   e.innerHTML = this.data.caption || ""
                   
-                  // Set template HTML
                   o.innerHTML = html
 
-                  // Responsive wrapper with dynamic aspect ratio (defaults to 16:9)
                   const responsiveWrapper = document.createElement('div')
                   responsiveWrapper.classList.add('embed-responsive')
                   const widthValue = Number(this.data?.width)
@@ -384,7 +498,6 @@ export default function EditorRenderer({ data, imageSizes, onReady }: EditorRend
                     responsiveWrapper.style.width = '100%'
                   }
                   
-                  // Prepare media element (template child or fallback)
                   let mediaEl: HTMLElement | null = null
                   if (o.content && o.content.firstChild) {
                     mediaEl = o.content.firstChild as HTMLElement
@@ -407,14 +520,11 @@ export default function EditorRenderer({ data, imageSizes, onReady }: EditorRend
                     responsiveWrapper.appendChild(mediaEl)
                   }
                   
-                  // Handle embed ready state
                   const embedIsReady = this.embedIsReady ? this.embedIsReady(r) : Promise.resolve()
                   
-                  // Append elements (with responsive wrapper)
                   r.appendChild(responsiveWrapper)
                   r.appendChild(e)
                   
-                  // Remove loading class when ready
                   embedIsReady.then(() => {
                     r.classList.remove(CSS.containerLoading)
                   }).catch(() => {
@@ -425,7 +535,6 @@ export default function EditorRenderer({ data, imageSizes, onReady }: EditorRend
                   return r
                 } catch (error) {
                   console.warn('Embed plugin render error in EditorRenderer (non-fatal):', error)
-                  // Return fallback element
                   const fallbackElement = document.createElement('div')
                   fallbackElement.textContent = 'Embed failed to load'
                   this.element = fallbackElement
@@ -440,16 +549,66 @@ export default function EditorRenderer({ data, imageSizes, onReady }: EditorRend
         }
       }
 
-      // Step 11.3: Columns plugin - multi-column layout display for public pages (read-only mode)
       let EditorjsColumns: any = null
       if (typeof window !== 'undefined') {
         try {
           const ColumnsModule = await import('@calumk/editorjs-columns')
           const ColumnsModuleAny = ColumnsModule as unknown as { default?: any; EditorjsColumns?: any }
           EditorjsColumns = ColumnsModuleAny.default || ColumnsModuleAny.EditorjsColumns || ColumnsModuleAny
+
+          if (EditorjsColumns && EditorjsColumns.prototype) {
+            const originalRender = EditorjsColumns.prototype.render
+            if (originalRender) {
+              EditorjsColumns.prototype.render = function() {
+                try {
+                  if (!this.colWrapper) {
+                    this.colWrapper = document.createElement("div")
+                    this.colWrapper.classList.add("ce-editorjsColumns_wrapper")
+                  }
+
+                  const result = originalRender.call(this)
+
+                  if (!result && this.colWrapper) {
+                    return this.colWrapper
+                  }
+
+                  return result
+                } catch (error) {
+                  console.warn('Columns plugin render error (non-fatal):', error)
+                  if (!this.colWrapper) {
+                    this.colWrapper = document.createElement("div")
+                    this.colWrapper.classList.add("ce-editorjsColumns_wrapper")
+                  }
+                  return this.colWrapper
+                }
+              }
+            }
+
+            const originalRerender = EditorjsColumns.prototype._rerender
+            if (originalRerender) {
+              EditorjsColumns.prototype._rerender = async function() {
+                try {
+                  if (!this.colWrapper) {
+                    console.warn('Columns plugin: colWrapper is null in _rerender, creating new one')
+                    this.colWrapper = document.createElement("div")
+                    this.colWrapper.classList.add("ce-editorjsColumns_wrapper")
+                  }
+
+                  return await originalRerender.call(this)
+                } catch (error) {
+                  console.warn('Columns plugin _rerender error (non-fatal):', error)
+                  if (error instanceof TypeError && error.message.includes('setAttribute')) {
+                    if (!this.colWrapper) {
+                      this.colWrapper = document.createElement("div")
+                      this.colWrapper.classList.add("ce-editorjsColumns_wrapper")
+                    }
+                  }
+                  throw error
+                }
+              }
+            }
+          }
           
-          // Note: Plugin supports read-only mode (isReadOnlySupported: true - declared in plugin source)
-          // Plugin requires EditorJs library class and separate column_tools configuration
         } catch (error) {
           console.warn('Columns plugin failed to load in EditorRenderer:', error)
           addWarning('Columns failed to load; column blocks may not display')
@@ -457,7 +616,6 @@ export default function EditorRenderer({ data, imageSizes, onReady }: EditorRend
         }
       }
 
-      // Step 12.3: Attaches plugin - file attachments display (read-only mode)
       let AttachesTool: any = null
       if (typeof window !== 'undefined') {
         try {
@@ -472,26 +630,18 @@ export default function EditorRenderer({ data, imageSizes, onReady }: EditorRend
         }
       }
 
-      // Step 14.3: AudioBlock - custom Editor.js block tool for audio content with wavesurfer.js (read-only mode)
-      // Custom block tool for embedding audio with waveform visualization in article content
       let AudioBlock: any = null
       if (typeof window !== 'undefined') {
         try {
           const AudioBlockModule = await import('@/components/editor/blocks/AudioBlock')
           AudioBlock = AudioBlockModule.default
           
-          // Note: AudioBlock already declares isReadOnlySupported: true (static get isReadOnlySupported())
-          // No additional configuration needed for read-only mode
         } catch (error) {
           console.warn('AudioBlock failed to load in EditorRenderer:', error)
           AudioBlock = null
         }
       }
 
-      // Step 11.3: Define column_tools for nested editors in columns (read-only mode)
-      // These tools are used in nested Editor.js instances within columns
-      // Important: Don't include columns plugin in column_tools to avoid circular reference
-      const columnToolsInlineBase = ['link', 'marker', 'inlineCode', 'underline', 'bold', 'italic']
       const column_tools: any = {
         header: {
           class: Header as any,
@@ -503,10 +653,11 @@ export default function EditorRenderer({ data, imageSizes, onReady }: EditorRend
         },
         paragraph: {
           class: Paragraph as any,
-          inlineToolbar: columnToolsInlineBase
+          inlineToolbar: true
         },
         list: {
           class: List as any,
+          inlineToolbar: true,
           config: {
             defaultStyle: 'unordered'
           }
@@ -522,7 +673,6 @@ export default function EditorRenderer({ data, imageSizes, onReady }: EditorRend
           readOnly: true, // Read-only mode for frontend display
           minHeight: 0,
           tools: {
-            // Block tools
             header: {
               class: Header as any,
               config: {
@@ -544,6 +694,7 @@ export default function EditorRenderer({ data, imageSizes, onReady }: EditorRend
             },
             quote: {
               class: Quote as any,
+              inlineToolbar: true,
               config: {
                 quotePlaceholder: 'Enter a quote',
                 captionPlaceholder: 'Quote\'s author'
@@ -557,6 +708,7 @@ export default function EditorRenderer({ data, imageSizes, onReady }: EditorRend
             },
             warning: {
               class: Warning as any,
+              inlineToolbar: true,
               config: {
                 titlePlaceholder: 'Title',
                 messagePlaceholder: 'Message'
@@ -567,6 +719,7 @@ export default function EditorRenderer({ data, imageSizes, onReady }: EditorRend
             },
             table: {
               class: Table as any,
+              inlineToolbar: true,
               config: {
                 rows: 2,
                 cols: 3
@@ -578,39 +731,27 @@ export default function EditorRenderer({ data, imageSizes, onReady }: EditorRend
                 placeholder: 'Enter raw HTML'
               }
             },
-            // Step 4.2: Toggle block plugin - REMOVED
-            // Step 5.2: Conditionally register button plugin only if loaded successfully
             ...(AnyButton && {
               AnyButton: {
                 class: AnyButton as any
               }
             }),
-            // Step 8.2: Conditionally register image plugin only if loaded successfully
-            // Image plugin supports read-only mode, no uploader config needed
             ...(ImageTool && {
               image: {
                 class: ImageTool as any
               }
             }),
-            // Step 10.4: Conditionally register image gallery plugin only if loaded successfully
-            // Plugin uses image URLs (doesn't require server-side uploader)
             ...(ImageGallery && {
               gallery: {
                 class: ImageGallery as any
-                // Note: No special configuration needed for read-only rendering
               }
             }),
-            // Step 9.2: Conditionally register embed plugin only if loaded successfully
-            // Embed plugin supports read-only mode (isReadOnlySupported: true)
             ...(Embed && {
               embed: {
-                class: Embed as any
-                // Note: No special configuration needed for read-only rendering
+                class: Embed as any,
+                inlineToolbar: true
               }
             }),
-            // Step 11.3: Conditionally register columns plugin only if loaded successfully
-            // Plugin provides 2-column and 3-column layouts with nested Editor.js instances
-            // Plugin supports read-only mode (isReadOnlySupported: true)
             ...(EditorjsColumns && {
               columns: {
                 class: EditorjsColumns as any,
@@ -620,7 +761,6 @@ export default function EditorRenderer({ data, imageSizes, onReady }: EditorRend
                 }
               }
             }),
-            // Inline tools
             marker: {
               class: Marker as any
             },
@@ -630,6 +770,11 @@ export default function EditorRenderer({ data, imageSizes, onReady }: EditorRend
             underline: {
               class: Underline as any
             },
+            ...(Strikethrough && {
+              strikethrough: {
+                class: Strikethrough as any
+              }
+            }),
             linkTool: {
               class: LinkTool as any,
               config: {
@@ -637,8 +782,6 @@ export default function EditorRenderer({ data, imageSizes, onReady }: EditorRend
                 headers: {}
               }
             },
-            // Step 14.3: Conditionally register AudioBlock only if loaded successfully
-            // Custom block tool for embedding audio with wavesurfer.js waveform visualization
             ...(AudioBlock && {
               audio: {
                 class: AudioBlock as any,
@@ -654,58 +797,73 @@ export default function EditorRenderer({ data, imageSizes, onReady }: EditorRend
           }
         })
 
-        // Store editor instance
         editorRef.current = editor
 
-        // Wait for editor to be ready
         editor.isReady
           .then(() => {
+            // Restore console.warn after initialization
+            restoreConsoleWarn(originalWarn)
+            
             if (isMounted) {
-              console.log('✅ EditorRenderer ready')
               setInitStatus('ready')
               isInitializingRef.current = false
               
-              // Call onReady callback if provided
               if (onReadyRef.current) {
                 onReadyRef.current()
               }
             } else {
-              // Component unmounted before ready, clean up
               isInitializingRef.current = false
               if (editor && editor.destroy) {
                 try {
                   editor.destroy()
                 } catch (error) {
-                  // Ignore cleanup errors
                 }
               }
             }
           })
           .catch((error: Error) => {
+            // Restore console.warn on error
+            restoreConsoleWarn(originalWarn)
+            
             console.error('❌ EditorRenderer initialization failed:', error)
             isInitializingRef.current = false
             if (isMounted) {
               setInitStatus('error')
             }
           })
-
       } catch (error) {
+        // Restore console.warn on editor creation error
+        restoreConsoleWarn(originalWarn)
+        
         console.error('❌ EditorRenderer creation error:', error)
         isInitializingRef.current = false
         if (isMounted) {
           setInitStatus('error')
         }
       }
-    }).catch((error) => {
-      console.error('❌ EditorRenderer import error:', error)
+      })
+      .catch((error) => {
+        // Restore console.warn on Promise.all error
+        restoreConsoleWarn(originalWarn)
+        
+        console.error('❌ EditorRenderer import error:', error)
+        isInitializingRef.current = false
+        if (isMounted) {
+          setInitStatus('error')
+        }
+      })
+    } catch (error) {
+      // Restore console.warn on catch (try block error)
+      restoreConsoleWarn(originalWarn)
+      
+      console.error('❌ EditorRenderer creation error:', error)
       isInitializingRef.current = false
       if (isMounted) {
         setInitStatus('error')
       }
-      })
+    }
     }, 150)
 
-    // Cleanup function (memory leak prevention)
     return () => {
       isMounted = false
       if (debounceTimerRef.current) {
@@ -715,12 +873,15 @@ export default function EditorRenderer({ data, imageSizes, onReady }: EditorRend
       isInitializingRef.current = false
       
       if (editorRef.current && editorRef.current.destroy) {
-        console.log('🧹 Cleaning up EditorRenderer...')
+        // Suppress warnings during cleanup
+        const originalWarn = suppressEditorJSWarning()
         try {
           editorRef.current.destroy()
-          console.log('✅ EditorRenderer destroyed')
         } catch (error) {
           console.error('❌ Error destroying EditorRenderer:', error)
+        } finally {
+          // Restore console.warn after cleanup
+          restoreConsoleWarn(originalWarn)
         }
         editorRef.current = null
       }
@@ -764,12 +925,29 @@ export default function EditorRenderer({ data, imageSizes, onReady }: EditorRend
     }
   }, [initStatus, data, imageSizes])
 
+  useEffect(() => {
+    if (initStatus !== 'ready') return
+    if (typeof window === 'undefined') return
+    const holder = holderRef.current
+    if (!holder) return
+    const apply = () => applyLazyMedia()
+    const timer = window.setTimeout(apply, 0)
+    const raf = window.requestAnimationFrame(apply)
+    const delayed = window.setTimeout(apply, 80)
+    const observer = new MutationObserver(() => applyLazyMedia())
+    observer.observe(holder, { childList: true, subtree: true })
+    return () => {
+      window.clearTimeout(timer)
+      window.clearTimeout(delayed)
+      window.cancelAnimationFrame(raf)
+      observer.disconnect()
+    }
+  }, [initStatus, data])
+
             return (
     <div className="w-full">
-      {/* Minimal styles to align image/embed display with admin expectations */}
       <style>
         {`
-          /* Image tool tweaks */
           .ce-block .cdx-image {
             margin: 1rem 0;
           }
@@ -787,6 +965,10 @@ export default function EditorRenderer({ data, imageSizes, onReady }: EditorRend
           .embed-tool__caption[data-has-text="false"] {
             display: none;
           }
+          .ce-block {
+            content-visibility: auto;
+            contain-intrinsic-size: 1px 300px;
+          }
           .cdx-image.image-tool--withBackground {
             background: #0f172a;
             padding: 1rem;
@@ -796,13 +978,11 @@ export default function EditorRenderer({ data, imageSizes, onReady }: EditorRend
             border: 1px solid #1f2937;
             border-radius: 0.5rem;
           }
-          /* Keep stretched images full width; non-stretched use plugin defaults */
           .cdx-image.image-tool--stretched img {
             width: 100%;
             height: auto;
           }
 
-          /* Embed responsiveness */
           .embed-responsive {
             position: relative;
             width: 100%;
@@ -819,7 +999,6 @@ export default function EditorRenderer({ data, imageSizes, onReady }: EditorRend
             border: 0;
             border-radius: 0.5rem;
           }
-          /* Embed caption styling */
           .embed-tool__caption {
             margin-top: 0.5rem;
             color: #d1d5db;
@@ -835,21 +1014,18 @@ export default function EditorRenderer({ data, imageSizes, onReady }: EditorRend
           ))}
         </div>
       )}
-      {/* Loading state */}
       {initStatus === 'loading' && (
         <div className="text-gray-400 text-sm py-2">
           Loading content...
               </div>
       )}
       
-      {/* Error state */}
       {initStatus === 'error' && (
         <div className="text-red-400 text-sm py-2">
           Error loading content
               </div>
       )}
       
-      {/* Editor holder - EditorJS renders into this div */}
       <div 
         ref={holderRef}
         className="editor-renderer"

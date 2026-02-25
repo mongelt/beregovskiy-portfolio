@@ -1,12 +1,10 @@
 import { Variants } from 'framer-motion'
 
-// Respect user's motion preferences
 export const shouldReduceMotion = () => {
   if (typeof window === 'undefined') return false
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
-// Fade in animations
 export const fadeIn: Variants = {
   hidden: { opacity: 0 },
   visible: { 
@@ -33,7 +31,6 @@ export const fadeInDown: Variants = {
   }
 }
 
-// Scale animations
 export const scaleIn: Variants = {
   hidden: { opacity: 0, scale: 0.8 },
   visible: { 
@@ -43,7 +40,6 @@ export const scaleIn: Variants = {
   }
 }
 
-// Slide animations
 export const slideInLeft: Variants = {
   hidden: { opacity: 0, x: -60 },
   visible: { 
@@ -62,7 +58,6 @@ export const slideInRight: Variants = {
   }
 }
 
-// Stagger container for child animations
 export const staggerContainer: Variants = {
   hidden: { opacity: 0 },
   visible: {
@@ -74,7 +69,6 @@ export const staggerContainer: Variants = {
   }
 }
 
-// Stagger items (use as children of staggerContainer)
 export const staggerItem: Variants = {
   hidden: { opacity: 0, y: 20 },
   visible: { 
@@ -84,7 +78,6 @@ export const staggerItem: Variants = {
   }
 }
 
-// Tab switching animation
 export const tabTransition: Variants = {
   hidden: { opacity: 0, y: 10 },
   visible: { 
@@ -99,7 +92,6 @@ export const tabTransition: Variants = {
   }
 }
 
-// Expand/collapse animation (for accordions, etc.)
 export const expandCollapse = {
   collapsed: { 
     height: 0, 
@@ -113,7 +105,6 @@ export const expandCollapse = {
   }
 }
 
-// Hover effects
 export const hoverScale = {
   scale: 1.05
 }
@@ -122,12 +113,10 @@ export const hoverLift = {
   y: -4
 }
 
-// Tap effects
 export const tapScale = {
   scale: 0.95
 }
 
-// Modal/Dialog animations
 export const modal: Variants = {
   hidden: { 
     opacity: 0, 
@@ -154,7 +143,6 @@ export const modal: Variants = {
   }
 }
 
-// Backdrop overlay animation
 export const backdrop: Variants = {
   hidden: { opacity: 0 },
   visible: { 
@@ -167,7 +155,6 @@ export const backdrop: Variants = {
   }
 }
 
-// Timeline entry animation (for resume)
 export const timelineEntry: Variants = {
   hidden: { opacity: 0, x: -40 },
   visible: (index: number) => ({
@@ -181,14 +168,12 @@ export const timelineEntry: Variants = {
   })
 }
 
-// Card hover animation
 export const cardHover = {
   scale: 1.02,
   boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4)",
   transition: { duration: 0.3, ease: 'easeOut' }
 }
 
-// Loading spinner rotation
 export const spinner = {
   rotate: 360,
   transition: {
@@ -198,7 +183,6 @@ export const spinner = {
   }
 }
 
-// Pulse animation (for loading states)
 export const pulse: Variants = {
   initial: { opacity: 0.6 },
   animate: { 
@@ -212,7 +196,6 @@ export const pulse: Variants = {
   }
 }
 
-// Page transition
 export const pageTransition: Variants = {
   hidden: { opacity: 0, y: 20 },
   visible: { 
@@ -227,10 +210,8 @@ export const pageTransition: Variants = {
   }
 }
 
-// Utility function to get reduced motion variants
 export const getMotionVariants = (variants: Variants): Variants => {
   if (shouldReduceMotion()) {
-    // Return simplified variants that only change opacity
     return {
       hidden: { opacity: 0 },
       visible: { opacity: 1 }
@@ -239,7 +220,6 @@ export const getMotionVariants = (variants: Variants): Variants => {
   return variants
 }
 
-// Spring configs for different use cases
 export const springConfigs = {
   gentle: {
     type: 'spring' as const,

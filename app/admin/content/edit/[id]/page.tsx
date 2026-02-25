@@ -150,7 +150,6 @@ export default function EditContent() {
     setSelectedBylineStyle(data.byline_style || '')
     setSelectedLinkStyle(data.link_style || '')
 
-    // Load assigned collections
     const { data: collectionData } = await supabase
       .from('content_collections')
       .select('collection_id')
@@ -310,7 +309,6 @@ export default function EditContent() {
               : {})
           : null
 
-      // Update content
       const { error: contentError } = await supabase
         .from('content')
         .update({
@@ -352,14 +350,11 @@ export default function EditContent() {
         return
       }
 
-      // Update collections
-      // First, remove all existing associations
       await supabase
         .from('content_collections')
         .delete()
         .eq('content_id', contentId)
 
-      // Then add new associations
       if (selectedCollections.length > 0) {
         const collectionInserts = selectedCollections.map((collectionId, index) => ({
           content_id: contentId,
@@ -395,7 +390,6 @@ export default function EditContent() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="bg-gray-900 border border-gray-800 rounded-lg p-6 space-y-6">
-          {/* Content Type */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Content Type *
@@ -413,7 +407,6 @@ export default function EditContent() {
             </select>
           </div>
 
-          {/* Category */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Category *
@@ -431,7 +424,6 @@ export default function EditContent() {
             </select>
           </div>
 
-          {/* Subcategory */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Subcategory *
@@ -456,7 +448,6 @@ export default function EditContent() {
             <h3 className="text-lg font-semibold text-white mb-4">Main Content Information</h3>
           </div>
 
-          {/* Title */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Content Title *
@@ -469,7 +460,6 @@ export default function EditContent() {
             />
           </div>
 
-          {/* Subtitle */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Content Subtitle
@@ -511,7 +501,6 @@ export default function EditContent() {
             <h3 className="text-lg font-semibold text-white mb-4">Publication Metadata (Optional)</h3>
           </div>
 
-          {/* Byline Style */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Byline Style (Optional)
@@ -566,7 +555,6 @@ export default function EditContent() {
             />
           </div>
 
-          {/* Link Style */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Link Style (Optional)
@@ -615,7 +603,6 @@ export default function EditContent() {
             <h3 className="text-lg font-semibold text-white mb-4">Content Body</h3>
           </div>
 
-          {/* Article Editor */}
           {contentType === 'article' && (
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -632,7 +619,6 @@ export default function EditContent() {
             </div>
           )}
 
-          {/* Image Upload */}
           {contentType === 'image' && (
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -659,7 +645,6 @@ export default function EditContent() {
             </div>
           )}
 
-          {/* Step 15.5: Video Upload - replaced with VideoEditor component */}
           {contentType === 'video' && (
             <VideoEditor
               videoUrl={videoUrl}
@@ -669,7 +654,6 @@ export default function EditContent() {
             />
           )}
 
-          {/* Audio Upload - Step 13.2: Replaced with AudioEditor component */}
           {contentType === 'audio' && (
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -688,7 +672,6 @@ export default function EditContent() {
             <h3 className="text-lg font-semibold text-white mb-4">Collections (Optional)</h3>
           </div>
 
-          {/* Collections */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Assign to Collections
@@ -721,7 +704,6 @@ export default function EditContent() {
             <h3 className="text-lg font-semibold text-white mb-4">Display Settings</h3>
           </div>
 
-          {/* Display Order */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Display Order
@@ -771,7 +753,6 @@ export default function EditContent() {
             </label>
           </div>
 
-          {/* Download Source Selection */}
           {downloadEnabled && (
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -815,7 +796,6 @@ export default function EditContent() {
             </div>
           )}
 
-          {/* External Download URL */}
           {downloadEnabled && downloadSource === 'external' && (
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -834,7 +814,6 @@ export default function EditContent() {
             </div>
           )}
 
-          {/* Custom PDF Selection */}
           {downloadEnabled && downloadSource === 'custom' && (
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -858,7 +837,6 @@ export default function EditContent() {
             </div>
           )}
 
-          {/* PDF Generation Info */}
           {downloadEnabled && downloadSource === 'generated' && (
             <div className="bg-blue-900/20 border border-blue-800 rounded-lg p-4">
               <h4 className="text-blue-300 font-medium mb-2">📄 PDF Generation</h4>
@@ -874,7 +852,6 @@ export default function EditContent() {
             </div>
           )}
 
-          {/* Featured Content */}
           <div>
             <label className="flex items-center gap-2 text-gray-300">
               <input
@@ -891,7 +868,6 @@ export default function EditContent() {
           </div>
         </div>
 
-        {/* Submit Buttons */}
         <div className="flex gap-4">
           <Button type="submit">Update Content</Button>
           <Link href="/admin/content">

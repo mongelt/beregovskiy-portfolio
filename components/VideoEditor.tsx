@@ -17,7 +17,6 @@ export default function VideoEditor({
   uploading = false,
   onUploadingChange
 }: VideoEditorProps) {
-  // Step 15.5: Handle video file upload with Cloudinary integration
   async function handleFileUpload(file: File) {
     if (onUploadingChange) {
       onUploadingChange(true)
@@ -57,7 +56,6 @@ export default function VideoEditor({
 
   return (
     <div className="space-y-4">
-      {/* URL Input */}
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-2">
           Video URL *
@@ -71,7 +69,6 @@ export default function VideoEditor({
         />
       </div>
 
-      {/* File Upload */}
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-2">
           Upload Video File
@@ -89,7 +86,6 @@ export default function VideoEditor({
         {uploading && <p className="text-sm text-blue-400 mt-2">Uploading...</p>}
       </div>
 
-      {/* Video Preview */}
       {videoUrl && (
         <div className="mt-4">
           <label className="block text-sm font-medium text-gray-300 mb-2">

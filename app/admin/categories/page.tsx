@@ -224,7 +224,6 @@ export default function CategoriesManagement() {
       <h1 className="text-3xl font-bold text-white mb-8">Categories & Subcategories</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Categories Section */}
         <div>
           <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
             <h2 className="text-xl font-semibold text-white mb-4">Categories</h2>
@@ -314,7 +313,6 @@ export default function CategoriesManagement() {
           </div>
         </div>
 
-        {/* Subcategories Section */}
         <div>
           <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
             <h2 className="text-xl font-semibold text-white mb-4">Subcategories</h2>

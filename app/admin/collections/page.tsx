@@ -56,10 +56,7 @@ export default function CollectionsManagement() {
   async function createCollection() {
     if (!newName.trim()) return
     
-    // Validate: empty collections cannot be featured
     if (newFeatured) {
-      // Note: New collections are always empty (0 content) at creation
-      // Therefore, featured cannot be true for new collections
       alert('Empty collections cannot be featured. Create the collection first, add content to it, then mark it as featured.')
       return
     }
@@ -104,7 +101,6 @@ export default function CollectionsManagement() {
   async function updateCollection() {
     if (!editName.trim() || !editingId) return
     
-    // Validate: empty collections cannot be featured
     if (editFeatured) {
       const { count, error: countError } = await supabase
         .from('content_collections')

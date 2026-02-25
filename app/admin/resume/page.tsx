@@ -70,7 +70,6 @@ export default function ResumeManagement() {
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   
-  // Form state
   const [selectedType, setSelectedType] = useState('')
   const [title, setTitle] = useState('')
   const [subtitle, setSubtitle] = useState('')
@@ -83,7 +82,6 @@ export default function ResumeManagement() {
   const [assets, setAssets] = useState<ResumeAsset[]>([])
   const [isFeatured, setIsFeatured] = useState(false)
   
-  // Debugging state
   const [showDebugWindow, setShowDebugWindow] = useState(false)
   const [showAllMarkers, setShowAllMarkers] = useState(false)
 
@@ -161,7 +159,6 @@ export default function ResumeManagement() {
       .single()
 
     if (!error && entryData && assets.length > 0) {
-      // Insert assets
       const assetInserts = assets.map((asset, index) => ({
         resume_entry_id: entryData.id,
         asset_type: asset.asset_type,
@@ -187,8 +184,6 @@ export default function ResumeManagement() {
   async function updateEntry() {
     if (!title || !selectedType || !editingId) return
 
-    console.log('Updating entry with description:', descriptionData)
-    console.log('Updating entry with assets:', assets)
 
     const descriptionImageSizes =
       descriptionEditorRef.current && typeof descriptionEditorRef.current.getImageSizeMap === 'function'
@@ -212,8 +207,6 @@ export default function ResumeManagement() {
       .eq('id', editingId)
 
     if (!error && editingId) {
-      // Update assets
-      console.log('Deleting existing assets for entry:', editingId)
       const { error: deleteError } = await supabase.from('resume_assets').delete().eq('resume_entry_id', editingId)
       
       if (deleteError) {
@@ -232,13 +225,11 @@ export default function ResumeManagement() {
           order_index: index
         }))
         
-        console.log('Inserting assets:', assetInserts)
         const { error: insertError } = await supabase.from('resume_assets').insert(assetInserts)
         
         if (insertError) {
           console.error('Error inserting assets:', insertError)
         } else {
-          console.log('Assets inserted successfully')
         }
       }
     }
@@ -267,8 +258,6 @@ export default function ResumeManagement() {
   }
 
   async function startEdit(entry: ResumeEntry) {
-    console.log('Starting edit for entry:', entry.title)
-    console.log('Entry description:', entry.description)
     
     setEditingId(entry.id)
     setSelectedType(entry.entry_type_id || '')
@@ -281,7 +270,6 @@ export default function ResumeManagement() {
     setSelectedCollection(entry.collection_id || '')
     setIsFeatured(entry.is_featured)
 
-    // Prefer embedded assets if present; otherwise fetch
     if (entry.resume_assets && entry.resume_assets.length > 0) {
       setAssets(entry.resume_assets.map(a => ({
         id: a.id,
@@ -299,7 +287,6 @@ export default function ResumeManagement() {
         .select('*')
         .eq('resume_entry_id', entry.id)
         .order('order_index')
-      console.log('Loaded assets:', assetsData)
       setAssets((assetsData || []).map(a => ({
         id: a.id,
         asset_type: a.asset_type as 'content' | 'link',
@@ -369,16 +356,13 @@ export default function ResumeManagement() {
     return 'Job Title'
   }
 
-  // Helper function to handle date input properly
   function formatDateForInput(dateString: string | null): string {
     if (!dateString) return ''
-    // Return the date as-is without timezone compensation
     return dateString
   }
 
   function formatDateForStorage(dateString: string): string {
     if (!dateString) return ''
-    // Return the date as-is without timezone compensation
     return dateString
   }
 
@@ -391,7 +375,6 @@ export default function ResumeManagement() {
         </Button>
       </div>
 
-      {/* Debugging Section */}
       <div className="bg-gray-900 border border-gray-800 rounded-lg p-6 mb-8">
         <h2 className="text-xl font-semibold text-white mb-4">Debugging</h2>
         
@@ -435,7 +418,6 @@ export default function ResumeManagement() {
         </div>
       </div>
 
-      {/* Entry Form */}
       {showForm && (
         <div className="bg-gray-900 border border-gray-800 rounded-lg p-6 mb-8 space-y-4">
           <h2 className="text-xl font-semibold text-white">
@@ -686,7 +668,6 @@ export default function ResumeManagement() {
         </div>
       )}
 
-      {/* Entries List */}
       <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
         <h2 className="text-xl font-semibold text-white mb-4">Resume Entries</h2>
         

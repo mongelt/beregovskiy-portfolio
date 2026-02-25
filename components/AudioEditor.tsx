@@ -20,8 +20,8 @@ export default function AudioEditor({
   const [waveformReady, setWaveformReady] = useState(false)
   const waveformRef = useRef<HTMLDivElement>(null)
   const wavesurferRef = useRef<any>(null)
+  const lastUrlRef = useRef<string | null>(null)
 
-  // Step 13.1: Handle audio file upload with Cloudinary integration
   async function handleFileUpload(file: File) {
     if (onUploadingChange) {
       onUploadingChange(true)
@@ -59,37 +59,33 @@ export default function AudioEditor({
     }
   }
 
-  // Step 13.1: Initialize wavesurfer.js waveform visualization (SSR-safe)
   useEffect(() => {
-    // Only run on client side
     if (typeof window === 'undefined' || !waveformRef.current) {
       return
     }
 
-    // Only initialize if we have an audio URL
     if (!audioUrl) {
       return
     }
 
     let isMounted = true
 
-    // Dynamically import wavesurfer.js (SSR safety)
     const initWaveform = async () => {
       try {
+        if (lastUrlRef.current === audioUrl && wavesurferRef.current) {
+          return
+        }
         const WaveSurfer = (await import('wavesurfer.js')).default
 
-        // Clean up existing instance if any
         if (wavesurferRef.current) {
           wavesurferRef.current.destroy()
           wavesurferRef.current = null
         }
 
-        // Clear the container
         if (waveformRef.current) {
           waveformRef.current.innerHTML = ''
         }
 
-        // Create new WaveSurfer instance
         const wavesurfer = WaveSurfer.create({
           container: waveformRef.current!,
           waveColor: '#60a5fa',
@@ -97,15 +93,14 @@ export default function AudioEditor({
           cursorColor: '#ffffff',
           barWidth: 2,
           barRadius: 3,
-          responsive: true,
           height: 100,
           normalize: true,
           backend: 'WebAudio',
           mediaControls: false,
         })
 
-        // Load audio URL
         await wavesurfer.load(audioUrl)
+        lastUrlRef.current = audioUrl
         
         if (isMounted) {
           wavesurferRef.current = wavesurfer
@@ -123,7 +118,6 @@ export default function AudioEditor({
 
     initWaveform()
 
-    // Cleanup function
     return () => {
       isMounted = false
       if (wavesurferRef.current) {
@@ -139,7 +133,6 @@ export default function AudioEditor({
 
   return (
     <div className="space-y-4">
-      {/* URL Input */}
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-2">
           Audio URL
@@ -153,7 +146,6 @@ export default function AudioEditor({
         />
       </div>
 
-      {/* File Upload */}
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-2">
           Upload Audio File
@@ -168,7 +160,6 @@ export default function AudioEditor({
         {uploading && <p className="text-sm text-blue-400 mt-2">Uploading...</p>}
       </div>
 
-      {/* Waveform Preview */}
       {audioUrl && (
         <div className="mt-4">
           <label className="block text-sm font-medium text-gray-300 mb-2">
