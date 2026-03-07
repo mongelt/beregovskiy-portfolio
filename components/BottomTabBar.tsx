@@ -3,6 +3,8 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
 import { tapScale } from '@/lib/animations'
+import { useMobileState } from '@/lib/responsive'
+import { ArrowUp, ArrowUpRight } from 'lucide-react'
 
 type Collection = {
   slug: string
@@ -57,6 +59,7 @@ export default function BottomTabBar({
   onDownload,
   isMenuExpanded = false
 }: BottomTabBarProps) {
+  const { isMobile } = useMobileState()
   const tabs = [
     { id: 'portfolio', label: 'PORTFOLIO' },
     { id: 'resume', label: 'RESUME' }
@@ -241,32 +244,54 @@ export default function BottomTabBar({
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-[#0f1419] border-t border-gray-800 z-50 backdrop-blur-lg bg-opacity-95">
+    <div className="fixed bottom-0 left-0 right-0 h-16 border-t border-border-gray-800 z-50 bg-bg-menu-bar backdrop-saturate-[180%] backdrop-blur-[20px] shadow-[0_-2px_12px_rgba(0,0,0,0.1)]">
       <div className="relative flex items-center justify-center h-16 px-4">
         <div className="absolute left-[25px]">
           <div className="relative">
             <button
               ref={downloadBtnRef}
               onClick={() => setDownloadsOpen(prev => !prev)}
-              className="px-4 py-2 text-sm font-semibold text-gray-200 hover:text-white transition-colors border border-gray-700 rounded-lg bg-[#11161d]"
+              className={
+                isMobile
+                  ? `flex flex-col items-center gap-1 font-body text-[0.88rem] font-semibold transition-all duration-200 border rounded-[5px] bg-transparent ${
+                      downloadsOpen
+                        ? 'border-[1.5px] border-text-on-dark text-text-on-dark-hover opacity-50 shadow-[0_0_0_1px_rgba(232,226,221,0.2)]'
+                        : 'border border-[#b8b0aa] text-[#b8b0aa] hover:border-[1.5px] hover:border-text-on-dark hover:text-text-on-dark-hover hover:opacity-50 hover:shadow-[0_0_0_1px_rgba(232,226,221,0.2)]'
+                    }`
+                  : `inline-flex justify-center items-center font-body text-[0.88rem] font-semibold transition-all duration-200 border rounded-[5px] bg-transparent min-w-0 ${
+                      downloadsOpen
+                        ? 'border-[1.5px] border-text-on-dark text-text-on-dark-hover opacity-50 shadow-[0_0_0_1px_rgba(232,226,221,0.2)]'
+                        : 'border border-[#b8b0aa] text-[#b8b0aa] hover:border-[1.5px] hover:border-text-on-dark hover:text-text-on-dark-hover hover:opacity-50 hover:shadow-[0_0_0_1px_rgba(232,226,221,0.2)]'
+                    }`
+              }
+              style={isMobile ? { padding: '6px 12px' } : { padding: '6px 12px' }}
             >
-              Download ↑
+              {isMobile ? (
+                <>
+                  <ArrowUp size={18} />
+                  <span className="text-[10px] leading-none invisible">Share</span>
+                </>
+              ) : (
+                'Download ↑'
+              )}
             </button>
             {downloadsOpen && (
               <div
                 ref={downloadMenuRef}
-                className="absolute bottom-full mb-2 left-0 w-72 bg-[#0f1419] border border-gray-700 rounded-lg shadow-lg p-3 space-y-2 z-50"
+                className="absolute bottom-full mb-2 left-0 w-72 border border-border-gray-700 rounded-lg shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1)] p-3 space-y-2 bg-bg-menu-bar"
+                style={{ zIndex: 60 }}
               >
                 {downloadMenuRows.map(row => (
                   <div key={row.key} className="flex items-center gap-2">
                     <button
                       disabled={row.disabled}
                       onClick={row.onClick}
-                      className={`flex-1 px-3 py-2 text-sm font-semibold rounded-md transition-colors ${
+                      className={`flex-1 font-body text-sm font-semibold rounded-md transition-all duration-200 ${
                         row.disabled
-                          ? 'text-gray-500 bg-gray-800 cursor-not-allowed'
-                          : 'text-white bg-gray-800 hover:bg-gray-700'
+                          ? 'text-text-on-dark-inactive bg-bg-gray-800 cursor-not-allowed'
+                          : 'text-text-body bg-bg-card hover:bg-bg-card-alt'
                       }`}
+                      style={{ padding: '8px 12px' }}
                     >
                       {row.left}
                     </button>
@@ -274,10 +299,10 @@ export default function BottomTabBar({
                       <button
                         disabled={row.disabled}
                         onClick={row.onClick}
-                        className={`flex-1 px-3 py-2 text-sm font-semibold rounded-md transition-colors ${
+                        className={`flex-1 px-3 py-2 font-body text-sm font-semibold rounded-md transition-all duration-200 ${
                           row.disabled
-                            ? 'text-gray-500 bg-gray-800 cursor-not-allowed'
-                            : 'text-white bg-gray-800 hover:bg-gray-700'
+                            ? 'text-text-on-dark-inactive bg-bg-gray-800 cursor-not-allowed'
+                            : 'text-text-body bg-bg-card hover:bg-bg-card-alt'
                         }`}
                       >
                         {row.right}
@@ -295,14 +320,35 @@ export default function BottomTabBar({
             <button
               ref={shareBtnRef}
               onClick={() => setShareOpen(prev => !prev)}
-              className="px-4 py-2 text-sm font-semibold text-gray-200 hover:text-white transition-colors border border-gray-700 rounded-lg bg-[#11161d]"
+              className={
+                isMobile
+                  ? `flex flex-col items-center gap-1 font-body text-[0.88rem] font-semibold transition-all duration-200 border rounded-[5px] bg-transparent ${
+                      shareOpen
+                        ? 'border-[1.5px] border-text-on-dark text-text-on-dark-hover opacity-50 shadow-[0_0_0_1px_rgba(232,226,221,0.2)]'
+                        : 'border border-[#b8b0aa] text-[#b8b0aa] hover:border-[1.5px] hover:border-text-on-dark hover:text-text-on-dark-hover hover:opacity-50 hover:shadow-[0_0_0_1px_rgba(232,226,221,0.2)]'
+                    }`
+                  : `inline-flex justify-center items-center font-body text-[0.88rem] font-semibold transition-all duration-200 border rounded-[5px] bg-transparent min-w-0 ${
+                      shareOpen
+                        ? 'border-[1.5px] border-text-on-dark text-text-on-dark-hover opacity-50 shadow-[0_0_0_1px_rgba(232,226,221,0.2)]'
+                        : 'border border-[#b8b0aa] text-[#b8b0aa] hover:border-[1.5px] hover:border-text-on-dark hover:text-text-on-dark-hover hover:opacity-50 hover:shadow-[0_0_0_1px_rgba(232,226,221,0.2)]'
+                    }`
+              }
+              style={{ paddingTop: '4px', paddingBottom: '4px', paddingLeft: '12px', paddingRight: '12px' }}
             >
-              Share ↗
+              {isMobile ? (
+                <>
+                  <ArrowUpRight size={18} />
+                  <span className="text-[10px] leading-none">Share</span>
+                </>
+              ) : (
+                'Share ↗'
+              )}
             </button>
             {shareOpen && (
               <div
                 ref={shareMenuRef}
-                className="absolute bottom-full mb-2 right-0 w-72 bg-[#0f1419] border border-gray-700 rounded-lg shadow-lg p-3 space-y-2 z-50"
+                className="absolute bottom-full mb-2 right-0 w-72 border border-border-gray-700 rounded-lg shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1)] p-3 space-y-2 bg-bg-menu-bar"
+                style={{ zIndex: 60 }}
               >
                 {shareMenuRows
                   .filter(row => row.visible)
@@ -313,7 +359,8 @@ export default function BottomTabBar({
                         handleShareCopy(row.value)
                         setShareCopiedKey(row.key)
                       }}
-                      className="w-full px-3 py-2 text-sm font-semibold rounded-md transition-colors text-white bg-gray-800 hover:bg-gray-700 text-left"
+                      className="w-full font-body text-sm font-semibold rounded-md transition-all duration-200 text-text-body bg-bg-card hover:bg-bg-card-alt text-left"
+                      style={{ padding: '8px 12px' }}
                     >
                       {shareCopiedKey === row.key ? 'Link copied' : row.label}
                     </button>
@@ -336,20 +383,22 @@ export default function BottomTabBar({
               <button
                 onClick={() => onTabChange(tab.id)}
                 className={`
-                  relative px-6 py-2 text-sm font-semibold uppercase tracking-wider
+                  relative font-ui text-sm font-semibold uppercase
                   transition-colors duration-300
                   ${activeTab === tab.id 
-                    ? 'text-white' 
-                    : 'text-gray-400 hover:text-white'
+                    ? 'text-text-on-dark' 
+                    : 'text-text-on-dark-inactive hover:text-text-on-dark-hover hover:opacity-80'
                   }
                 `}
+                style={{ padding: '8px 24px', letterSpacing: '0.05em' }}
               >
                 {tab.label}
                 
                 {activeTab === tab.id && (
                   <motion.div
                     layoutId="activeTabUnderline"
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-400"
+                    className="absolute bottom-0 left-0 right-0 bg-accent-light"
+                    style={{ height: '2px' }}
                     transition={{ 
                       type: 'spring', 
                       stiffness: 300, 
@@ -366,9 +415,9 @@ export default function BottomTabBar({
         </div>
 
         <div
-          className="flex items-center gap-2 absolute"
+          className={`flex items-center gap-2 absolute ${isMobile ? 'hidden' : ''}`}
           ref={collectionsRef}
-          style={{ right: `calc(50% + ${mainTabsWidth / 2}px)` }}
+          style={{ right: 'calc(50% + 180px)' }}
         >
           <AnimatePresence mode="popLayout">
             {collections.map((collection) => (
@@ -387,18 +436,20 @@ export default function BottomTabBar({
                   <button
                     onClick={() => onTabChange(collection.slug)}
                     className={`
-                      relative px-4 py-2 text-sm font-semibold rounded-l-lg
-                      transition-colors duration-300 z-10
+                      relative font-ui text-sm font-semibold rounded-tl-lg rounded-bl-lg
+                      transition-colors duration-300 z-10 bg-transparent
                       ${activeTab === collection.slug 
-                        ? 'text-white' 
-                        : 'text-gray-400 hover:text-white'
+                        ? 'text-text-on-dark' 
+                        : 'text-text-on-dark-inactive hover:text-text-on-dark-hover hover:opacity-80'
                       }
                     `}
+                    style={{ padding: '8px 16px' }}
                   >
                     {activeTab === collection.slug && (
                       <motion.div
-                        layoutId="activeTab"
-                        className="absolute inset-0 bg-purple-600 rounded-l-lg -z-10"
+                        layoutId="activeCollectionUnderline"
+                        className="absolute bottom-0 left-0 right-0 bg-accent-light"
+                    style={{ height: '2px' }}
                         transition={{ 
                           type: 'spring', 
                           stiffness: 300, 
@@ -417,7 +468,8 @@ export default function BottomTabBar({
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => onCollectionClose(collection.slug)}
-                  className="px-2 py-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-r-lg border-l border-gray-700 transition-colors"
+                  className="text-[#f87171] hover:text-[#e8e2dd] hover:opacity-50 hover:bg-[rgba(220,38,38,0.2)] rounded-tr-lg rounded-br-lg transition-all duration-200"
+                  style={{ padding: '8px 4px' }}
                 >
                   ✕
                 </motion.button>
@@ -427,9 +479,9 @@ export default function BottomTabBar({
         </div>
 
         <div
-          className="flex items-center gap-2 absolute"
+          className={`flex items-center gap-2 absolute ${isMobile ? 'hidden' : ''}`}
           ref={contentsRef}
-          style={{ left: `calc(50% + ${mainTabsWidth / 2}px)` }}
+          style={{ left: 'calc(50% + 180px)' }}
         >
           <AnimatePresence mode="popLayout">
             {contentTabs.map((content) => (
@@ -448,18 +500,20 @@ export default function BottomTabBar({
                   <button
                     onClick={() => onTabChange(content.id)}
                     className={`
-                      relative px-4 py-2 text-sm font-semibold rounded-l-lg
-                      transition-colors duration-300 z-10
+                      relative font-ui text-sm font-semibold rounded-tl-lg rounded-bl-lg
+                      transition-colors duration-300 z-10 bg-transparent
                       ${activeTab === content.id 
-                        ? 'text-white' 
-                        : 'text-gray-400 hover:text-white'
+                        ? 'text-text-on-dark' 
+                        : 'text-text-on-dark-inactive hover:text-text-on-dark-hover hover:opacity-80'
                       }
                     `}
+                    style={{ padding: '8px 16px' }}
                   >
                     {activeTab === content.id && (
                       <motion.div
-                        layoutId="activeTabContent"
-                        className="absolute inset-0 bg-emerald-700 rounded-l-lg -z-10"
+                        layoutId="activeContentUnderline"
+                        className="absolute bottom-0 left-0 right-0 bg-accent-light"
+                    style={{ height: '2px' }}
                         transition={{ 
                           type: 'spring', 
                           stiffness: 300, 
@@ -478,7 +532,8 @@ export default function BottomTabBar({
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => onContentClose(content.id)}
-                  className="px-2 py-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-r-lg border-l border-gray-700 transition-colors"
+                  className="text-[#f87171] hover:text-[#e8e2dd] hover:opacity-50 hover:bg-[rgba(220,38,38,0.2)] rounded-tr-lg rounded-br-lg transition-all duration-200"
+                  style={{ padding: '8px 4px' }}
                 >
                   ✕
                 </motion.button>

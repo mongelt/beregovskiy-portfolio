@@ -7,6 +7,7 @@ import ContentReader from '@/components/ContentReader'
 import InfoMenu from '@/components/InfoMenu'
 import CollectionsMenu from '@/components/tabs/CollectionsMenu'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useMobileState } from '@/lib/responsive'
 
 
 type PageState = 'expanded-empty' | 'expanded-reader' | 'collapsed-reader'
@@ -115,6 +116,14 @@ interface PortfolioContentProps {
   profileHeight: number
   onDownloadContextChange?: (context: { contentTitle: string | null; contentId: string | null; contentType: string | null; downloadEnabled: boolean | null }) => void
   onMenuExpandedChange?: (isExpanded: boolean) => void
+  selectedContentIdFromResume?: string | null // Content ID to auto-select when coming from Resume (mobile only)
+  onContentSelectedFromResume?: () => void // Callback to clear the selectedContentId after selection
+  // State memory props to persist across remounts
+  savedMenuState?: PageState | null // Saved menu state from previous visit
+  savedSelectedContentId?: string | null // Saved content ID from previous visit
+  savedSelectedCategoryId?: string | null // Saved category ID from previous visit
+  savedSelectedSubcategoryId?: string | null // Saved subcategory ID from previous visit
+  onSaveMenuState?: (state: { pageState: PageState | null; contentId: string | null; categoryId: string | null; subcategoryId: string | null }) => void // Callback to save menu state
 }
 
 
@@ -125,13 +134,63 @@ export default function PortfolioContent({
   onCollectionClick,
   profileHeight,
   onDownloadContextChange,
-  onMenuExpandedChange
+  onMenuExpandedChange,
+  selectedContentIdFromResume = null,
+  onContentSelectedFromResume,
+  savedMenuState = null,
+  savedSelectedContentId = null,
+  savedSelectedCategoryId = null,
+  savedSelectedSubcategoryId = null,
+  onSaveMenuState
 }: PortfolioContentProps) {
+  const { isMobile } = useMobileState()
   const [pageState, setPageState] = useState<PageState>('expanded-empty')
+  const menuBarRef = useRef<HTMLDivElement | null>(null)
+  const [collapsedMenuHeight, setCollapsedMenuHeight] = useState<number>(0)
+  const lastMenuStateRef = useRef<PageState | null>(null) // Remember menu state when leaving Portfolio
+  const lastSelectedContentRef = useRef<ContentItem | null>(null) // Remember selected content when leaving Portfolio
+  const lastSelectedCategoryRef = useRef<Category | null>(null) // Remember selected category when leaving Portfolio
+  const lastSelectedSubcategoryRef = useRef<Subcategory | null>(null) // Remember selected subcategory when leaving Portfolio
+  const dataLoadedRef = useRef<boolean>(false) // Track if data has been loaded to prevent re-loading on tab switches
+  const [justWentBackFromContent, setJustWentBackFromContent] = useState<boolean>(false) // Track if we just went back from content
+  const justWentBackRef = useRef<boolean>(false) // Ref for immediate synchronous access
+  const isAutoSelectingFromResumeRef = useRef<boolean>(false) // Track if we're auto-selecting content from Resume
+  const justAutoSelectedFromResumeRef = useRef<boolean>(false) // Track if we just completed auto-selection (to prevent reset)
+  const isRestoringFromTabSwitchRef = useRef<boolean>(false) // Track if we're restoring content from a tab switch
 
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
   const [selectedSubcategory, setSelectedSubcategory] = useState<Subcategory | null>(null)
   const [selectedContent, setSelectedContent] = useState<ContentItem | null>(null)
+  
+  // Step 7: States are automatically preserved when crossing breakpoints
+  // - pageState (expanded-empty, expanded-reader, collapsed-reader) persists
+  // - selectedContent, selectedCategory, selectedSubcategory persist
+  // - activeTab persists (parent state)
+  // - Profile expanded/collapsed state persists (Profile component's local state)
+  // No reset logic needed - React state naturally persists across breakpoint changes
+  
+  // Refs to store current state for cleanup function (always up-to-date)
+  const pageStateRef = useRef<PageState>(pageState)
+  const selectedContentRef = useRef<ContentItem | null>(selectedContent)
+  const selectedCategoryRef = useRef<Category | null>(selectedCategory)
+  const selectedSubcategoryRef = useRef<Subcategory | null>(selectedSubcategory)
+  
+  // Keep refs in sync with state
+  useEffect(() => {
+    pageStateRef.current = pageState
+  }, [pageState])
+  
+  useEffect(() => {
+    selectedContentRef.current = selectedContent
+  }, [selectedContent])
+  
+  useEffect(() => {
+    selectedCategoryRef.current = selectedCategory
+  }, [selectedCategory])
+  
+  useEffect(() => {
+    selectedSubcategoryRef.current = selectedSubcategory
+  }, [selectedSubcategory])
   const [titleInView, setTitleInView] = useState<boolean>(true)
   const [subtitleInView, setSubtitleInView] = useState<boolean>(true)
 
@@ -624,6 +683,21 @@ export default function PortfolioContent({
   }
 
   useEffect(() => {
+    // Only load data once on initial mount
+    if (dataLoadedRef.current) {
+      console.log('[DEBUG] Data loading effect: Data already loaded, skipping')
+      return
+    }
+    
+    // Check if we're restoring BEFORE loading data
+    const isRestoring = isMobile && savedMenuState !== null && savedMenuState === 'collapsed-reader' && savedSelectedContentId
+    
+    console.log('[DEBUG] Data loading effect: Starting, isRestoring =', isRestoring, {
+      isMobile,
+      savedMenuState,
+      savedSelectedContentId
+    })
+    
     async function loadAllData() {
       try {
         setLoadingCategories(true)
@@ -639,6 +713,8 @@ export default function PortfolioContent({
         
         const collectionsData = await loadCollections()
         
+        // In mobile, don't auto-select content when in expanded-empty state (show categories by default)
+        const shouldAutoSelect = !isMobile
         const { selectedCategory, selectedSubcategory, selectedContent } = 
           await autoSelectInitialContent(categoriesData, subcategoriesData, contentData)
         
@@ -646,9 +722,31 @@ export default function PortfolioContent({
         setSubcategories(subcategoriesData)
         setContent(contentData)
         setCollections(collectionsData)
-        setSelectedCategory(selectedCategory)
-        setSelectedSubcategory(selectedSubcategory)
-        setSelectedContent(selectedContent)
+        
+        // CRITICAL: If we're restoring, don't reset ANY state - let the restore effect handle it
+        if (isRestoring) {
+          console.log('[DEBUG] Data loading effect: Restoring mode, skipping state reset')
+          // Just mark data as loaded, restore effect will handle state restoration
+          setLoadingCategories(false)
+          setLoadingContent(false)
+          setLoadingCollections(false)
+          dataLoadedRef.current = true
+          return
+        }
+        
+        console.log('[DEBUG] Data loading effect: Normal mode, resetting state to default')
+        
+        // In mobile, always start with no selections to show categories by default
+        // In desktop, auto-select first items
+        if (isMobile) {
+          setSelectedCategory(null)
+          setSelectedSubcategory(null)
+          setSelectedContent(null)
+        } else {
+          setSelectedCategory(selectedCategory)
+          setSelectedSubcategory(selectedSubcategory)
+          setSelectedContent(selectedContent)
+        }
         
         setPageState('expanded-empty')
         
@@ -656,6 +754,7 @@ export default function PortfolioContent({
         setLoadingContent(false)
         setLoadingCollections(false)
         
+        dataLoadedRef.current = true
       } catch (err) {
         console.error('Failed to load data:', err)
         setLoadingCategories(false)
@@ -665,7 +764,7 @@ export default function PortfolioContent({
     }
     
     loadAllData()
-  }, [])
+  }, [isMobile, savedMenuState, savedSelectedContentId])
 
   const applyContentDetails = useCallback((details: ContentItem) => {
     contentCacheRef.current.set(details.id, details)
@@ -722,6 +821,84 @@ export default function PortfolioContent({
     loadingContent,
     loadingCategories,
     ensureContentDetails
+  ])
+
+  // Step 4 Stage 7: Auto-select content when coming from Resume tab (mobile only)
+  useEffect(() => {
+    if (!isMobile) {
+      isAutoSelectingFromResumeRef.current = false
+      return
+    }
+    if (!selectedContentIdFromResume) {
+      isAutoSelectingFromResumeRef.current = false
+      return
+    }
+    if (activeTab !== 'portfolio') {
+      // Set flag even if tab hasn't changed yet, so menu state memory effect can see it
+      isAutoSelectingFromResumeRef.current = true
+      return
+    }
+    if (loadingContent || loadingCategories) {
+      // Set flag while loading
+      isAutoSelectingFromResumeRef.current = true
+      return
+    }
+    if (content.length === 0) {
+      // Set flag while waiting for content
+      isAutoSelectingFromResumeRef.current = true
+      return
+    }
+    
+    const contentMatch = content.find(c => c.id === selectedContentIdFromResume)
+    if (!contentMatch) {
+      isAutoSelectingFromResumeRef.current = false
+      return
+    }
+    
+    // Set flag to prevent menu state memory effect from interfering (set BEFORE any state changes)
+    isAutoSelectingFromResumeRef.current = true
+    justAutoSelectedFromResumeRef.current = false // Reset completion flag
+    
+    // Auto-select the content: set category, subcategory, content, and collapse menu
+    const { category, subcategory } = findCategorySubcategoryForContent(contentMatch, categories, subcategories)
+    setSelectedContent(contentMatch)
+    if (category) setSelectedCategory(category)
+    if (subcategory) setSelectedSubcategory(subcategory)
+    setPageState('collapsed-reader')
+    
+    // Load content details
+    void ensureContentDetails(contentMatch)
+    
+    // Mark that we just completed auto-selection
+    justAutoSelectedFromResumeRef.current = true
+    
+    // Clear the selectedContentIdFromResume after selection
+    // But keep the flag set longer to prevent menu state memory effect from resetting
+    // Use a longer delay to ensure all effects have finished running
+    setTimeout(() => {
+      if (onContentSelectedFromResume) {
+        onContentSelectedFromResume()
+      }
+      // Keep flag set even longer to prevent menu state memory effect from interfering
+      setTimeout(() => {
+        isAutoSelectingFromResumeRef.current = false
+        // Clear completion flag after a longer delay to ensure menu state memory effect has run
+        setTimeout(() => {
+          justAutoSelectedFromResumeRef.current = false
+        }, 300)
+      }, 500)
+    }, 100)
+  }, [
+    isMobile,
+    selectedContentIdFromResume,
+    activeTab,
+    loadingContent,
+    loadingCategories,
+    content,
+    categories,
+    subcategories,
+    ensureContentDetails,
+    onContentSelectedFromResume
   ])
 
   useEffect(() => {
@@ -788,6 +965,8 @@ export default function PortfolioContent({
 
   
   const handleCategorySelect = useCallback((category: Category) => {
+    justWentBackRef.current = false
+    setJustWentBackFromContent(false) // Clear flag when navigating forward
     if (selectedCategory?.id === category.id) {
       if (pageState === 'collapsed-reader') {
         setPageState('expanded-empty')
@@ -804,8 +983,10 @@ export default function PortfolioContent({
     setSelectedContent(null)
     setPageState('expanded-empty')
   }, [selectedCategory, selectedContent, pageState])
-
+  
   const handleSubcategorySelect = useCallback((subcategory: Subcategory) => {
+    justWentBackRef.current = false
+    setJustWentBackFromContent(false) // Clear flag when navigating forward
     if (selectedSubcategory?.id === subcategory.id) {
       if (pageState === 'collapsed-reader') {
         setPageState('expanded-empty')
@@ -823,6 +1004,8 @@ export default function PortfolioContent({
   }, [selectedSubcategory, selectedContent, pageState])
 
   const handleContentSelect = useCallback((content: ContentItem) => {
+    justWentBackRef.current = false
+    setJustWentBackFromContent(false) // Clear flag when selecting content
     if (selectedContent?.id === content.id) {
       if (pageState === 'collapsed-reader') {
         setPageState('expanded-empty')
@@ -833,16 +1016,65 @@ export default function PortfolioContent({
       return
     }
     
+    // Set category and subcategory for the selected content so menu can show content items level
+    const { category, subcategory } = findCategorySubcategoryForContent(content, categories, subcategories)
+    if (category) setSelectedCategory(category)
+    if (subcategory) setSelectedSubcategory(subcategory)
+    
     setSelectedContent(content)
     void ensureContentDetails(content)
     setPageState('collapsed-reader')
-  }, [selectedContent, pageState, ensureContentDetails])
+  }, [selectedContent, pageState, ensureContentDetails, categories, subcategories])
 
   const handleMainMenuClick = useCallback(() => {
     if (pageState === 'collapsed-reader') {
+      // User is manually expanding the menu - clear saved state so it doesn't interfere
+      // This allows the user to navigate freely after coming back from another tab
+      if (onSaveMenuState && isMobile) {
+        console.log('[DEBUG] Clearing saved state - user manually expanded menu')
+        onSaveMenuState({
+          pageState: null,
+          contentId: null,
+          categoryId: null,
+          subcategoryId: null
+        })
+      }
       setPageState('expanded-empty')
     }
-  }, [pageState])
+  }, [pageState, onSaveMenuState, isMobile])
+
+  const handleMenuBack = useCallback(() => {
+    // From level 3 (content items): go back to level 2 (subcategories)
+    if (selectedContent) {
+      // IMPORTANT: Set flag BEFORE clearing content to ensure menu sees it
+      // Use both ref (immediate) and state (triggers re-render)
+      justWentBackRef.current = true
+      // Force state update in a way that React can't batch
+      setJustWentBackFromContent(true)
+      // Clear content - this will trigger menu re-render
+      setSelectedContent(null)
+      // Keep selectedSubcategory and selectedCategory - menu will use flag to show subcategories
+      // Flag will be cleared when user navigates forward (in handleCategorySelect/handleSubcategorySelect)
+    }
+    // From level 2 (subcategories): go back to level 1 (categories)
+    else if (selectedSubcategory) {
+      justWentBackRef.current = false
+      setJustWentBackFromContent(false)
+      setSelectedSubcategory(null)
+      setSelectedContent(null)
+      // selectedCategory stays set, menu will show categories
+    }
+    // From level 1 (categories): shouldn't happen (back button hidden)
+    else if (selectedCategory) {
+      justWentBackRef.current = false
+      setJustWentBackFromContent(false)
+      setSelectedCategory(null)
+      setSelectedSubcategory(null)
+      setSelectedContent(null)
+    }
+  }, [selectedCategory, selectedSubcategory, selectedContent])
+  
+  
 
   const handleCollectionClick = useCallback((collection: Collection) => {
     onCollectionClick(collection)
@@ -850,6 +1082,432 @@ export default function PortfolioContent({
   }, [onCollectionClick])
 
   const isLoading = loadingCategories || loadingContent || loadingCollections
+  const isExpanded = pageState !== 'collapsed-reader'
+
+  // Clear selections when menu opens in expanded-empty state (mobile only) - show categories by default
+  // BUT: preserve selectedContent and its parent category/subcategory if content is selected
+  // AND: preserve category/subcategory when going back from content (flag is set)
+  // AND: don't interfere with auto-selection from Resume
+  // AND: don't interfere when restoring content from tab switch
+  useEffect(() => {
+    if (!isMobile || !isExpanded || pageState !== 'expanded-empty') return
+    
+    // Don't interfere if we're auto-selecting from Resume
+    if (selectedContentIdFromResume || isAutoSelectingFromResumeRef.current) {
+      return
+    }
+    
+    // Don't interfere if we're restoring content from a previous tab switch
+    if (isRestoringFromTabSwitchRef.current) {
+      return
+    }
+    
+    // If we just went back from content, don't clear category/subcategory - they're needed to show subcategories
+    if (justWentBackFromContent || justWentBackRef.current) {
+      return
+    }
+    
+    // If content is selected, preserve it along with its category/subcategory to show content items level
+    // Otherwise, clear all selections to show categories
+    if (!selectedContent) {
+      setSelectedCategory(null)
+      setSelectedSubcategory(null)
+    }
+    // If selectedContent exists, category and subcategory should already be set from the content item
+  }, [isMobile, isExpanded, pageState, selectedContent, justWentBackFromContent, selectedContentIdFromResume])
+
+  // Remember and restore menu state on tab switch (mobile only)
+  useEffect(() => {
+    console.log('[DEBUG] Menu state memory effect: Effect triggered', {
+      activeTab,
+      prevActiveTabRef: prevActiveTabRef.current,
+      isMobile
+    })
+    
+    if (!isMobile) {
+      prevActiveTabRef.current = activeTab
+      return
+    }
+    
+    const prevTab = prevActiveTabRef.current
+    const isPortfolioTab = activeTab === 'portfolio' || isCollectionTab(activeTab, activeCollections)
+    const wasPortfolioTab = prevTab === 'portfolio' || isCollectionTab(prevTab, activeCollections)
+    
+    console.log('[DEBUG] Menu state memory effect: Tab transition check', {
+      prevTab,
+      activeTab,
+      wasPortfolioTab,
+      isPortfolioTab,
+      shouldSave: wasPortfolioTab && !isPortfolioTab
+    })
+    
+    // Remember state when leaving Portfolio tab
+    if (wasPortfolioTab && !isPortfolioTab) {
+      console.log('[DEBUG] Saving Portfolio state before leaving:', {
+        pageState,
+        contentId: selectedContent?.id || null,
+        categoryId: selectedCategory?.id || null,
+        subcategoryId: selectedSubcategory?.id || null,
+        contentTitle: selectedContent?.title || null
+      })
+      lastMenuStateRef.current = pageState
+      // Also remember selected content, category, and subcategory to restore them when returning
+      lastSelectedContentRef.current = selectedContent
+      lastSelectedCategoryRef.current = selectedCategory
+      lastSelectedSubcategoryRef.current = selectedSubcategory
+      
+      // Also save to parent component so it persists across remounts
+      if (onSaveMenuState) {
+        onSaveMenuState({
+          pageState,
+          contentId: selectedContent?.id || null,
+          categoryId: selectedCategory?.id || null,
+          subcategoryId: selectedSubcategory?.id || null
+        })
+        console.log('[DEBUG] Called onSaveMenuState callback')
+      } else {
+        console.log('[DEBUG] WARNING: onSaveMenuState callback is missing!')
+      }
+    }
+    
+    // Restore state when returning to Portfolio tab
+    // We have saved state if either refs have it (same mount) or props have it (cross-mount)
+    const hasSavedState = lastMenuStateRef.current !== null || savedMenuState !== null
+    
+    console.log('[DEBUG] Menu state memory effect:', {
+      wasPortfolioTab,
+      isPortfolioTab,
+      hasSavedState,
+      lastMenuStateRef: lastMenuStateRef.current,
+      savedMenuState,
+      savedSelectedContentId,
+      currentSelectedContent: selectedContent?.id || null,
+      currentPageState: pageState,
+      isRestoring: isRestoringFromTabSwitchRef.current
+    })
+    
+    // CRITICAL: If we have saved state from props (cross-mount), let the separate restore effect handle it
+    // Don't interfere here - the separate effect will restore the content
+    if (savedMenuState !== null && savedMenuState === 'collapsed-reader' && savedSelectedContentId && !selectedContent) {
+      console.log('[DEBUG] Menu state memory effect: Deferring to separate restore effect')
+      // We have saved state to restore, but let the separate restore effect handle it
+      // Just update the ref and return to prevent this effect from resetting
+      prevActiveTabRef.current = activeTab
+      return
+    }
+    
+    // Restore if we're switching from a non-Portfolio tab to Portfolio AND we have saved state (same mount)
+    const shouldRestore = !wasPortfolioTab && isPortfolioTab && hasSavedState
+    
+    if (shouldRestore) {
+      console.log('[DEBUG] Menu state memory effect: Should restore (same mount)')
+      // If we have selectedContentIdFromResume, skip reset - auto-selection will handle it
+      if (selectedContentIdFromResume || isAutoSelectingFromResumeRef.current) {
+        console.log('[DEBUG] Menu state memory effect: Skipping - auto-selection in progress')
+        prevActiveTabRef.current = activeTab
+        return
+      }
+      
+      // CRITICAL: If we just completed auto-selection, preserve the state
+      // This prevents the menu state memory effect from resetting after auto-selection completes
+      if (justAutoSelectedFromResumeRef.current) {
+        console.log('[DEBUG] Menu state memory effect: Skipping - just completed auto-selection')
+        // Just completed auto-selection - don't reset, preserve the collapsed state with content
+        prevActiveTabRef.current = activeTab
+        return
+      }
+      
+      // Check if we're already restoring (from the separate restore effect)
+      if (isRestoringFromTabSwitchRef.current) {
+        console.log('[DEBUG] Menu state memory effect: Skipping - restoration in progress')
+        prevActiveTabRef.current = activeTab
+        return
+      }
+      
+      // CRITICAL: If content is selected AND pageState is collapsed, preserve it
+      // This handles:
+      // 1. User selects content → goes to Resume → comes back (preserve collapsed with content)
+      // 2. Auto-selection just completed (content selected, pageState is collapsed-reader)
+      // This check MUST come before checking lastState to prevent resetting after auto-selection
+      if (selectedContent && pageState === 'collapsed-reader') {
+        // Content is selected and menu is collapsed, so keep it that way
+        // Don't clear selections - they're already set
+        // Don't reset pageState - it's already correct
+        prevActiveTabRef.current = activeTab
+        return
+      }
+      
+      const lastState = lastMenuStateRef.current || savedMenuState
+      
+      // If menu was collapsed when leaving (with content selected), restore the content
+      // Check both refs (for same-mount restoration) and saved props (for cross-mount restoration)
+      const contentToRestoreFromRef = lastState === 'collapsed-reader' ? lastSelectedContentRef.current : null
+      const contentToRestoreFromProps = savedMenuState === 'collapsed-reader' && savedSelectedContentId ? 
+        content.find(c => c.id === savedSelectedContentId) : null
+      const contentToRestore = contentToRestoreFromRef || contentToRestoreFromProps
+      
+      if (contentToRestore) {
+        // Set flag to prevent other effects from interfering
+        isRestoringFromTabSwitchRef.current = true
+        
+        // Wait for content to load before restoring
+        if (loadingContent || content.length === 0) {
+          // Content not loaded yet, will restore on next render
+          prevActiveTabRef.current = activeTab
+          return
+        }
+        
+        // Verify the content still exists in the content array
+        const contentExists = content.some(c => c.id === contentToRestore.id)
+        
+        if (contentExists) {
+          // Restore the content that was selected when leaving
+          // Use saved props if available (cross-mount), otherwise use refs (same-mount)
+          let categoryToRestore: Category | null = null
+          let subcategoryToRestore: Subcategory | null = null
+          
+          if (savedSelectedCategoryId) {
+            categoryToRestore = categories.find(c => c.id === savedSelectedCategoryId) || null
+          } else {
+            categoryToRestore = lastSelectedCategoryRef.current
+          }
+          
+          if (savedSelectedSubcategoryId) {
+            subcategoryToRestore = subcategories.find(s => s.id === savedSelectedSubcategoryId) || null
+          } else {
+            subcategoryToRestore = lastSelectedSubcategoryRef.current
+          }
+          
+          // Restore selections
+          if (categoryToRestore) setSelectedCategory(categoryToRestore)
+          if (subcategoryToRestore) setSelectedSubcategory(subcategoryToRestore)
+          setSelectedContent(contentToRestore)
+          setPageState('collapsed-reader')
+          
+          // Load content details if needed
+          void ensureContentDetails(contentToRestore)
+          
+          // Clear flag after a delay to ensure all effects have run
+          setTimeout(() => {
+            isRestoringFromTabSwitchRef.current = false
+          }, 300)
+          prevActiveTabRef.current = activeTab
+          return
+        } else {
+          // Content no longer exists, clear the ref and fall through to default behavior
+          lastSelectedContentRef.current = null
+          lastSelectedCategoryRef.current = null
+          lastSelectedSubcategoryRef.current = null
+          isRestoringFromTabSwitchRef.current = false
+        }
+      }
+      
+      // If menu was expanded when leaving → reset to expanded (loading screen)
+      // BUT: Only if content is NOT selected (if content is selected, we already returned above)
+      if ((lastState === 'expanded-empty' || lastState === 'expanded-reader') && !selectedContent) {
+        setPageState('expanded-empty')
+        // Clear selections to show loading screen
+        setSelectedCategory(null)
+        setSelectedSubcategory(null)
+        setSelectedContent(null)
+      }
+      // If menu was collapsed when leaving but no content was selected → keep collapsed (preserve user's place)
+      // The state and selections should already be preserved, so no action needed
+    }
+    
+    // Update previous tab ref
+    prevActiveTabRef.current = activeTab
+  }, [activeTab, pageState, isMobile, activeCollections, selectedContentIdFromResume, selectedContent, selectedCategory, selectedSubcategory, content, loadingContent, ensureContentDetails, savedMenuState, savedSelectedContentId, savedSelectedCategoryId, savedSelectedSubcategoryId, onSaveMenuState])
+  
+  // Store onSaveMenuState in a ref to avoid dependency issues
+  const onSaveMenuStateRef = useRef(onSaveMenuState)
+  useEffect(() => {
+    onSaveMenuStateRef.current = onSaveMenuState
+  }, [onSaveMenuState])
+  
+  // Store saved state in refs so cleanup can access them
+  const savedMenuStateRef = useRef(savedMenuState)
+  const savedSelectedContentIdRef = useRef(savedSelectedContentId)
+  useEffect(() => {
+    savedMenuStateRef.current = savedMenuState
+    savedSelectedContentIdRef.current = savedSelectedContentId
+  }, [savedMenuState, savedSelectedContentId])
+  
+  // Separate effect for cleanup on unmount only
+  useEffect(() => {
+    if (!isMobile) return
+    
+    // Cleanup: Save state when component unmounts (when switching away from Portfolio)
+    return () => {
+      if (!onSaveMenuStateRef.current) return
+      
+      // Don't save if we're restoring - this would overwrite the saved state we're trying to restore
+      if (isRestoringFromTabSwitchRef.current) {
+        console.log('[DEBUG] Cleanup: Skipping save - restoration in progress')
+        return
+      }
+      
+      const currentPageState = pageStateRef.current
+      const currentContent = selectedContentRef.current
+      
+      // Don't save if we're in default state with no content AND we have saved state to restore
+      // This prevents overwriting a good saved state when the component remounts in default state
+      // Check if we have saved state by checking if savedMenuState prop exists (from parent)
+      if (currentPageState === 'expanded-empty' && !currentContent && savedMenuStateRef.current !== null) {
+        console.log('[DEBUG] Cleanup: Skipping save - default state with saved state to restore', {
+          savedMenuState: savedMenuStateRef.current,
+          savedSelectedContentId: savedSelectedContentIdRef.current
+        })
+        return
+      }
+      
+      // Don't save if we're in default state with no content - this would overwrite a good saved state
+      // Only save if we have actual state to preserve (content selected or menu was expanded)
+      if (currentPageState === 'expanded-empty' && !currentContent) {
+        console.log('[DEBUG] Cleanup: Skipping save - default state with no content')
+        return
+      }
+      
+      // Save current state from refs (always up-to-date)
+      console.log('[DEBUG] Cleanup: Saving Portfolio state on unmount:', {
+        pageState: currentPageState,
+        contentId: currentContent?.id || null,
+        categoryId: selectedCategoryRef.current?.id || null,
+        subcategoryId: selectedSubcategoryRef.current?.id || null,
+        contentTitle: currentContent?.title || null
+      })
+      onSaveMenuStateRef.current({
+        pageState: currentPageState,
+        contentId: currentContent?.id || null,
+        categoryId: selectedCategoryRef.current?.id || null,
+        subcategoryId: selectedSubcategoryRef.current?.id || null
+      })
+    }
+  }, [isMobile]) // Only depends on isMobile, cleanup runs on unmount
+  
+  // Separate effect to restore on mount when we have saved state from props (cross-mount restoration)
+  // This runs independently of the menu state memory effect to handle cross-mount restoration
+  // IMPORTANT: This must run as early as possible to prevent other effects from resetting state
+  useEffect(() => {
+    console.log('[DEBUG] Restore effect running:', {
+      isMobile,
+      activeTab,
+      savedMenuState,
+      savedSelectedContentId,
+      selectedContent: selectedContent?.id || null,
+      pageState,
+      loadingContent,
+      contentLength: content.length
+    })
+    
+    if (!isMobile) {
+      console.log('[DEBUG] Restore effect: Not mobile, skipping')
+      return
+    }
+    if (activeTab !== 'portfolio') {
+      console.log('[DEBUG] Restore effect: Not portfolio tab, skipping')
+      return
+    }
+    if (!savedMenuState || savedMenuState !== 'collapsed-reader') {
+      console.log('[DEBUG] Restore effect: No saved state or not collapsed-reader, skipping')
+      return
+    }
+    if (!savedSelectedContentId) {
+      console.log('[DEBUG] Restore effect: No saved content ID, skipping')
+      return
+    }
+    if (selectedContent && pageState === 'collapsed-reader') {
+      console.log('[DEBUG] Restore effect: Already restored, skipping')
+      return // Already restored
+    }
+    
+    console.log('[DEBUG] Restore effect: Setting restoration flag')
+    // Set flag immediately to prevent other effects from interfering
+    isRestoringFromTabSwitchRef.current = true
+    
+    // Wait for content to load before restoring
+    if (loadingContent || content.length === 0) {
+      console.log('[DEBUG] Restore effect: Waiting for content to load...')
+      // Content not loaded yet, will restore on next render when content loads
+      // But keep the flag set so other effects don't interfere
+      return
+    }
+    
+    // Find the content to restore
+    const contentToRestore = content.find(c => c.id === savedSelectedContentId)
+    if (!contentToRestore) {
+      console.log('[DEBUG] Restore effect: Content not found in array:', savedSelectedContentId)
+      isRestoringFromTabSwitchRef.current = false
+      return
+    }
+    
+    console.log('[DEBUG] Restore effect: Found content, restoring state:', {
+      contentTitle: contentToRestore.title,
+      savedSelectedCategoryId,
+      savedSelectedSubcategoryId
+    })
+    
+    // Restore category and subcategory
+    let categoryToRestore: Category | null = null
+    let subcategoryToRestore: Subcategory | null = null
+    
+    if (savedSelectedCategoryId) {
+      categoryToRestore = categories.find(c => c.id === savedSelectedCategoryId) || null
+    }
+    
+    if (savedSelectedSubcategoryId) {
+      subcategoryToRestore = subcategories.find(s => s.id === savedSelectedSubcategoryId) || null
+    }
+    
+    console.log('[DEBUG] Restore effect: Restoring selections:', {
+      category: categoryToRestore?.name || null,
+      subcategory: subcategoryToRestore?.name || null,
+      content: contentToRestore.title
+    })
+    
+    // Restore selections - set all at once
+    if (categoryToRestore) setSelectedCategory(categoryToRestore)
+    if (subcategoryToRestore) setSelectedSubcategory(subcategoryToRestore)
+    setSelectedContent(contentToRestore)
+    setPageState('collapsed-reader')
+    
+    console.log('[DEBUG] Restore effect: State restored, loading content details')
+    
+    // Load content details if needed
+    void ensureContentDetails(contentToRestore)
+    
+    // Keep flag set for a longer delay to ensure all effects have run
+    setTimeout(() => {
+      isRestoringFromTabSwitchRef.current = false
+      console.log('[DEBUG] Restore effect: Restoration flag cleared')
+    }, 1000)
+  }, [isMobile, activeTab, savedMenuState, savedSelectedContentId, savedSelectedCategoryId, savedSelectedSubcategoryId, selectedContent, pageState, loadingContent, content, categories, subcategories, ensureContentDetails])
+
+  // Measure collapsed menu height for mobile positioning
+  useEffect(() => {
+    if (!isMobile || isExpanded || pageState !== 'collapsed-reader') {
+      setCollapsedMenuHeight(0)
+      return
+    }
+
+    const measureMenuHeight = () => {
+      if (menuBarRef.current) {
+        const height = menuBarRef.current.offsetHeight
+        setCollapsedMenuHeight(height)
+      }
+    }
+
+    // Measure after a short delay to ensure DOM is ready
+    const timeoutId = setTimeout(measureMenuHeight, 0)
+    
+    // Also measure on resize
+    window.addEventListener('resize', measureMenuHeight)
+    
+    return () => {
+      clearTimeout(timeoutId)
+      window.removeEventListener('resize', measureMenuHeight)
+    }
+  }, [isMobile, isExpanded, pageState])
 
   if (isLoading) {
     return (
@@ -859,7 +1517,7 @@ export default function PortfolioContent({
           style={{ 
             top: profileHeight ? `${profileHeight}px` : '200px',
             left: '0',
-            right: '0'
+            width: '100%'
           }}
         >
           <div className="flex gap-12">
@@ -901,18 +1559,11 @@ export default function PortfolioContent({
       </div>
     )
   }
-
+  
   return (
     <div>
-      <div 
-        className="fixed z-10 bg-[#1a1d23] flex justify-between items-start min-h-16 px-[60px]" 
-        style={{ 
-          top: profileHeight ? `${profileHeight}px` : '200px',
-          left: '0',
-          right: '0'
-        }}
-        data-portfolio-menu-bar
-      >
+      {/* MainMenu in mobile expanded mode - rendered outside container */}
+      {isMobile && isExpanded && (
         <MainMenu
           categories={filteredCategories}
           subcategories={filteredSubcategories}
@@ -925,46 +1576,96 @@ export default function PortfolioContent({
           onSubcategorySelect={handleSubcategorySelect}
           onContentSelect={handleContentSelect}
           onMenuClick={handleMainMenuClick}
+          onMenuBack={handleMenuBack}
+          profileHeight={profileHeight}
+          justWentBackFromContent={justWentBackFromContent}
+          justWentBackFromContentRef={justWentBackRef}
         />
-        <CollectionsMenu
-          collections={collections}
-          featuredCollections={featuredCollections}
-          selectedContent={selectedContent}
-          pageState={pageState}
-          onCollectionClick={handleCollectionClick}
-        />
-      </div>
-
-      <div className="relative">
-        {pageState === 'collapsed-reader' && (
-          <ContentReader
-            content={selectedContent}
-            isVisible={true}
-            positioning="collapsed"
-            onTitleVisibilityChange={({ titleInView, subtitleInView }) => {
-              setTitleInView(titleInView)
-              setSubtitleInView(subtitleInView)
-            }}
-          />
-        )}
-        
-        {pageState === 'collapsed-reader' && (
-          <InfoMenu
-            metadata={selectedContent ? {
-              publication_name: selectedContent.publication_name || '',
-              publication_date: selectedContent.publication_date || '',
-              byline_style_text: selectedContent.byline_style_text || '',
-              author_name: selectedContent.author_name || '',
-              link_style_text: selectedContent.link_style_text || '',
-              source_link: selectedContent.source_link || ''
-            } : null}
-            isVisible={true}
+      )}
+      
+      {/* Menu container - for desktop and mobile collapsed mode */}
+      {(!isMobile || !isExpanded) && (
+        <div 
+          ref={menuBarRef}
+          className={`portfolio-menu-bar fixed z-30 bg-bg-menu-bar border-t-2 border-accent-light flex justify-between items-start min-h-16 px-[60px] ${pageState === 'collapsed-reader' ? 'collapsed' : ''}`}
+          style={{ 
+            top: profileHeight ? `${profileHeight}px` : '200px',
+            left: '0',
+            width: '100%',
+            ...(pageState !== 'collapsed-reader' ? { 
+              bottom: '64px', // Extend to bottom nav with 0px gap
+              overflow: 'hidden' // Per redesign spec
+            } : {})
+          }}
+          data-portfolio-menu-bar
+        >
+          <MainMenu
+            categories={filteredCategories}
+            subcategories={filteredSubcategories}
+            content={filteredContent}
+            pageState={pageState}
+            selectedCategory={selectedCategory}
+            selectedSubcategory={selectedSubcategory}
+            selectedContent={selectedContent}
+            onCategorySelect={handleCategorySelect}
+            onSubcategorySelect={handleSubcategorySelect}
+            onContentSelect={handleContentSelect}
+            onMenuClick={handleMainMenuClick}
             profileHeight={profileHeight}
-            stickyTitle={selectedContent?.title || null}
-            stickySubtitle={selectedContent?.subtitle || null}
-            showStickyTitle={!titleInView}
-            showStickySubtitle={!!selectedContent?.subtitle && !subtitleInView}
+            justWentBackFromContent={justWentBackFromContent}
+            justWentBackFromContentRef={justWentBackRef}
           />
+          {/* Step 4 Stage 8: Featured collections menu hidden in mobile */}
+          {!isMobile && (
+            <CollectionsMenu
+              collections={collections}
+              featuredCollections={featuredCollections}
+              selectedContent={selectedContent}
+              pageState={pageState}
+              onCollectionClick={handleCollectionClick}
+            />
+          )}
+        </div>
+      )}
+
+      <div 
+        className="relative"
+        style={
+          isMobile && !isExpanded && pageState === 'collapsed-reader'
+            ? {
+                marginTop: `${collapsedMenuHeight + 10}px`
+              }
+            : undefined
+        }
+      >
+        {pageState === 'collapsed-reader' && (
+          <>
+            <InfoMenu
+              metadata={selectedContent ? {
+                publication_name: selectedContent.publication_name || '',
+                publication_date: selectedContent.publication_date || '',
+                byline_style_text: selectedContent.byline_style_text || '',
+                author_name: selectedContent.author_name || '',
+                link_style_text: selectedContent.link_style_text || '',
+                source_link: selectedContent.source_link || ''
+              } : null}
+              isVisible={true}
+              profileHeight={profileHeight}
+              stickyTitle={selectedContent?.title || null}
+              stickySubtitle={selectedContent?.subtitle || null}
+              showStickyTitle={!titleInView}
+              showStickySubtitle={!!selectedContent?.subtitle && !subtitleInView}
+            />
+            <ContentReader
+              content={selectedContent}
+              isVisible={true}
+              positioning="collapsed"
+              onTitleVisibilityChange={({ titleInView, subtitleInView }) => {
+                setTitleInView(titleInView)
+                setSubtitleInView(subtitleInView)
+              }}
+            />
+          </>
         )}
       </div>
     </div>

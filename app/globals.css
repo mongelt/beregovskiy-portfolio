@@ -1,12 +1,140 @@
 @import "tailwindcss";
 @import "video.js/dist/video-js.css";
 
+/* Tailwind v4 Theme Configuration - Custom Colors */
+/* In Tailwind v4, @theme defines colors that Tailwind will generate utilities for */
+/* NOTE: @theme must come BEFORE :root so CSS variables are available */
+/* We use direct color values here (matching :root values) so Tailwind can generate utilities */
+@theme {
+  /* Accent Colors - Burgundy Family */
+  --color-accent-light: #6B2A2A;
+  --color-accent-dark: #fc5454;
+  --color-accent-emerald-300: #A85A5A;
+  --color-accent-emerald-400: #6B2A2A;
+  --color-accent-emerald-700: #6B2A2A;
+  --color-accent-purple-600: #6B2A2A;
+  --color-accent-blue: #6B2A2A;
+  
+  /* Background Colors */
+  --color-bg-main: #c7c7c2;
+  --color-bg-menu-bar: #0B0A0A;
+  --color-bg-card: #E9E3E0;
+  --color-bg-card-alt: #E9E3E0;
+  --color-bg-profile: #121212;
+  --color-bg-info-menu: #1a1618;
+  --color-bg-gray-800: #181416;
+  --color-bg-gray-700: #272223;
+  --color-bg-unlinked-skills-pill: #2a2527;
+  
+  /* Text Colors */
+  --color-text-headings: #111111;
+  --color-text-body: #1a1a1a;
+  --color-text-secondary: #4a4a4a;
+  --color-text-metadata: #5a5a5a;
+  --color-text-on-dark: #e0e0e0;
+  --color-text-on-dark-secondary: #b0b0b0;
+  --color-text-on-dark-inactive: #808080;
+  --color-text-on-dark-hover: #e8e2dd;
+  --color-text-white: #ffffff;
+  --color-text-primary: #1a1a1a;
+  --color-text-gray-400: #4d4844;
+  --color-text-gray-500: #5c5652;
+  
+  /* Border Colors */
+  --color-border-gray-800: #2e2a28;
+  --color-border-gray-700: #3d3835;
+  --color-border-card: #b8b0aa;
+}
+
 :root {
-  --background: #0f1419; /* Figma background color */
+  /* ============================================
+     REDESIGN DESIGN TOKENS - Single Source of Truth
+     Source: docs/design-mockup/redesign-mockup.html lines 37-112
+     ============================================ */
+  
+  /* Background Colors */
+  --bg-main: #c7c7c2; /* Middle zone (content reader, resume background) - colder weathered stone gray */
+  --bg-menu-bar: #0B0A0A; /* Main menu and bottom nav - warm black */
+  --bg-card: #E9E3E0; /* Resume cards background */
+  --bg-card-alt: #E9E3E0;
+  --bg-profile: #121212; /* Profile tab background - cold granite */
+  --bg-info-menu: #1a1618; /* Info menu - warm black */
+  --bg-gray-800: #181416;
+  --bg-gray-700: #272223;
+  --bg-unlinked-skills-pill: #2a2527;
+  
+  /* Text Colors */
+  --text-headings: #111111; /* Headings */
+  --text-body: #1a1a1a; /* Body text */
+  --text-secondary: #4a4a4a; /* Secondary text - cooler neutral gray */
+  --text-metadata: #5a5a5a; /* Metadata text - cooler neutral gray */
+  --text-on-dark: #e0e0e0; /* Cooler neutral gray */
+  --text-on-dark-secondary: #b0b0b0; /* Cooler neutral gray */
+  --text-on-dark-inactive: #808080; /* Cooler neutral gray */
+  --text-on-dark-hover: #e8e2dd; /* Hover state for text on dark backgrounds */
+  /* FIX: text-white should be pure white for pills and other white-on-burgundy elements */
+  --text-white: #ffffff;
+  --text-primary: #1a1a1a;
+  --text-gray-400: #4d4844;
+  --text-gray-500: #5c5652;
+  
+  /* Accent Colors - Burgundy Family (Desaturated) */
+  --accent-light: #6B2A2A; /* Primary burgundy accent - used for selected items, links, underlines, corner marks, skill pills, content tabs, collection tabs, center entry markers */
+  --accent-dark: #fc5454; /* Main menu selected, info menu labels - desaturated burgundy */
+  --accent-emerald-300: #A85A5A; /* Hover states - desaturated burgundy */
+  
+  /* Consolidated aliases (all point to --accent-light for consistency) */
+  --accent-emerald-400: var(--accent-light); /* Alias: Used for selected items, links */
+  --accent-emerald-700: var(--accent-light); /* Alias: Skill pills, content tabs */
+  --accent-purple-600: var(--accent-light); /* Alias: Collection tabs */
+  --accent-blue: var(--accent-light); /* Alias: Center entry markers */
+  
+  /* Border Colors */
+  --border-gray-800: #2e2a28;
+  --border-gray-700: #3d3835;
+  --border-card: #b8b0aa;
+  
+  /* Spacing */
+  --spacing-profile-collapsed: 200px;
+  --spacing-menu-bar-top: 15px;
+  --spacing-menu-bar-horizontal: 60px;
+  --spacing-content-top: 105px;
+  --spacing-content-left: 295px; /* Info menu width (280px) + 30px gap (will be updated in Step 8) */
+  --spacing-content-right: 50px;
+  --spacing-bottom-nav-height: 64px;
+  --spacing-info-menu-left: 25px;
+  --spacing-menu-bar-height: 64px;
+  
+  /* Typography */
+  /* Note: --font-display, --font-body, --font-ui are set by Next.js font loaders in app/layout.tsx */
+  /* These are fallbacks only - Next.js will override them */
+  --font-display: 'Crimson Pro', serif;
+  --font-body: 'Public Sans', sans-serif;
+  --font-ui: 'Space Grotesk', sans-serif;
+  --font-primary: 'Space Grotesk', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  
+  /* Layout */
+  --info-menu-width: 280px; /* Redesign change: Changed from centered to sidebar */
+  --font-size-base: 16px;
+  --font-size-sm: 0.875rem;
+  --font-size-xs: 0.75rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  
+  /* Resume Tab Fixed Layout Constraints (CRITICAL - Cannot Change) */
+  --width-side-card: 560px; /* ⚠️ CRITICAL: Cannot change without breaking timeline calculations */
+  --width-center-card: 384px; /* ⚠️ CRITICAL: Cannot change without breaking timeline calculations */
+  --timeline-offset: 35px; /* ⚠️ CRITICAL: Cannot change without breaking timeline math */
+  
+  /* Legacy/Backwards Compatibility (Keep for existing components) */
+  --background: #9A928E; /* Body background gradient start color (matches body gradient) */
   --foreground: oklch(0.985 0 0); /* Near white text */
   --primary: oklch(0.488 0.243 264.376); /* Purple-blue primary */
-  --emerald-400: oklch(0.765 0.177 163.223);
-  --emerald-300: oklch(0.845 0.143 164.978);
+  --emerald-400: oklch(0.765 0.177 163.223); /* Old emerald - will be replaced by burgundy */
+  --emerald-300: oklch(0.845 0.143 164.978); /* Old emerald - will be replaced by burgundy */
   --gray-300: oklch(0.872 0.01 258.338);
   --gray-400: oklch(0.707 0.022 261.325);
   --gray-500: oklch(0.551 0.027 264.364);
@@ -14,16 +142,50 @@
   --font-size: 16px;
 }
 
+html {
+  height: 100%;
+  background: var(--bg-main) !important;
+  /* NOTE: overflow-x: hidden removed from html to prevent scrollbar overlap with fixed elements */
+  /* overflow-x: hidden causes fixed elements (menu bar) to extend into scrollbar area */
+}
+
+/* Override Tailwind dark mode default background */
+html.dark {
+  background: var(--bg-main) !important;
+}
+
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: var(--font-space-grotesk, 'Space Grotesk', system-ui, sans-serif);
-  font-size: var(--font-size);
+  height: 100%;
+  min-height: 100vh;
+  color: var(--text-body);
+  background: var(--bg-main) !important;
+  font-family: var(--font-body);
+  font-size: var(--font-size-base);
+  line-height: 1.65;
+  overflow-x: hidden; /* Per redesign spec: prevents horizontal scrolling */
+  transition: background 0.3s ease;
+}
+
+/* Override Tailwind dark mode default background on body */
+body.dark {
+  background: var(--bg-main) !important;
+}
+
+/* Ensure font-display class uses Crimson Pro correctly */
+/* Note: This is a functional override to ensure Next.js font variable is applied correctly */
+.font-display {
+  font-family: var(--font-display) !important;
+}
+
+/* Menu expanded state: Same uniform background */
+body.menu-expanded {
+  background: var(--bg-main);
 }
 
 :root {
+  /* Legacy Layout Constants (Keep for backwards compatibility) */
   --business-card-height: 200px;
-  --tab-bar-height: 64px;
+  --tab-bar-height: 64px; /* ⚠️ CRITICAL: Must match BOTTOM_NAV_HEIGHT_PX in lib/constants.ts */
   --sidebar-width: 320px;
 }
 
@@ -74,7 +236,7 @@ body {
 }
 
 .codex-editor {
-  color: #fff;
+  color: var(--text-on-dark-secondary);
 }
 
 .codex-editor__redactor {
@@ -245,12 +407,12 @@ body {
 }
 
 .ce-paragraph {
-  color: #d1d5db;
+  color: var(--text-on-dark-secondary);
   line-height: 1.7;
 }
 
 .ce-header {
-  color: #fff;
+  color: var(--text-on-dark-secondary);
   font-weight: 600;
 }
 
@@ -275,12 +437,12 @@ body {
 }
 
 .cdx-quote__text {
-  color: #d1d5db;
+  color: var(--text-on-dark-secondary);
   min-height: 30px;
 }
 
 .cdx-list {
-  color: #d1d5db;
+  color: var(--text-on-dark-secondary);
 }
 
 .tc-table {
@@ -302,7 +464,7 @@ body {
 }
 
 .cdx-warning__message {
-  color: #d1d5db;
+  color: var(--text-on-dark-secondary);
 }
 
 .cdx-alert {
@@ -470,11 +632,11 @@ div[status="open"] .toggle-block__icon > svg,
 }
 
 .cdx-attaches__file-info {
-  color: #d1d5db;
+  color: var(--text-on-dark-secondary);
 }
 
 .cdx-nested-list {
-  color: #d1d5db;
+  color: var(--text-on-dark-secondary);
 }
 
 .cdx-nested-list__item {
@@ -571,14 +733,14 @@ code.inline-code {
 .cdx-image__caption {
   text-align: center;
   margin-top: 8px;
-  color: #d1d5db;
+  color: var(--text-on-dark-secondary);
   font-size: 0.9em;
 }
 
 .image-tool__caption {
   text-align: center !important;
   margin-top: 8px;
-  color: #d1d5db;
+  color: var(--text-on-dark-secondary);
   font-size: 0.9em;
 }
 
@@ -624,3 +786,1045 @@ code.inline-code {
   }
 }
 
+/* ============================================
+   MAIN MENU + COLLECTIONS MENU PSEUDO-ELEMENTS
+   Step 4: Redesign implementation
+   ============================================ */
+
+/* Main Menu - Active border (expanded state) */
+.main-menu::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: 0;
+  right: 0;
+  height: 9px; /* Expanded state - will be 2px in collapsed via CSS */
+  background: var(--accent-light);
+  transition: height 0.3s ease;
+}
+
+/* Main Menu - Active border (collapsed state) */
+.portfolio-menu-bar.collapsed .main-menu::before {
+  height: 2px;
+}
+
+/* Collections Menu - Active border (expanded state) */
+.collections-menu::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: 0;
+  right: 0;
+  height: 9px; /* Expanded state - will be 2px in collapsed via CSS */
+  background: var(--accent-light);
+  transition: height 0.3s ease;
+}
+
+/* Collections Menu - Active border (collapsed state) */
+.portfolio-menu-bar.collapsed .collections-menu::before {
+  height: 2px;
+}
+
+/* Content Items - Dash prefix */
+.main-menu-item[data-content-item="true"] > div:first-child::before {
+  content: '—';
+  color: var(--accent-dark);
+  margin-right: 8px;
+}
+
+/* Content Items - Selected state with dash */
+.main-menu-item.selected[data-content-item="true"] > div:first-child::before {
+  color: #A85A5A; /* accent-emerald-300 */
+}
+
+/* Portfolio Menu Bar - Collapsed state */
+.portfolio-menu-bar.collapsed {
+  padding-bottom: 4px; /* Reduced from 10px by 6px to fix breadcrumb vertical centering */
+  align-items: center; /* Center breadcrumb vertically in collapsed state */
+}
+
+/* ============================================
+   CONTENT READER
+   Step 5: Redesign implementation - Fonts, Colors, and Background (NO positioning changes)
+   ============================================ */
+
+/* Content Reader - Main container (background only, no positioning) */
+.content-reader {
+  background: linear-gradient(to bottom, var(--bg-main) 0%, var(--bg-main) 100%);
+}
+
+/* Content Reader - Title (fonts and colors only) */
+.content-title {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--text-headings);
+  line-height: 1.2;
+  margin-bottom: 12px;
+}
+
+/* Content Reader - Subtitle (fonts and colors only) */
+.content-subtitle {
+  font-family: var(--font-body);
+  font-size: 1.25rem;
+  color: var(--text-secondary);
+  margin-bottom: 32px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--accent-light);
+}
+
+/* Content Reader - Body (fonts and colors only) */
+.content-body {
+  font-family: var(--font-body);
+  color: var(--text-body);
+  line-height: 1.7;
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+.content-body p {
+  margin-bottom: 16px;
+}
+
+/* Editor.js content styling within content-body - Base styles */
+.content-body .codex-editor,
+.content-body .codex-editor__redactor,
+.content-body .ce-block__content {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
+}
+
+/* Editor.js - Paragraph blocks */
+.content-body .ce-paragraph {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
+  margin-bottom: 16px !important;
+}
+
+.content-body .ce-block__content p {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
+  margin-bottom: 16px !important;
+}
+
+/* Editor.js - Header blocks (h1-h6) */
+.content-body .ce-header {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+  font-weight: 400 !important;
+}
+
+.content-body .ce-header[data-level="1"],
+.content-body .ce-header h1 {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
+}
+
+.content-body .ce-header[data-level="2"],
+.content-body .ce-header h2 {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
+}
+
+.content-body .ce-header[data-level="3"],
+.content-body .ce-header h3 {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
+}
+
+.content-body .ce-header[data-level="4"],
+.content-body .ce-header h4 {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
+}
+
+.content-body .ce-header[data-level="5"],
+.content-body .ce-header h5 {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
+}
+
+.content-body .ce-header[data-level="6"],
+.content-body .ce-header h6 {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
+}
+
+/* Editor.js - List blocks */
+.content-body .ce-list {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
+}
+
+.content-body .ce-list__item {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
+}
+
+.content-body .cdx-list__item {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
+}
+
+/* Editor.js - Quote blocks */
+.content-body .ce-quote {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
+}
+
+.content-body .ce-quote__text {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
+}
+
+.content-body .ce-quote__caption {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
+}
+
+/* Editor.js - Warning blocks */
+.content-body .ce-warning {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
+}
+
+.content-body .ce-warning__title {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
+}
+
+.content-body .ce-warning__message {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
+}
+
+/* Editor.js - Table blocks */
+.content-body .ce-table {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
+}
+
+.content-body .ce-table td,
+.content-body .ce-table th {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
+}
+
+/* Editor.js - All text elements within blocks */
+.content-body .ce-block__content * {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+}
+
+/* Override for specific elements that should inherit size/weight */
+.content-body .ce-block__content strong,
+.content-body .ce-block__content b {
+  font-weight: 600 !important;
+}
+
+.content-body .ce-block__content em,
+.content-body .ce-block__content i {
+  font-style: italic !important;
+}
+
+/* ============================================
+   INFO MENU
+   Step 5: Redesign implementation
+   ============================================ */
+
+/* Info Menu - Main container */
+.info-menu {
+  position: fixed;
+  left: 0;
+  top: calc(var(--spacing-profile-collapsed) + var(--spacing-menu-bar-height));
+  bottom: var(--spacing-bottom-nav-height);
+  width: var(--info-menu-width);
+  background: var(--bg-info-menu);
+  padding: 32px 28px;
+  border-right: 1px solid var(--border-gray-800);
+  box-shadow: 4px 0 24px rgba(0,0,0,0.15), 2px 0 8px rgba(0,0,0,0.08);
+  z-index: 20;
+  overflow-y: auto;
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+
+/* Info Menu - Sticky title container */
+.info-menu-sticky-title {
+  margin-bottom: 16px;
+  padding-top: 16px;
+  padding-bottom: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Info Menu - Sticky title text */
+.info-menu-sticky-title-text {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-on-dark);
+  line-height: 1.3;
+}
+
+/* Info Menu - Sticky subtitle */
+.info-menu-sticky-subtitle {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  color: var(--text-on-dark-inactive);
+  line-height: 1.25;
+  margin-top: 4px;
+}
+
+/* Info Menu - Label (field labels) */
+.info-menu-label {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  color: #ffffff;
+}
+
+/* Info Menu - Value (field values) */
+.info-menu-value {
+  font-family: var(--font-body);
+  color: var(--text-on-dark-inactive);
+}
+
+/* Info Menu - Line (metadata line container) */
+.info-menu-line {
+  font-family: var(--font-body);
+  font-size: var(--font-size-sm);
+  margin-bottom: 8px;
+}
+
+/* Info Menu - Link */
+.info-menu-link {
+  font-family: var(--font-body);
+  color: var(--text-on-dark-inactive);
+  text-decoration: underline;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Info Menu - Link hover */
+.info-menu-link:hover {
+  color: var(--text-on-dark);
+}
+
+/* Info Menu - Favicon */
+.info-menu-favicon {
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+}
+
+/* ============================================
+   RESUME TAB
+   Step 6: Redesign implementation - HIGH RISK
+   ============================================ */
+
+/* Resume Container - Background only (NO positioning/layout changes) */
+.resume-container {
+  background: var(--bg-main);
+}
+
+/* Timeline Now Marker - Visuals only (NO positioning changes) */
+.timeline-now-marker {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--accent-light);
+}
+
+/* Timeline Line - Visuals only (NO positioning changes) */
+.timeline-line {
+  background: linear-gradient(to bottom, rgba(122, 48, 32, 0.75) 0%, rgba(122, 48, 32, 0.75) 90%, transparent 100%);
+  filter: blur(0.5px);
+  z-index: 1; /* Above body background, below month marker pills */
+}
+
+/* Timeline Month Marker Background Pill - Visuals only (NO positioning changes) */
+.timeline-month-marker-pill {
+  background: var(--bg-main); /* Fully opaque center */
+  padding: 4px 12px;
+  padding-top: 9px; /* Extended by 5px to accommodate fade above */
+  padding-bottom: 9px; /* Extended by 5px to accommodate fade below */
+  border-radius: 4px;
+  border: none;
+  z-index: 2 !important; /* Above timeline line (z-index 1), below ALL text (z-index 3) */
+  position: absolute;
+  left: 0;
+  top: -5px; /* Extend 5px above to accommodate fade */
+  right: 0;
+  bottom: -10px; /* Extend 10px below (5px + 5px more) to accommodate fade */
+  pointer-events: none;
+  /* Fade-out gradient at edges - extended 5px above and 10px below */
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 10%,
+    black 90%,
+    transparent 100%
+  ),
+  linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 12%,
+    black 75%,
+    transparent 100%
+  );
+  mask-composite: intersect;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 10%,
+    black 90%,
+    transparent 100%
+  ),
+  linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 12%,
+    black 75%,
+    transparent 100%
+  );
+  -webkit-mask-composite: source-in;
+}
+
+/* Timeline Month Marker Text - Visuals only (NO positioning changes) */
+.timeline-month-marker-text {
+  color: var(--accent-light);
+  font-size: 0.9rem;
+  font-weight: 300;
+  white-space: nowrap;
+  z-index: 3 !important; /* Above ALL background pills (z-index 2) - ensures text from any marker appears above pills from any marker */
+  position: relative;
+  display: inline-block;
+  padding: 4px 12px; /* Match pill padding */
+  text-shadow: none !important; /* Remove text shadow per redesign */
+}
+
+/* Timeline Birth Marker - Visuals only (NO positioning changes) */
+.timeline-birth-marker {
+  color: var(--text-metadata);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-body);
+}
+
+/* ============================================
+   RESUME TAB - CENTER ENTRY
+   Visuals only (NO positioning/layout changes)
+   ============================================ */
+
+/* Center Entry Card - Visuals only (NO positioning changes) */
+.resume-entry-card-center {
+  background: transparent !important;
+  border: none !important;
+  z-index: 10;
+}
+
+/* Center Entry Title - Visuals only (NO positioning changes) */
+.resume-entry-card-center .resume-entry-title {
+  font-family: var(--font-display);
+  font-size: 1.375rem;
+  font-weight: 600;
+  color: var(--accent-light);
+}
+
+/* Center Entry Date - Visuals only (NO positioning changes) */
+.resume-entry-card-center .resume-entry-date {
+  background: none;
+  font-family: var(--font-ui);
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  color: var(--text-metadata);
+}
+
+/* Center Entry Description - Visuals only (NO positioning changes) */
+.center-entry-description {
+  color: var(--text-body);
+  font-size: var(--font-size-base);
+  text-align: center !important;
+}
+
+/* Center Entry Background Pill - Visuals only (NO positioning changes) */
+.center-entry-pill {
+  background: var(--bg-main); /* Fully opaque - completely blocks timeline */
+  border-radius: 4px;
+  z-index: 6; /* Between month markers (7) and side lines (5) */
+  pointer-events: none; /* Allow clicks to pass through */
+  position: absolute; /* Positioned via inline styles in component */
+  /* 10px fade-out gradient at edges (384px width ≈ 2.6% per 10px, using ~3% for safety) */
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 3%,
+    black 97%,
+    transparent 100%
+  ),
+  linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 3%,
+    black 97%,
+    transparent 100%
+  );
+  mask-composite: intersect;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 3%,
+    black 97%,
+    transparent 100%
+  ),
+  linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 3%,
+    black 97%,
+    transparent 100%
+  );
+  -webkit-mask-composite: source-in;
+}
+
+/* Center Entry Actions - Remove filters/shadows (NO positioning changes) */
+.resume-entry-card-center .resume-entry-action,
+.center-entry-expand-btn {
+  filter: none !important;
+  text-shadow: none !important;
+  box-shadow: none !important;
+  -webkit-filter: none !important;
+}
+
+/* Center Entry Expand/Collapse Button - Visuals only (NO positioning changes) */
+.center-entry-expand-btn {
+  color: var(--accent-light) !important;
+  opacity: 1 !important;
+}
+
+/* Remove all shadows from center entry and its children */
+.resume-entry-card-center,
+.resume-entry-card-center * {
+  filter: none !important;
+  text-shadow: none !important;
+  box-shadow: none !important;
+}
+
+/* ============================================
+   RESUME TAB - SIDE ENTRIES (LEFT & RIGHT)
+   Visuals only (NO positioning/layout changes)
+   ============================================ */
+
+/* Side Entry Cards - Visuals only (NO positioning changes) */
+.resume-entry-card-left,
+.resume-entry-card-right {
+  background: linear-gradient(to bottom, rgba(220, 210, 200, 0.85) 0%, rgba(210, 200, 190, 0.75) 100%) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border-left: 0px solid var(--accent-light) !important;
+  border-right: 0px solid var(--accent-light) !important;
+  border-bottom: 3px solid var(--accent-light) !important;
+  border-top: 6px solid var(--accent-light) !important;
+  border-radius: 0 !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07) !important;
+}
+
+/* Paper texture overlay - Visuals only (NO positioning changes) */
+.resume-entry-card-left::after,
+.resume-entry-card-right::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    repeating-linear-gradient(0deg, rgba(0,0,0,0.08) 0px, transparent 0.5px, transparent 1.5px, rgba(0,0,0,0.08) 2px),
+    repeating-linear-gradient(90deg, rgba(0,0,0,0.08) 0px, transparent 0.5px, transparent 1.5px, rgba(0,0,0,0.08) 2px);
+  background-size: 3px 3px;
+  opacity: 0.4;
+  pointer-events: none;
+  z-index: 0; /* Behind content */
+}
+
+/* Ensure card content appears above texture overlay */
+.resume-entry-card-left > *,
+.resume-entry-card-right > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Corner accent mark - left cards: top-right corner */
+.resume-entry-card-left::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 10px 10px 0;
+  border-color: transparent var(--accent-light) transparent transparent;
+  z-index: 2; /* Above content */
+}
+
+/* Corner accent mark - right cards: top-left corner */
+.resume-entry-card-right::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 0 10px 10px;
+  border-color: transparent transparent transparent var(--accent-light);
+  z-index: 2; /* Above content */
+}
+
+/* Side Entry Title - Visuals only (NO positioning changes) */
+.resume-entry-card-left .resume-entry-title,
+.resume-entry-card-right .resume-entry-title {
+  font-family: var(--font-display);
+  font-size: 1.375rem;
+  font-weight: 600;
+  color: var(--text-headings);
+  line-height: 1.3;
+}
+
+/* Side Entry Subtitle - Visuals only (NO positioning changes) */
+.resume-entry-card-left .resume-entry-subtitle,
+.resume-entry-card-right .resume-entry-subtitle {
+  color: var(--text-secondary);
+  font-size: var(--font-size-base);
+  font-family: var(--font-body);
+}
+
+/* Side Entry Date - Visuals only (NO positioning changes) */
+.resume-entry-card-left .resume-entry-date,
+.resume-entry-card-right .resume-entry-date {
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-metadata);
+}
+
+/* Present date indicator dot */
+.resume-entry-card-left .resume-entry-date.has-present::after,
+.resume-entry-card-right .resume-entry-date.has-present::after {
+  content: '';
+  display: inline-block;
+  width: 4.5px;
+  height: 4.5px;
+  background: var(--accent-light);
+  border-radius: 50%;
+  margin-left: 6px;
+  margin-right: 2px;
+  vertical-align: middle;
+}
+
+/* Side Entry Description - Visuals only (NO positioning changes) */
+.resume-entry-card-left .resume-entry-description,
+.resume-entry-card-right .resume-entry-description {
+  color: var(--text-body);
+  font-size: var(--font-size-base);
+}
+
+/* Side Entry Description Expanded - Visuals only (NO positioning changes) */
+.resume-entry-card-left .resume-entry-description-expanded,
+.resume-entry-card-right .resume-entry-description-expanded {
+  margin-top: 16px;
+  padding: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(122, 48, 32, 0.15);
+  background: rgba(192, 184, 180, 0.15);
+  color: var(--text-body);
+  font-size: var(--font-size-base);
+  line-height: 1.7;
+  text-align: left !important;
+}
+
+.resume-entry-card-left .resume-entry-description-expanded p,
+.resume-entry-card-right .resume-entry-description-expanded p {
+  margin-bottom: 16px;
+}
+
+.resume-entry-card-left .resume-entry-description-expanded p:last-child,
+.resume-entry-card-right .resume-entry-description-expanded p:last-child {
+  margin-bottom: 0;
+}
+
+/* Editor.js content within side entry expanded descriptions - Visuals only (NO positioning changes) */
+.resume-entry-card-left .resume-entry-description-expanded .codex-editor,
+.resume-entry-card-left .resume-entry-description-expanded .codex-editor__redactor,
+.resume-entry-card-left .resume-entry-description-expanded .ce-block__content,
+.resume-entry-card-right .resume-entry-description-expanded .codex-editor,
+.resume-entry-card-right .resume-entry-description-expanded .codex-editor__redactor,
+.resume-entry-card-right .resume-entry-description-expanded .ce-block__content {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+  font-size: var(--font-size-base) !important;
+  font-weight: 400 !important;
+}
+
+/* Editor.js - Paragraph blocks */
+.resume-entry-card-left .resume-entry-description-expanded .ce-paragraph,
+.resume-entry-card-right .resume-entry-description-expanded .ce-paragraph {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+  font-size: var(--font-size-base) !important;
+  font-weight: 400 !important;
+  margin-bottom: 16px !important;
+}
+
+.resume-entry-card-left .resume-entry-description-expanded .ce-block__content p,
+.resume-entry-card-right .resume-entry-description-expanded .ce-block__content p {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+  font-size: var(--font-size-base) !important;
+  font-weight: 400 !important;
+  margin-bottom: 16px !important;
+}
+
+.resume-entry-card-left .resume-entry-description-expanded .ce-block__content p:last-child,
+.resume-entry-card-right .resume-entry-description-expanded .ce-block__content p:last-child {
+  margin-bottom: 0 !important;
+}
+
+/* Editor.js - Header blocks (h1-h6) */
+.resume-entry-card-left .resume-entry-description-expanded .ce-header,
+.resume-entry-card-right .resume-entry-description-expanded .ce-header {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+  font-weight: 400 !important;
+}
+
+.resume-entry-card-left .resume-entry-description-expanded .ce-header[data-level="1"],
+.resume-entry-card-left .resume-entry-description-expanded .ce-header h1,
+.resume-entry-card-right .resume-entry-description-expanded .ce-header[data-level="1"],
+.resume-entry-card-right .resume-entry-description-expanded .ce-header h1 {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+  font-size: var(--font-size-base) !important;
+  font-weight: 400 !important;
+}
+
+.resume-entry-card-left .resume-entry-description-expanded .ce-header[data-level="2"],
+.resume-entry-card-left .resume-entry-description-expanded .ce-header h2,
+.resume-entry-card-right .resume-entry-description-expanded .ce-header[data-level="2"],
+.resume-entry-card-right .resume-entry-description-expanded .ce-header h2 {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+  font-size: var(--font-size-base) !important;
+  font-weight: 400 !important;
+}
+
+.resume-entry-card-left .resume-entry-description-expanded .ce-header[data-level="3"],
+.resume-entry-card-left .resume-entry-description-expanded .ce-header h3,
+.resume-entry-card-right .resume-entry-description-expanded .ce-header[data-level="3"],
+.resume-entry-card-right .resume-entry-description-expanded .ce-header h3 {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+  font-size: var(--font-size-base) !important;
+  font-weight: 400 !important;
+}
+
+.resume-entry-card-left .resume-entry-description-expanded .ce-header[data-level="4"],
+.resume-entry-card-left .resume-entry-description-expanded .ce-header h4,
+.resume-entry-card-right .resume-entry-description-expanded .ce-header[data-level="4"],
+.resume-entry-card-right .resume-entry-description-expanded .ce-header h4 {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+  font-size: var(--font-size-base) !important;
+  font-weight: 400 !important;
+}
+
+.resume-entry-card-left .resume-entry-description-expanded .ce-header[data-level="5"],
+.resume-entry-card-left .resume-entry-description-expanded .ce-header h5,
+.resume-entry-card-right .resume-entry-description-expanded .ce-header[data-level="5"],
+.resume-entry-card-right .resume-entry-description-expanded .ce-header h5 {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+  font-size: var(--font-size-base) !important;
+  font-weight: 400 !important;
+}
+
+.resume-entry-card-left .resume-entry-description-expanded .ce-header[data-level="6"],
+.resume-entry-card-left .resume-entry-description-expanded .ce-header h6,
+.resume-entry-card-right .resume-entry-description-expanded .ce-header[data-level="6"],
+.resume-entry-card-right .resume-entry-description-expanded .ce-header h6 {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+  font-size: var(--font-size-base) !important;
+  font-weight: 400 !important;
+}
+
+/* Editor.js - List blocks */
+.resume-entry-card-left .resume-entry-description-expanded .ce-list,
+.resume-entry-card-right .resume-entry-description-expanded .ce-list {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+  font-size: var(--font-size-base) !important;
+  font-weight: 400 !important;
+}
+
+.resume-entry-card-left .resume-entry-description-expanded .ce-list__item,
+.resume-entry-card-right .resume-entry-description-expanded .ce-list__item {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+  font-size: var(--font-size-base) !important;
+  font-weight: 400 !important;
+}
+
+.resume-entry-card-left .resume-entry-description-expanded .cdx-list__item,
+.resume-entry-card-right .resume-entry-description-expanded .cdx-list__item {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+  font-size: var(--font-size-base) !important;
+  font-weight: 400 !important;
+}
+
+/* Editor.js - Quote blocks */
+.resume-entry-card-left .resume-entry-description-expanded .ce-quote,
+.resume-entry-card-right .resume-entry-description-expanded .ce-quote {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+  font-size: var(--font-size-base) !important;
+  font-weight: 400 !important;
+}
+
+.resume-entry-card-left .resume-entry-description-expanded .ce-quote__text,
+.resume-entry-card-right .resume-entry-description-expanded .ce-quote__text {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+  font-size: var(--font-size-base) !important;
+  font-weight: 400 !important;
+}
+
+.resume-entry-card-left .resume-entry-description-expanded .ce-quote__caption,
+.resume-entry-card-right .resume-entry-description-expanded .ce-quote__caption {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+  font-size: var(--font-size-base) !important;
+  font-weight: 400 !important;
+}
+
+/* Editor.js - Warning blocks */
+.resume-entry-card-left .resume-entry-description-expanded .ce-warning,
+.resume-entry-card-right .resume-entry-description-expanded .ce-warning {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+  font-size: var(--font-size-base) !important;
+  font-weight: 400 !important;
+}
+
+.resume-entry-card-left .resume-entry-description-expanded .ce-warning__title,
+.resume-entry-card-right .resume-entry-description-expanded .ce-warning__title {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+  font-size: var(--font-size-base) !important;
+  font-weight: 400 !important;
+}
+
+.resume-entry-card-left .resume-entry-description-expanded .ce-warning__message,
+.resume-entry-card-right .resume-entry-description-expanded .ce-warning__message {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+  font-size: var(--font-size-base) !important;
+  font-weight: 400 !important;
+}
+
+/* Editor.js - Table blocks */
+.resume-entry-card-left .resume-entry-description-expanded .ce-table,
+.resume-entry-card-right .resume-entry-description-expanded .ce-table {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+  font-size: var(--font-size-base) !important;
+  font-weight: 400 !important;
+}
+
+.resume-entry-card-left .resume-entry-description-expanded .ce-table td,
+.resume-entry-card-left .resume-entry-description-expanded .ce-table th,
+.resume-entry-card-right .resume-entry-description-expanded .ce-table td,
+.resume-entry-card-right .resume-entry-description-expanded .ce-table th {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+  font-size: var(--font-size-base) !important;
+  font-weight: 400 !important;
+}
+
+/* Editor.js - All text elements within blocks */
+.resume-entry-card-left .resume-entry-description-expanded .ce-block__content *,
+.resume-entry-card-right .resume-entry-description-expanded .ce-block__content * {
+  font-family: var(--font-body) !important;
+  color: var(--text-body) !important;
+  line-height: 1.7 !important;
+}
+
+/* Override for specific elements that should inherit size/weight */
+.resume-entry-card-left .resume-entry-description-expanded .ce-block__content strong,
+.resume-entry-card-left .resume-entry-description-expanded .ce-block__content b,
+.resume-entry-card-right .resume-entry-description-expanded .ce-block__content strong,
+.resume-entry-card-right .resume-entry-description-expanded .ce-block__content b {
+  font-weight: 600 !important;
+}
+
+.resume-entry-card-left .resume-entry-description-expanded .ce-block__content em,
+.resume-entry-card-left .resume-entry-description-expanded .ce-block__content i,
+.resume-entry-card-right .resume-entry-description-expanded .ce-block__content em,
+.resume-entry-card-right .resume-entry-description-expanded .ce-block__content i {
+  font-style: italic !important;
+}
+
+/* Side Entry Asset Box - Visuals only (NO positioning changes) */
+.resume-entry-card-left .resume-entry-asset,
+.resume-entry-card-right .resume-entry-asset {
+  border: 1px solid var(--border-card);
+  background: var(--accent-light);
+  border-radius: 6px;
+  justify-content: flex-start;
+  align-items: flex-start;
+  transition: all 0.2s;
+  box-shadow: inset 0 1px 2px rgba(122, 48, 32, 0.06), inset 0 0 0 1px rgba(122, 48, 32, 0.08);
+}
+
+.resume-entry-card-left .resume-entry-asset:hover,
+.resume-entry-card-right .resume-entry-asset:hover {
+  border-color: var(--accent-light);
+  transform: translateY(-1px);
+  box-shadow: inset 0 1px 2px rgba(122, 48, 32, 0.08), inset 0 0 0 1px rgba(122, 48, 32, 0.12), 0 2px 4px rgba(0,0,0,0.1);
+  background: var(--accent-dark);
+}
+
+/* Side Entry Asset Icon - Visuals only (NO positioning changes) */
+.resume-entry-card-left .resume-entry-asset-icon,
+.resume-entry-card-right .resume-entry-asset-icon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  top: 8px;
+  left: 8px;
+  margin: 0;
+}
+
+/* Side Entry Asset Caption - Visuals only (NO positioning changes) */
+.resume-entry-card-left .resume-entry-asset-caption,
+.resume-entry-card-right .resume-entry-asset-caption {
+  color: #ffffff;
+  font-size: var(--font-size-sm);
+  line-height: 1.4;
+  bottom: 8px;
+  left: 8px;
+  right: 8px;
+  font-family: var(--font-body);
+}
+
+/* Side Entry Actions - Visuals only (NO positioning changes) */
+.resume-entry-card-left .resume-entry-actions,
+.resume-entry-card-right .resume-entry-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Side Entry Action Button - Visuals only (NO positioning changes) */
+.resume-entry-card-left .resume-entry-action,
+.resume-entry-card-right .resume-entry-action {
+  color: var(--accent-light);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.resume-entry-card-left .resume-entry-action:hover,
+.resume-entry-card-right .resume-entry-action:hover {
+  color: var(--accent-dark);
+}

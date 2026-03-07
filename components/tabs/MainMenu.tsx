@@ -1,6 +1,9 @@
 'use client'
 
 import { useMemo, useState, useEffect } from 'react'
+import { useMobileState } from '@/lib/responsive'
+import { ChevronLeft } from 'lucide-react'
+import { BOTTOM_NAV_HEIGHT_PX } from '@/lib/constants'
 
 
 type PageState = 'expanded-empty' | 'expanded-reader' | 'collapsed-reader'
@@ -63,10 +66,15 @@ interface MainMenuProps {
   onSubcategorySelect: (subcategory: Subcategory) => void // Selection callback (Step 3.3)
   onContentSelect: (content: ContentItem) => void // Selection callback (Step 3.3)
   onMenuClick: () => void // Collapsed state expansion (Step 3.3)
+  onMenuBack?: () => void // Back navigation callback (Step 4.3)
+  profileHeight?: number // Profile height for mobile positioning
+  justWentBackFromContent?: boolean // Flag to track if we just went back from content
+  justWentBackFromContentRef?: React.MutableRefObject<boolean> // Ref for immediate synchronous access
 }
 
 
-export default function MainMenu({ categories, subcategories, content, pageState, selectedCategory, selectedSubcategory, selectedContent, onCategorySelect, onSubcategorySelect, onContentSelect, onMenuClick }: MainMenuProps) {
+export default function MainMenu({ categories, subcategories, content, pageState, selectedCategory, selectedSubcategory, selectedContent, onCategorySelect, onSubcategorySelect, onContentSelect, onMenuClick, onMenuBack, profileHeight = 0, justWentBackFromContent = false, justWentBackFromContentRef }: MainMenuProps) {
+  const { isMobile } = useMobileState()
   const sortedCategories = useMemo(() => {
     return [...categories].sort((a, b) => a.order_index - b.order_index)
   }, [categories])
@@ -198,12 +206,14 @@ export default function MainMenu({ categories, subcategories, content, pageState
     item: Category | Subcategory | ContentItem,
     itemType: 'category' | 'subcategory' | 'content'
   ) => {
-    if (!isAnimating) {
+    // Reorder column only in desktop (not mobile) - this moves selected item to top
+    if (!isMobile && !isAnimating) {
       setIsAnimating(true)
       reorderColumn(itemType, item.id)
       setTimeout(() => setIsAnimating(false), 100)
     }
     
+    // Always call the selection handlers (don't block on animation in mobile)
     if (itemType === 'category') {
       onCategorySelect(item as Category)
     } else if (itemType === 'subcategory') {
@@ -215,44 +225,209 @@ export default function MainMenu({ categories, subcategories, content, pageState
 
   const isExpanded = pageState !== 'collapsed-reader'
 
-  if (!isExpanded && pageState === 'collapsed-reader') {
+  // Mobile collapsed mode: show only active content item sidebar title
+  if (!isExpanded && pageState === 'collapsed-reader' && isMobile) {
+    // CRITICAL: Menu cannot be collapsed without content selected
+    if (!selectedContent) {
+      return null
+    }
+    
     return (
-      <div onClick={onMenuClick} className="cursor-pointer flex flex-row items-center gap-4 pt-[15px]">
+      <div 
+        onClick={onMenuClick} 
+        className="cursor-pointer px-[15px] border-b border-border-gray-800 flex items-center"
+        style={{ minHeight: '50px' }}
+      >
+        <div className="text-accent-dark text-base font-medium">
+          {selectedContent.sidebar_title || selectedContent.title}
+        </div>
+      </div>
+    )
+  }
+
+  // Desktop collapsed mode: show breadcrumb
+  if (!isExpanded && pageState === 'collapsed-reader' && !isMobile) {
+    return (
+      <div onClick={onMenuClick} className="main-menu-breadcrumb cursor-pointer flex flex-row items-center gap-2 py-[10px]">
         {selectedCategory && (
           <>
-            <div className="text-gray-500">{selectedCategory.name}</div>
-            {(selectedSubcategory || selectedContent) && <span className="text-gray-500"> | </span>}
+            <div className="text-text-on-dark-inactive">{selectedCategory.name}</div>
+            {(selectedSubcategory || selectedContent) && <span className="main-menu-breadcrumb-separator text-text-on-dark-inactive"> | </span>}
           </>
         )}
         {selectedSubcategory && (
           <>
-            <div className="text-gray-500">{selectedSubcategory.name}</div>
-            {selectedContent && <span className="text-gray-500"> | </span>}
+            <div className="text-text-on-dark-inactive">{selectedSubcategory.name}</div>
+            {selectedContent && <span className="main-menu-breadcrumb-separator text-text-on-dark-inactive"> | </span>}
           </>
         )}
         {selectedContent && (
-          <div className="text-[#00ff88]">{selectedContent.sidebar_title || selectedContent.title}</div>
+          <div className="main-menu-breadcrumb-active text-accent-dark">{selectedContent.sidebar_title || selectedContent.title}</div>
         )}
       </div>
     )
   }
 
+  // Mobile expanded mode: single-column vertical list
+  if (isExpanded && isMobile) {
+    
+    // Determine which level to show
+    // Priority: content items (if selected) → subcategories (if navigating) → categories (default)
+    // Show content items when: a content item was previously selected
+    // Show subcategories when: category selected but no content item (during navigation)
+    // Show categories when: nothing selected (default)
+    // Show content items when: subcategory selected (navigating) OR content item selected (highlighting)
+    // BUT NOT when we just went back from content - in that case show subcategories
+    const hasContent = selectedContent !== null
+    const hasSubcategory = selectedSubcategory !== null
+    const hasCategory = selectedCategory !== null
+    
+    // Check both state and ref - ref for immediate access, state for re-renders
+    const justWentBack = justWentBackFromContentRef?.current ?? justWentBackFromContent
+    
+    // Detect "going back from content" state:
+    // When going back from content, we have: category set, subcategory set, content null, flag set
+    // This is different from "clicking subcategory" which also has category and subcategory set
+    // The key difference: when going back, the flag is set
+    const isGoingBackFromContent = justWentBack && hasCategory && hasSubcategory && !hasContent
+    
+    // When going back from content: show subcategories (level 2)
+    // When navigating forward: show content items if subcategory is selected
+    const showContent = (hasSubcategory || hasContent) && !isGoingBackFromContent
+    // Show subcategories when:
+    // 1. Category is selected but no subcategory yet (just clicked category) - forward navigation
+    // 2. We just went back from content (flag is set, both category and subcategory set, but no content)
+    const showSubcategories = hasCategory && (!hasSubcategory || isGoingBackFromContent)
+    // Show categories when: nothing else is showing
+    const showCategories = !showContent && !showSubcategories
+    
+    // Show Back button on level 2 (subcategories) or level 3 (content items)
+    const showBackButton = showSubcategories || showContent
+
+    return (
+      <div 
+        className="fixed left-0 right-0 bg-bg-menu-bar overflow-y-auto px-[15px] py-4"
+        style={{
+          top: profileHeight ? `${profileHeight}px` : '0',
+          bottom: `${BOTTOM_NAV_HEIGHT_PX}px`,
+          zIndex: 20
+        }}
+      >
+        {/* Back Button - shown on level 2 and 3 */}
+        {showBackButton && onMenuBack && (
+          <div 
+            onClick={onMenuBack}
+            className="flex items-center gap-2 text-accent-dark text-base font-semibold py-1 mb-4 border-b border-border-gray-800 cursor-pointer transition-colors hover:text-accent-emerald-300"
+          >
+            <ChevronLeft size={18} />
+            <span>Back</span>
+          </div>
+        )}
+
+        {/* Categories Level - shown by default, or when no content item is selected */}
+        {showCategories && (
+          <div className="flex flex-col gap-3 w-full">
+            {categories.length === 0 ? (
+              <div className="text-text-on-dark-inactive">No categories</div>
+            ) : (
+              categoriesOrder.map(categoryId => {
+                const cat = sortedCategories.find(c => c.id === categoryId)
+                if (!cat) return null
+                const color = getSelectionColor(cat.id, 'category')
+                const isSelected = color === 'green'
+                return (
+                  <div
+                    key={cat.id}
+                    onClick={() => handleItemClick(cat, 'category')}
+                    className={`main-menu-item ${isSelected ? 'selected text-accent-dark' : 'text-text-on-dark-inactive'} hover:text-text-on-dark cursor-pointer py-2 border-b border-border-gray-800 text-base`}
+                  >
+                    {cat.name}
+                  </div>
+                )
+              })
+            )}
+          </div>
+        )}
+
+        {/* Subcategories Level - shown when category is selected but no content item */}
+        {showSubcategories && (
+          <div className="flex flex-col gap-3 w-full">
+            {displayedSubcategories.length === 0 ? (
+              <div className="text-text-on-dark-inactive">No subcategories</div>
+            ) : (
+              subcategoriesOrder.map(subcategoryId => {
+                const sub = displayedSubcategories.find(s => s.id === subcategoryId)
+                if (!sub) return null
+                const color = getSelectionColor(sub.id, 'subcategory')
+                const isSelected = color === 'green'
+                return (
+                  <div
+                    key={sub.id}
+                    onClick={() => handleItemClick(sub, 'subcategory')}
+                    className={`main-menu-item ${isSelected ? 'selected text-accent-dark' : 'text-text-on-dark-inactive'} hover:text-text-on-dark cursor-pointer py-2 border-b border-border-gray-800 text-base`}
+                  >
+                    {sub.name}
+                  </div>
+                )
+              })
+            )}
+          </div>
+        )}
+
+        {/* Content Items Level - only shown when a content item was previously selected */}
+        {showContent && (
+          <div className="flex flex-col gap-3 w-full">
+            {displayedContent.length === 0 ? (
+              <div className="text-text-on-dark-inactive">No content</div>
+            ) : (
+              contentOrder.map(contentId => {
+                const item = displayedContent.find(c => c.id === contentId)
+                if (!item) return null
+                const color = getSelectionColor(item.id, 'content')
+                const isSelected = color === 'green'
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => handleItemClick(item, 'content')}
+                    data-content-item="true"
+                    className={`main-menu-item ${isSelected ? 'selected text-accent-dark' : 'text-text-on-dark-inactive'} hover:text-text-on-dark cursor-pointer py-2 border-b border-border-gray-800 text-base`}
+                  >
+                    <div>{item.sidebar_title || item.title}</div>
+                    {(item.sidebar_subtitle || item.publication_year) && (
+                      <div className="main-menu-content-subtitle text-text-on-dark-inactive text-sm mt-1">
+                        {item.sidebar_subtitle && item.publication_year 
+                          ? `${item.sidebar_subtitle} / ${item.publication_year}`
+                          : item.publication_year || ''
+                        }
+                      </div>
+                    )}
+                  </div>
+                )
+              })
+            )}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // Desktop expanded mode: multi-column layout
   return (
-    <div className="flex gap-[3rem] items-start pt-[15px]">
-      <div className="flex flex-col gap-3" style={{ maxWidth: '25ch', overflow: 'hidden' }}>
+    <div className="main-menu flex gap-[3rem] items-start pt-[15px] relative">
+      <div className="main-menu-column flex flex-col gap-3" style={{ maxWidth: '25ch', overflow: 'hidden' }}>
         {categories.length === 0 ? (
-          <div className="text-gray-400">No categories</div>
+          <div className="text-text-on-dark-inactive">No categories</div>
         ) : (
           categoriesOrder.map(categoryId => {
             const cat = sortedCategories.find(c => c.id === categoryId)
             if (!cat) return null
             const color = getSelectionColor(cat.id, 'category')
+            const isSelected = color === 'green'
             return (
               <div 
                 key={cat.id}
                 onClick={() => handleItemClick(cat, 'category')}
-                className={`${color === 'green' ? 'text-[#00ff88]' : 'text-[#6b7280]'} hover:text-[#e5e7eb] cursor-pointer`}
-                style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                className={`main-menu-item ${isSelected ? 'selected text-accent-dark' : 'text-text-on-dark'} hover:text-text-white hover:bg-[rgba(191,106,77,0.08)] cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap`}
               >
                 {cat.name}
               </div>
@@ -261,20 +436,20 @@ export default function MainMenu({ categories, subcategories, content, pageState
         )}
       </div>
       
-      <div className="flex flex-col gap-3" style={{ maxWidth: '25ch', overflow: 'hidden' }}>
+      <div className="main-menu-column flex flex-col gap-3" style={{ maxWidth: '25ch', overflow: 'hidden' }}>
         {displayedSubcategories.length === 0 ? (
-          <div className="text-gray-400">No subcategories</div>
+          <div className="text-text-on-dark-inactive">No subcategories</div>
         ) : (
           subcategoriesOrder.map(subcategoryId => {
             const sub = displayedSubcategories.find(s => s.id === subcategoryId)
             if (!sub) return null
             const color = getSelectionColor(sub.id, 'subcategory')
+            const isSelected = color === 'green'
             return (
               <div 
                 key={sub.id}
                 onClick={() => handleItemClick(sub, 'subcategory')}
-                className={`${color === 'green' ? 'text-[#00ff88]' : 'text-[#6b7280]'} hover:text-[#e5e7eb] cursor-pointer`}
-                style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                className={`main-menu-item ${isSelected ? 'selected text-accent-dark' : 'text-text-on-dark'} hover:text-text-white hover:bg-[rgba(191,106,77,0.08)] cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap`}
               >
                 {sub.name}
               </div>
@@ -283,23 +458,25 @@ export default function MainMenu({ categories, subcategories, content, pageState
         )}
       </div>
       
-      <div className="flex flex-col gap-3">
+      <div className="main-menu-column-wide flex flex-col gap-3">
         {displayedContent.length === 0 ? (
-          <div className="text-gray-400">No content</div>
+          <div className="text-text-on-dark-inactive">No content</div>
         ) : (
           contentOrder.map(contentId => {
             const item = displayedContent.find(c => c.id === contentId)
             if (!item) return null
             const color = getSelectionColor(item.id, 'content')
+            const isSelected = color === 'green'
             return (
               <div 
                 key={item.id}
                 onClick={() => handleItemClick(item, 'content')}
-                className={`${color === 'green' ? 'text-[#00ff88]' : 'text-[#6b7280]'} hover:text-[#e5e7eb] cursor-pointer`}
+                data-content-item="true"
+                className={`main-menu-item ${isSelected ? 'selected text-accent-dark' : 'text-text-on-dark'} hover:text-text-white hover:bg-[rgba(191,106,77,0.08)] cursor-pointer`}
               >
-                <div>{item.sidebar_title || item.title}</div>
+                <div className="inline-block whitespace-nowrap">{item.sidebar_title || item.title}</div>
                 {(item.sidebar_subtitle || item.publication_year) && (
-                  <div className="text-gray-400 text-sm">
+                  <div className="main-menu-content-subtitle text-text-on-dark-inactive text-sm">
                     {item.sidebar_subtitle && item.publication_year 
                       ? `${item.sidebar_subtitle} / ${item.publication_year}`
                       : item.publication_year || ''

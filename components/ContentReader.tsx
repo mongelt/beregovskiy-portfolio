@@ -4,6 +4,8 @@ import dynamic from 'next/dynamic'
 import { useEffect, useRef } from 'react'
 import AudioPlayer from '@/components/AudioPlayer'
 import VideoPlayer from '@/components/VideoPlayer'
+import { useMobileState } from '@/lib/responsive'
+import { BOTTOM_NAV_HEIGHT_PX } from '@/lib/constants'
 
 
 const EditorRenderer = dynamic(() => import('@/components/EditorRenderer'), { ssr: false })
@@ -51,6 +53,7 @@ interface ContentReaderProps {
 export default function ContentReader({ content, isVisible, positioning, onTitleVisibilityChange }: ContentReaderProps) {
   if (!isVisible || !content) return null
   
+  const { isMobile } = useMobileState()
   const titleRef = useRef<HTMLHeadingElement | null>(null)
   const subtitleRef = useRef<HTMLHeadingElement | null>(null)
   const notifyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -152,42 +155,55 @@ export default function ContentReader({ content, isVisible, positioning, onTitle
       }
     }
   }, [content, isVisible, onTitleVisibilityChange])
-
+  
+  // Desktop positioning
   const marginTop = '105px' // Collapsed: 105px spacing (35px + 70px fix)
-  
   const marginRight = '50px' // Gap from right edge (layout-reset.md line 323)
-  const marginLeft = '295px' // Collapsed: starts after Info Menu
+  const marginLeft = 'calc(var(--info-menu-width) + 30px)' // Starts after Info Menu (280px + 30px gap)
   
+  // Mobile positioning: full width with 15px margins, fills space between menu and bottom nav
+  const mobileStyles = isMobile ? {
+    position: 'relative' as const,
+    width: '100%',
+    marginTop: '0',
+    marginLeft: '0',
+    marginRight: '0',
+    paddingLeft: '15px',
+    paddingRight: '15px',
+    paddingBottom: `${BOTTOM_NAV_HEIGHT_PX + 24}px`
+  } : {
+    position: 'relative' as const,
+    marginTop,
+    marginLeft,
+    marginRight,
+    paddingBottom: 'calc(var(--tab-bar-height, 64px) + 24px)'
+  }
 
   const isArticleLoading = content.type === 'article' && !content.content_body
 
   return (
     <div
-      className="flex-1"
-      style={{
-        position: 'relative',
-        marginTop,
-        marginLeft,
-        marginRight
-      }}
+      className="flex-1 content-reader"
+      style={mobileStyles}
     >
       <div 
         className="text-[#e5e7eb]"
         style={{
           position: 'relative',
-          zIndex: 2,
-          paddingBottom: 'calc(var(--tab-bar-height, 64px) + 24px)'
+          zIndex: 2
         }}
       >
-        <h1 ref={titleRef} className="text-3xl font-bold text-[#e5e7eb] mb-2">{content.title}</h1>
+        <h1 ref={titleRef} className="content-title">{content.title}</h1>
         {content.subtitle && (
-          <h2 ref={subtitleRef} className="text-xl text-[#d1d5db] mb-6">{content.subtitle}</h2>
+          <h2 ref={subtitleRef} className="content-subtitle">{content.subtitle}</h2>
         )}
         {isArticleLoading && (
           <div className="text-gray-400 text-sm">Loading content...</div>
         )}
         {content.type === 'article' && content.content_body && (
-          <EditorRenderer data={content.content_body} imageSizes={content.image_sizes} />
+          <div className="content-body">
+            <EditorRenderer data={content.content_body} imageSizes={content.image_sizes} />
+          </div>
         )}
         {content.type === 'image' && content.image_url && (
           <div className="my-8 flex justify-center">

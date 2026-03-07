@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMobileState } from '@/lib/responsive'
 
 
 interface ContentMetadata {
@@ -39,6 +40,7 @@ export default function InfoMenu({
   showStickyTitle = false,
   showStickySubtitle = false
 }: InfoMenuProps) {
+  const { isMobile } = useMobileState()
   const stickyRef = useRef<HTMLDivElement | null>(null)
   const [faviconSrc, setFaviconSrc] = useState<string | null>(null)
   const [faviconStage, setFaviconStage] = useState<0 | 1 | 2>(0)
@@ -96,28 +98,47 @@ export default function InfoMenu({
     }
   }
 
-  const centerPoint = profileHeight > 0
-    ? `calc((${profileHeight}px + 25px + 100vh) / 2)`
-    : 'calc((200px + 25px + 100vh) / 2)' // Fallback to approximate Profile height if not set
+  // Desktop positioning: sidebar layout, positioned directly below menu bar
+  // Top = profile height + menu bar height (no gap)
+  const desktopTop = profileHeight > 0
+    ? `${profileHeight + 64}px` // profileHeight + menu bar height (64px)
+    : 'calc(var(--spacing-profile-collapsed) + var(--spacing-menu-bar-height))' // Fallback: 200px + 64px
+
+  // Mobile positioning: relative, 10px below collapsed menu, full width with 15px margins
+  const mobileStyles = isMobile ? {
+    position: 'relative' as const,
+    width: '100%',
+    paddingLeft: '15px',
+    paddingRight: '15px',
+    paddingTop: '10px', // 10px gap below collapsed main menu
+    paddingBottom: '15px',
+    marginTop: '0',
+    marginBottom: '0',
+    borderBottom: '1px solid #1f2937' // border-gray-800
+  } : {
+    position: 'fixed' as const,
+    left: '0',
+    top: desktopTop,
+    bottom: 'var(--spacing-bottom-nav-height)',
+    width: 'var(--info-menu-width)',
+    zIndex: 20
+  }
 
   return (
     <div
-      className="fixed z-10"
-      style={{
-        top: centerPoint, // Vertically centered between Menu Bar and Bottom Tab Bar
-        left: '25px', // 25px from left edge (per layout-reset.md line 354)
-        transform: 'translateY(-50%)' // Always centered between Menu Bar and Bottom Tab Bar
-      }}
+      className="info-menu"
+      style={mobileStyles}
     >
-      {(showStickyTitle || showStickySubtitle) && (
-        <div ref={stickyRef} className="mb-3">
+      {/* Sticky title/subtitle only shown in desktop (not mobile) */}
+      {!isMobile && (showStickyTitle || showStickySubtitle) && (
+        <div ref={stickyRef} className="info-menu-sticky-title">
           {showStickyTitle && stickyTitle && (
-            <div className="text-base font-bold text-white leading-tight">
+            <div className="info-menu-sticky-title-text">
               {stickyTitle}
             </div>
           )}
           {showStickySubtitle && stickySubtitle && (
-            <div className="text-[15px] text-gray-400 leading-tight">
+            <div className="info-menu-sticky-subtitle">
               {stickySubtitle}
             </div>
           )}
@@ -125,52 +146,52 @@ export default function InfoMenu({
       )}
       
       {(metadata.publication_name || metadata.publication_date) && (
-        <div className="text-sm mb-2">
+        <div className="info-menu-line">
           {metadata.publication_name && (
             <>
-              <span className="text-[#00ff88]">{metadata.publication_name}</span>
+              <span className="info-menu-label">{metadata.publication_name}</span>
               {metadata.publication_date && (
-                <span className="text-[#9ca3af]"> / </span>
+                <span className="info-menu-value"> / </span>
               )}
             </>
           )}
           {metadata.publication_date && (
-            <span className="text-[#9ca3af]">{metadata.publication_date}</span>
+            <span className="info-menu-value">{metadata.publication_date}</span>
           )}
         </div>
       )}
       
       {metadata.byline_style_text && (
-        <div className="text-sm mb-2">
-          <span className="text-[#00ff88]">{metadata.byline_style_text}</span>
+        <div className="info-menu-line">
+          <span className="info-menu-label">{metadata.byline_style_text}</span>
           {metadata.author_name && (
-            <span className="text-[#9ca3af]">: </span>
+            <span className="info-menu-value">: </span>
           )}
           {metadata.author_name && (
-            <span className="text-[#9ca3af]">{metadata.author_name}</span>
+            <span className="info-menu-value">{metadata.author_name}</span>
           )}
         </div>
       )}
       
       {metadata.link_style_text && (
-        <div className="text-sm">
-          <span className="text-[#00ff88]">{metadata.link_style_text}</span>
+        <div className="info-menu-line">
+          <span className="info-menu-label">{metadata.link_style_text}</span>
           {metadata.source_link && (
-            <span className="text-[#9ca3af]">: </span>
+            <span className="info-menu-value">: </span>
           )}
           {metadata.source_link ? (
             <a 
               href={metadata.source_link} 
               target="_blank" 
               rel="noopener noreferrer"
-              className="text-[#9ca3af] hover:text-[#e5e7eb] underline inline-flex items-center gap-2"
+              className="info-menu-link"
               title={metadata.source_link}
             >
               {faviconSrc && (
                 <img
                   src={faviconSrc}
                   alt=""
-                  className="h-4 w-4 rounded-sm"
+                  className="info-menu-favicon"
                   onError={handleFaviconError}
                 />
               )}
@@ -178,7 +199,7 @@ export default function InfoMenu({
             </a>
           ) : (
             metadata.link_style_text && (
-              <span className="text-[#9ca3af]">—</span>
+              <span className="info-menu-value">—</span>
             )
           )}
         </div>

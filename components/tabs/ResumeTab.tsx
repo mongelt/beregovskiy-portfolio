@@ -1,11 +1,15 @@
 'use client'
 
-import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import type { RefObject } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import EditorRenderer from '@/components/EditorRenderer'
+import { useMobileState } from '@/lib/responsive'
 
 const TIMELINE_TOP_OFFSET = 35
+
+// TEMPORARY: Set to false to disable side lines rendering
+const SHOW_SIDE_LINES = false
 
 type DebugSettings = {
   showDebugWindow: boolean
@@ -69,6 +73,8 @@ export default function ResumeTab({
   onNowMarkerInViewChange?: (inView: boolean) => void
   onSideEntryExpandedChange?: (hasExpanded: boolean) => void
 } = {}) {
+  const { isMobile } = useMobileState()
+  
   const [debugSettings, setDebugSettings] = useState<DebugSettings>({
     showDebugWindow: false,
     showAllMarkers: false
@@ -1045,10 +1051,28 @@ const TIMELINE_TOP_OFFSET = 35
   
   const resumeTopOffset = 1 // target gap below Profile
 
+  // Step 5 Stage 2: Combine and sort all entries for mobile display
+  // Sort by end date (newest first) to match desktop timeline order
+  const allEntriesForMobile = useMemo(() => {
+    if (!isMobile) return []
+    
+    const all = [...sideEntries, ...centerEntries]
+    return all.sort((a, b) => {
+      const aDate = a.date_end_normalized?.getTime() || a.date_start_normalized?.getTime() || 0
+      const bDate = b.date_end_normalized?.getTime() || b.date_start_normalized?.getTime() || 0
+      return bDate - aDate // Descending: newest first
+    })
+  }, [isMobile, sideEntries, centerEntries])
+
   return (
     <div
-      className="max-w-6xl mx-auto p-8"
-      style={{ paddingTop: `${resumeTopOffset}px` }}
+      className="max-w-6xl mx-auto resume-container"
+      style={{ 
+        paddingTop: `${resumeTopOffset}px`,
+        paddingLeft: isMobile ? '0' : '2rem',
+        paddingRight: isMobile ? '0' : '2rem',
+        paddingBottom: isMobile ? '0' : '2rem'
+      }}
     >
       {loading && (
         <div className="text-white text-center py-8">
@@ -1088,61 +1112,109 @@ const TIMELINE_TOP_OFFSET = 35
             />
           )}
           
-          <div 
-            className="relative" 
-            style={{ 
-              height: `${35 + timelineHeight + 400}px`, // Step 5.1 Fix 8: 300px continuation + 100px buffer
-              transition: 'height 300ms ease-out' // Step 5.1 Fix 10: Smooth height changes during expansion
-            }}
-          >
-            <Timeline 
-              nowMarkerRef={nowMarkerRef}
-              debugSettings={debugSettings}
-              operationalMonths={operationalMonths}
-              activatedMarkers={activatedMarkers}
-              greenActivatedMarkers={greenActivatedMarkers}
-              blueActivatedMarkers={blueActivatedMarkers}
-            markerHeights={adjustedMarkerHeights}
-              markerPositions={markerPositions}
-              timelineHeight={timelineHeight}
-              sideLineData={sideLineData}
-            startSideMarkers={startSideMarkerLabels}
-            startMarkerLabelOffset={SIDE_CARD_TOP_BUFFER}
-            startMarkerLabelBufferBottom={START_MARKER_BOTTOM_SPACER}
-            />
-            
-            {sideEntries.map((entry, index) => (
-              <EntryCard 
-                key={entry.id}
-                entry={entry}
-                position={entry.position as 'left' | 'right'}
-                index={index}
-                isExpanded={expandedEntries.has(entry.id)}
-                onToggleExpand={() => toggleExpand(entry.id)}
-                onHeightMeasured={onCardHeightMeasured}
+          {isMobile ? (
+            // Step 5 Stage 2: Mobile layout - stacked cards with 15px margins and 20px gap
+            <div className="flex flex-col" style={{ marginLeft: '15px', marginRight: '15px', gap: '20px' }}>
+              {allEntriesForMobile.map((entry, index) => (
+                <EntryCard 
+                  key={entry.id}
+                  entry={entry}
+                  position={entry.position as 'left' | 'right' | 'center'}
+                  index={index}
+                  isExpanded={expandedEntries.has(entry.id)}
+                  onToggleExpand={() => toggleExpand(entry.id)}
+                  onHeightMeasured={onCardHeightMeasured}
+                  markerPositions={markerPositions}
+                  sideAdjustedY={sideEntryAdjustedPositions.get(entry.id)}
+                  centerAdjustedY={centerEntryAdjustedPositions.get(entry.id)}
+                  onOpenCollection={onOpenCollection}
+                  onOpenContent={onOpenContent}
+                  isMobile={isMobile}
+                />
+              ))}
+            </div>
+          ) : (
+            <div 
+              className="relative" 
+              style={{ 
+                height: `${35 + timelineHeight + 400}px`, // Step 5.1 Fix 8: 300px continuation + 100px buffer
+                transition: 'height 300ms ease-out' // Step 5.1 Fix 10: Smooth height changes during expansion
+              }}
+            >
+              <Timeline 
+                nowMarkerRef={nowMarkerRef}
+                debugSettings={debugSettings}
+                operationalMonths={operationalMonths}
+                activatedMarkers={activatedMarkers}
+                greenActivatedMarkers={greenActivatedMarkers}
+                blueActivatedMarkers={blueActivatedMarkers}
+                markerHeights={adjustedMarkerHeights}
                 markerPositions={markerPositions}
-                sideAdjustedY={sideEntryAdjustedPositions.get(entry.id)} // Fix 9 Stage 3: Pass cascade-adjusted position
-                onOpenCollection={onOpenCollection}
-                onOpenContent={onOpenContent}
+                timelineHeight={timelineHeight}
+                sideLineData={SHOW_SIDE_LINES ? sideLineData : []}
+                startSideMarkers={startSideMarkerLabels}
+                startMarkerLabelOffset={SIDE_CARD_TOP_BUFFER}
+                startMarkerLabelBufferBottom={START_MARKER_BOTTOM_SPACER}
               />
-            ))}
-            
-            {centerEntries.map((entry, index) => (
-              <EntryCard 
-                key={entry.id}
-                entry={entry}
-                position='center'
-                index={index}
-                isExpanded={expandedEntries.has(entry.id)}
-                onToggleExpand={() => toggleExpand(entry.id)}
-                onHeightMeasured={onCardHeightMeasured}
-                markerPositions={markerPositions}
-                centerAdjustedY={centerEntryAdjustedPositions.get(entry.id)} // Step 5.1 Fix 5: Pass centered position
-                onOpenCollection={onOpenCollection}
-                onOpenContent={onOpenContent}
-              />
-            ))}
-          </div>
+              
+              {sideEntries.map((entry, index) => (
+                <EntryCard 
+                  key={entry.id}
+                  entry={entry}
+                  position={entry.position as 'left' | 'right'}
+                  index={index}
+                  isExpanded={expandedEntries.has(entry.id)}
+                  onToggleExpand={() => toggleExpand(entry.id)}
+                  onHeightMeasured={onCardHeightMeasured}
+                  markerPositions={markerPositions}
+                  sideAdjustedY={sideEntryAdjustedPositions.get(entry.id)} // Fix 9 Stage 3: Pass cascade-adjusted position
+                  onOpenCollection={onOpenCollection}
+                  onOpenContent={onOpenContent}
+                  isMobile={isMobile}
+                />
+              ))}
+              
+              {centerEntries.map((entry, index) => {
+                const centerY = centerEntryAdjustedPositions.get(entry.id)
+                const cardHeight = cardHeights.get(entry.id)?.collapsed ?? 120
+                const expandedHeight = expandedEntries.has(entry.id) 
+                  ? (cardHeights.get(entry.id)?.expanded ?? cardHeight)
+                  : cardHeight
+                
+                return (
+                  <React.Fragment key={entry.id}>
+                    {/* Center Entry Background Pill - breaks timeline visually */}
+                    {centerY !== undefined && (
+                      <div 
+                        className="center-entry-pill absolute"
+                        style={{
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                          top: `${centerY - 10}px`, /* Extend 10px above to accommodate fade */
+                          width: '384px',
+                          height: `${expandedHeight + 20}px`, /* Extend 20px total (10px top + 10px bottom) to accommodate fade */
+                          transition: 'top 300ms ease-out, height 300ms ease-out'
+                        }}
+                      />
+                    )}
+                    <EntryCard 
+                      entry={entry}
+                      position='center'
+                      index={index}
+                      isExpanded={expandedEntries.has(entry.id)}
+                      onToggleExpand={() => toggleExpand(entry.id)}
+                      onHeightMeasured={onCardHeightMeasured}
+                      markerPositions={markerPositions}
+                      centerAdjustedY={centerY} // Step 5.1 Fix 5: Pass centered position
+                      onOpenCollection={onOpenCollection}
+                      onOpenContent={onOpenContent}
+                      isMobile={isMobile}
+                    />
+                  </React.Fragment>
+                )
+              })}
+            </div>
+          )}
         </>
       )}
     </div>
@@ -1597,7 +1669,8 @@ function EntryCard({
   centerAdjustedY,  // Step 5.1 Fix 5: Centered Y position for center entries
   sideAdjustedY,    // Fix 9 Stage 3: Cascade-adjusted Y position for side entries
   onOpenCollection,
-  onOpenContent
+  onOpenContent,
+  isMobile = false  // Step 5 Stage 2: Mobile layout flag
 }: { 
   entry: ResumeEntry
   position: 'left' | 'right' | 'center'
@@ -1610,6 +1683,7 @@ function EntryCard({
   sideAdjustedY?: number    // Fix 9 Stage 3: Cascade-adjusted Y position for side entries
   onOpenCollection?: (slug: string, name: string) => void
   onOpenContent?: (id: string, title: string) => void
+  isMobile?: boolean  // Step 5 Stage 2: Mobile layout flag
 }) {
   const normalizeLink = useCallback((url?: string | null) => {
     if (!url) return null
@@ -1654,9 +1728,10 @@ function EntryCard({
     }
   }, [isExpanded, editorReady, entry.id, entry.title, entry.short_description, position, onHeightMeasured])
   
-  const borderClass = entry.is_featured ? 'border-emerald-400' : 'border-gray-800'
-  const shadowClass = entry.is_featured ? 'shadow-lg shadow-emerald-900/20' : ''
-  const baseClasses = `bg-gray-900 border-2 ${borderClass} ${shadowClass} rounded-lg p-6`
+  // Side entry cards use CSS classes, not Tailwind classes
+  const baseClasses = position === 'left' ? 'resume-entry-card-left p-6' : 
+                      position === 'right' ? 'resume-entry-card-right p-6' : 
+                      '' // Center entries handled separately
   
   let topPosition = 0 // Will be set from markerPositions Map
   
@@ -1686,135 +1761,56 @@ function EntryCard({
   
   const dateRange = formatDateRange(entry.date_start_normalized, entry.date_end_normalized)
   
-  if (position === 'left') {
-    return (
-      <div 
-        ref={measureRef}
-        className={`${baseClasses} w-[560px] text-right absolute`}
-        style={{
-          right: 'calc(50% + 70px)',
-          top: `${topPosition}px`,
-          transition: 'top 300ms ease-out' // Step 5.1 Fix 10: Smooth position changes during expansion
-        }}
-      >
-        <div className="text-gray-400 text-sm mb-3">
-          {dateRange}
-        </div>
-        
-        <h3 className="text-xl font-bold text-white mb-1">
-          {entry.title}
-        </h3>
-        
-        {entry.subtitle && (
-          <div className="text-gray-400 text-base mb-2">
-            {entry.subtitle}
+  // Step 5 Stage 2: Mobile layout - full width, relative positioning
+  // Step 5 Stage 3: Center entries maintain their unique visual styling (no border/background, drop shadow) and are centered
+  if (isMobile) {
+    // Center entries have different visual styling (no card background/border, drop shadow) and are centered
+    if (position === 'center') {
+      return (
+        <div 
+          ref={measureRef}
+          className="py-3 px-2 w-full text-center relative"
+          style={{
+            filter: 'drop-shadow(0 4px 12px rgba(0, 0, 0, 0.6)) drop-shadow(0 8px 24px rgba(0, 0, 0, 0.4))' // Preserve drop shadow
+          }}
+        >
+          <div className="text-sm text-gray-400 mb-2">
+            {formatSingleDate(entry.date_end_normalized || entry.date_start_normalized)}
           </div>
-        )}
-        
-        {entry.short_description && (
-          <div className="text-gray-300 text-base mb-4">
-            {entry.short_description}
-          </div>
-        )}
-        
-        {isExpanded && entry.description && (
-          <div className="transition-all duration-300 ease-in-out overflow-hidden mb-4">
-            <EditorRenderer data={entry.description} imageSizes={entry.description_image_sizes} onReady={handleEditorReady} />
-          </div>
-        )}
-        
-        {entry.resume_assets && entry.resume_assets.length > 0 && (
-          <div className="flex justify-end gap-3 mb-3">
-            {entry.resume_assets.map(asset => {
-              const caption = asset.custom_caption || asset.content?.title || asset.link_title || 'Asset'
-              const iconUrl = asset.resume_asset_icons?.icon_url
-              const handleAssetClick = () => {
-                if (asset.asset_type === 'content' && asset.content_id) {
-                  onOpenContent?.(asset.content_id, asset.content?.title || 'Content')
-                } else if (asset.asset_type === 'link' && asset.link_url) {
-                  const href = normalizeLink(asset.link_url)
-                  if (href) {
-                    window.open(href, '_blank', 'noopener,noreferrer')
-                  }
-                }
-              }
-              return (
-                <div
-                  key={asset.id}
-                  className="cursor-pointer rounded-md border border-gray-800 bg-gray-850/80 hover:border-emerald-500 transition-colors"
-                  style={{ width: '100px', height: '140px' }}
-                  onClick={handleAssetClick}
-                >
-                  <div className="flex flex-col justify-between h-full p-2">
-                    <div className="flex items-start">
-                      {iconUrl ? (
-                        <img
-                          src={iconUrl}
-                          alt={asset.resume_asset_icons?.name || 'icon'}
-                          style={{
-                            maxWidth: '30px',
-                            maxHeight: '30px',
-                            objectFit: 'contain'
-                          }}
-                        />
-                      ) : (
-                        <div
-                          className="bg-gray-700 rounded-sm"
-                          style={{ width: '20px', height: '20px' }}
-                        />
-                      )}
-                    </div>
-                    <div className="text-gray-200 text-sm leading-4 overflow-hidden">
-                      {caption}
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        )}
-        
-        <div className="flex items-center justify-between">
-          {shouldShowSamplesButton(entry) ? (
-            <div
-              className="text-emerald-400 hover:text-emerald-300 font-semibold text-sm cursor-pointer"
-              onClick={() => {
-                const slug = entry.collections?.slug
-                const name = entry.collections?.name
-                if (slug && name) {
-                  onOpenCollection?.(slug, name)
-                }
-              }}
-            >
-              Samples →
+          
+          <h3 className="text-xl font-bold text-white mb-2">
+            {entry.title}
+          </h3>
+          
+          {isExpanded && entry.short_description && (
+            <div className="transition-all duration-300 ease-in-out overflow-hidden text-sm text-gray-300 mb-3">
+              {entry.short_description}
             </div>
-          ) : (
-            <div></div> // Spacer if no Samples button
           )}
           
-          {shouldShowExpandButton(entry) && (
+          {entry.date_start_normalized && entry.date_end_normalized && (
+            <div className="text-sm text-gray-400 mb-3">
+              {formatSingleDate(entry.date_start_normalized)}
+            </div>
+          )}
+          
+          {shouldShowExpandButtonCenter(entry) && (
             <div 
               onClick={onToggleExpand}
               className="text-emerald-400 hover:text-emerald-300 font-semibold text-sm cursor-pointer"
             >
-              {isExpanded ? 'Collapse ▲' : 'Expand ▼'}
+              {isExpanded ? '▲' : '▼'}
             </div>
           )}
         </div>
-      </div>
-    )
-  }
-  
-  if (position === 'right') {
+      )
+    }
+    
+    // Side entries (left/right) use card styling
     return (
       <div 
         ref={measureRef}
-        className={`${baseClasses} w-[560px] text-left absolute`}
-        style={{
-          left: 'calc(50% + 70px)',
-          top: `${topPosition}px`,
-          transition: 'top 300ms ease-out' // Step 5.1 Fix 10: Smooth position changes during expansion
-        }}
+        className={`${baseClasses} w-full text-left relative`}
       >
         <div className="text-gray-400 text-sm mb-3">
           {dateRange}
@@ -1893,7 +1889,25 @@ function EntryCard({
           </div>
         )}
         
+        {/* Step 5 Stage 4: Same layout as desktop (Expand button, assets in row), Samples button hidden in mobile */}
         <div className="flex items-center justify-between">
+          {!isMobile && shouldShowSamplesButton(entry) ? (
+            <div
+              className="text-emerald-400 hover:text-emerald-300 font-semibold text-sm cursor-pointer"
+              onClick={() => {
+                const slug = entry.collections?.slug
+                const name = entry.collections?.name
+                if (slug && name) {
+                  onOpenCollection?.(slug, name)
+                }
+              }}
+            >
+              Samples →
+            </div>
+          ) : (
+            <div></div> // Spacer if no Samples button or mobile
+          )}
+          
           {shouldShowExpandButton(entry) && (
             <div 
               onClick={onToggleExpand}
@@ -1902,10 +1916,224 @@ function EntryCard({
               {isExpanded ? 'Collapse ▲' : 'Expand ▼'}
             </div>
           )}
+        </div>
+      </div>
+    )
+  }
+  
+  // Desktop layouts below
+  if (position === 'left') {
+    return (
+      <div 
+        ref={measureRef}
+        className={`${baseClasses} w-[560px] absolute`}
+        style={{
+          right: 'calc(50% + 70px)',
+          top: `${topPosition}px`,
+          transition: 'top 300ms ease-out' // Step 5.1 Fix 10: Smooth position changes during expansion
+        }}
+      >
+        <div className={`resume-entry-date mb-3 ${dateRange.includes('Present') ? 'has-present' : ''}`}>
+          {dateRange}
+        </div>
+        
+        <h3 className="resume-entry-title mb-1">
+          {entry.title}
+        </h3>
+        
+        {entry.subtitle && (
+          <div className="resume-entry-subtitle mb-2">
+            {entry.subtitle}
+          </div>
+        )}
+        
+        {entry.short_description && (
+          <div className="resume-entry-description mb-4">
+            {entry.short_description}
+          </div>
+        )}
+        
+        {isExpanded && entry.description && (
+          <div className="resume-entry-description-expanded transition-all duration-300 ease-in-out overflow-hidden mb-4">
+            <EditorRenderer data={entry.description} imageSizes={entry.description_image_sizes} onReady={handleEditorReady} />
+          </div>
+        )}
+        
+        {entry.resume_assets && entry.resume_assets.length > 0 && (
+          <div className="flex justify-end gap-3 mb-3">
+            {entry.resume_assets.map(asset => {
+              const caption = asset.custom_caption || asset.content?.title || asset.link_title || 'Asset'
+              const iconUrl = asset.resume_asset_icons?.icon_url
+              const handleAssetClick = () => {
+                if (asset.asset_type === 'content' && asset.content_id) {
+                  onOpenContent?.(asset.content_id, asset.content?.title || 'Content')
+                } else if (asset.asset_type === 'link' && asset.link_url) {
+                  const href = normalizeLink(asset.link_url)
+                  if (href) {
+                    window.open(href, '_blank', 'noopener,noreferrer')
+                  }
+                }
+              }
+              return (
+                <div
+                  key={asset.id}
+                  className="resume-entry-asset cursor-pointer relative"
+                  style={{ width: '100px', height: '140px' }}
+                  onClick={handleAssetClick}
+                >
+                  <div className="flex flex-col h-full">
+                    <div className="flex items-start">
+                      {iconUrl ? (
+                        <img
+                          src={iconUrl}
+                          alt={asset.resume_asset_icons?.name || 'icon'}
+                          className="resume-entry-asset-icon absolute"
+                        />
+                      ) : (
+                        <div
+                          className="bg-gray-700 rounded-sm absolute"
+                          style={{ width: '20px', height: '20px', top: '8px', left: '8px' }}
+                        />
+                      )}
+                    </div>
+                    <div className="resume-entry-asset-caption absolute overflow-hidden">
+                      {caption}
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+        
+        <div className="resume-entry-actions">
+          {shouldShowSamplesButton(entry) ? (
+            <div
+              className="resume-entry-action"
+              onClick={() => {
+                const slug = entry.collections?.slug
+                const name = entry.collections?.name
+                if (slug && name) {
+                  onOpenCollection?.(slug, name)
+                }
+              }}
+            >
+              Samples →
+            </div>
+          ) : (
+            <div></div> // Spacer if no Samples button
+          )}
+          
+          {shouldShowExpandButton(entry) && (
+            <div 
+              onClick={onToggleExpand}
+              className="resume-entry-action"
+            >
+              {isExpanded ? 'Collapse ▲' : 'Expand ▼'}
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+  
+  if (position === 'right') {
+    return (
+      <div 
+        ref={measureRef}
+        className={`${baseClasses} w-[560px] absolute`}
+        style={{
+          left: 'calc(50% + 70px)',
+          top: `${topPosition}px`,
+          transition: 'top 300ms ease-out' // Step 5.1 Fix 10: Smooth position changes during expansion
+        }}
+      >
+        <div className={`resume-entry-date mb-3 ${dateRange.includes('Present') ? 'has-present' : ''}`}>
+          {dateRange}
+        </div>
+        
+        <h3 className="resume-entry-title mb-1">
+          {entry.title}
+        </h3>
+        
+        {entry.subtitle && (
+          <div className="resume-entry-subtitle mb-2">
+            {entry.subtitle}
+          </div>
+        )}
+        
+        {entry.short_description && (
+          <div className="resume-entry-description mb-4">
+            {entry.short_description}
+          </div>
+        )}
+        
+        {isExpanded && entry.description && (
+          <div className="resume-entry-description-expanded transition-all duration-300 ease-in-out overflow-hidden mb-4">
+            <EditorRenderer data={entry.description} imageSizes={entry.description_image_sizes} onReady={handleEditorReady} />
+          </div>
+        )}
+        
+        {entry.resume_assets && entry.resume_assets.length > 0 && (
+          <div className="flex justify-start gap-3 mb-3">
+            {entry.resume_assets.map(asset => {
+              const caption = asset.custom_caption || asset.content?.title || asset.link_title || 'Asset'
+              const iconUrl = asset.resume_asset_icons?.icon_url
+              const handleAssetClick = () => {
+                if (asset.asset_type === 'content' && asset.content_id) {
+                  onOpenContent?.(asset.content_id, asset.content?.title || 'Content')
+                } else if (asset.asset_type === 'link' && asset.link_url) {
+                  const href = normalizeLink(asset.link_url)
+                  if (href) {
+                    window.open(href, '_blank', 'noopener,noreferrer')
+                  }
+                }
+              }
+              return (
+                <div
+                  key={asset.id}
+                  className="resume-entry-asset cursor-pointer relative"
+                  style={{ width: '100px', height: '140px' }}
+                  onClick={handleAssetClick}
+                >
+                  <div className="flex flex-col h-full">
+                    <div className="flex items-start">
+                      {iconUrl ? (
+                        <img
+                          src={iconUrl}
+                          alt={asset.resume_asset_icons?.name || 'icon'}
+                          className="resume-entry-asset-icon absolute"
+                        />
+                      ) : (
+                        <div
+                          className="bg-gray-700 rounded-sm absolute"
+                          style={{ width: '20px', height: '20px', top: '8px', left: '8px' }}
+                        />
+                      )}
+                    </div>
+                    <div className="resume-entry-asset-caption absolute overflow-hidden">
+                      {caption}
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+        
+        <div className="resume-entry-actions">
+          {shouldShowExpandButton(entry) && (
+            <div 
+              onClick={onToggleExpand}
+              className="resume-entry-action"
+            >
+              {isExpanded ? 'Collapse ▲' : 'Expand ▼'}
+            </div>
+          )}
           
           {shouldShowSamplesButton(entry) ? (
             <div
-              className="ml-auto text-emerald-400 hover:text-emerald-300 font-semibold text-sm cursor-pointer"
+              className="resume-entry-action"
               onClick={() => {
                 const slug = entry.collections?.slug
                 const name = entry.collections?.name
@@ -1928,31 +2156,30 @@ function EntryCard({
     return (
       <div 
         ref={measureRef}
-        className="py-3 px-2 w-[384px] text-center absolute"
+        className="py-3 px-2 w-[384px] text-center absolute resume-entry-card-center"
         style={{
           left: '50%',
           transform: 'translateX(-50%)',
           top: `${topPosition}px`,
-          transition: 'top 300ms ease-out', // Step 5.1 Fix 10: Smooth position changes during expansion
-          filter: 'drop-shadow(0 4px 12px rgba(0, 0, 0, 0.6)) drop-shadow(0 8px 24px rgba(0, 0, 0, 0.4))' // Fix 5 Stage 4: Shadow for floating text effect
+          transition: 'top 300ms ease-out' // Step 5.1 Fix 10: Smooth position changes during expansion
         }}
       >
-        <div className="text-sm text-gray-400 mb-2">
+        <div className="text-sm mb-2 resume-entry-date">
           {formatSingleDate(entry.date_end_normalized || entry.date_start_normalized)}
         </div>
         
-        <h3 className="text-xl font-bold text-white mb-2">
+        <h3 className="text-xl font-bold mb-2 resume-entry-title">
           {entry.title}
         </h3>
         
         {isExpanded && entry.short_description && (
-          <div className="transition-all duration-300 ease-in-out overflow-hidden text-sm text-gray-300 mb-3">
+          <div className="transition-all duration-300 ease-in-out overflow-hidden mb-3 center-entry-description">
             {entry.short_description}
           </div>
         )}
         
         {entry.date_start_normalized && entry.date_end_normalized && (
-          <div className="text-sm text-gray-400 mb-3">
+          <div className="text-sm mb-3 resume-entry-date">
             {formatSingleDate(entry.date_start_normalized)}
           </div>
         )}
@@ -1960,7 +2187,7 @@ function EntryCard({
         {shouldShowExpandButtonCenter(entry) && (
           <div 
             onClick={onToggleExpand}
-            className="text-emerald-400 hover:text-emerald-300 font-semibold text-sm cursor-pointer"
+            className="font-semibold text-sm cursor-pointer center-entry-expand-btn"
           >
             {isExpanded ? '▲' : '▼'}
           </div>
@@ -2161,10 +2388,6 @@ function MonthMarker({
     return null
   }
   
-  const textColorClass = markerType === 'green' ? 'text-emerald-400' : 
-                         markerType === 'blue' ? 'text-[#88b6e3]' : 
-                         'text-gray-400' // operational (for debug mode)
-  
   const opacityClass = markerType === 'operational' ? 'opacity-40' : 'opacity-100'
   
   const [year, monthNum] = monthKey.split('-')
@@ -2179,17 +2402,16 @@ function MonthMarker({
   
   return (
     <div 
-      className="absolute left-1/2 -translate-x-1/2 z-10"
-      style={{ top: `${labelTop}px` }}
+      className="absolute left-1/2 -translate-x-1/2"
+      style={{ top: `${labelTop}px`, marginBottom: `${extraBottom}px` }}
     >
-      <div 
-        className={`${textColorClass} ${opacityClass} text-sm font-semibold whitespace-nowrap`}
-        style={{
-          textShadow: '0 2px 8px rgba(0, 0, 0, 0.6), 0 4px 16px rgba(0, 0, 0, 0.4)',
-          marginBottom: `${extraBottom}px`
-        }}
-      >
-        {label}
+      <div className="relative inline-block">
+        {/* Background pill - breaks the timeline visually, z-index 2 (all pills same level) */}
+        <div className={`timeline-month-marker-pill ${opacityClass}`} />
+        {/* Text - sits on top of ALL pills, z-index 3 (all text same level) */}
+        <span className="timeline-month-marker-text">
+          {label}
+        </span>
       </div>
     </div>
   )
@@ -2259,7 +2481,7 @@ function Timeline({
   return (
     <div className="relative w-full">
       <div ref={nowMarkerRef} className="absolute left-1/2 -translate-x-1/2 top-0">
-        <span className="text-emerald-400 font-semibold text-lg">Now</span>
+        <span className="timeline-now-marker">Now</span>
       </div>
       
       <div className="absolute left-1/2 -translate-x-1/2" style={{ top: '35px' }}>
@@ -2275,7 +2497,8 @@ function Timeline({
         ))}
       </div>
       
-      <div className="absolute left-1/2 -translate-x-1/2" style={{ top: '35px' }}>
+      {/* All background pills in one container - same stacking context */}
+      <div className="absolute left-1/2 -translate-x-1/2" style={{ top: '35px', zIndex: 2 }}>
         {markersToRender.map((month) => {
           const monthKey = formatMonthKey(month)
           const yPosition = markerPositions.get(monthKey) ?? 0
@@ -2298,30 +2521,93 @@ function Timeline({
             return null
           }
           
+          const opacityClass = markerType === 'operational' ? 'opacity-40' : 'opacity-100'
+          const [year, monthNum] = monthKey.split('-')
+          const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                            'July', 'August', 'September', 'October', 'November', 'December']
+          const monthName = monthNames[parseInt(monthNum) - 1]
+          const label = `${monthName} ${year}`
+          const labelTop = startSideMarkers?.has(monthKey)
+            ? yPosition + height - startMarkerLabelOffset
+            : yPosition
+          const extraBottom = startSideMarkers?.has(monthKey) ? startMarkerLabelBufferBottom : 0
+          
           return (
-            <MonthMarker
-              key={monthKey}
-              monthKey={monthKey}
-              isActivated={isActivated}
-              markerType={markerType}
-              height={height}
-              yPosition={yPosition}
-              debugMode={debugSettings.showAllMarkers}
-              startSideMarkers={startSideMarkers}
-              startMarkerLabelOffset={startMarkerLabelOffset}
-              startMarkerLabelBufferBottom={startMarkerLabelBufferBottom}
-            />
+            <div 
+              key={`pill-${monthKey}`}
+              className="absolute left-1/2 -translate-x-1/2"
+              style={{ top: `${labelTop}px`, marginBottom: `${extraBottom}px` }}
+            >
+              <div className="relative inline-block">
+                {/* Invisible text to size the pill container */}
+                <span style={{ visibility: 'hidden', padding: '4px 12px', fontSize: '0.9rem', whiteSpace: 'nowrap' }}>
+                  {label}
+                </span>
+                {/* Background pill - breaks the timeline visually */}
+                <div className={`timeline-month-marker-pill ${opacityClass}`} />
+              </div>
+            </div>
+          )
+        })}
+      </div>
+      
+      {/* All text in another container - same stacking context, above pills */}
+      <div className="absolute left-1/2 -translate-x-1/2" style={{ top: '35px', zIndex: 3 }}>
+        {markersToRender.map((month) => {
+          const monthKey = formatMonthKey(month)
+          const yPosition = markerPositions.get(monthKey) ?? 0
+          const height = markerHeights.get(monthKey) ?? 0
+          
+          const isBlueActivated = blueActivatedMarkers.has(monthKey)
+          const isGreenActivated = greenActivatedMarkers.has(monthKey)
+          const isActivated = activatedMarkers.has(monthKey)
+          
+          let markerType: 'green' | 'blue' | 'operational'
+          if (isBlueActivated) {
+            markerType = 'blue'
+          } else if (isGreenActivated) {
+            markerType = 'green'
+          } else {
+            markerType = 'operational'
+          }
+          
+          if (markerType === 'blue') {
+            return null
+          }
+          
+          const [year, monthNum] = monthKey.split('-')
+          const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                            'July', 'August', 'September', 'October', 'November', 'December']
+          const monthName = monthNames[parseInt(monthNum) - 1]
+          const label = `${monthName} ${year}`
+          const labelTop = startSideMarkers?.has(monthKey)
+            ? yPosition + height - startMarkerLabelOffset
+            : yPosition
+          const extraBottom = startSideMarkers?.has(monthKey) ? startMarkerLabelBufferBottom : 0
+          
+          return (
+            <div 
+              key={`text-${monthKey}`}
+              className="absolute left-1/2 -translate-x-1/2"
+              style={{ top: `${labelTop}px`, marginBottom: `${extraBottom}px` }}
+            >
+              <div className="relative inline-block">
+                <span className="timeline-month-marker-text">
+                  {label}
+                </span>
+              </div>
+            </div>
           )
         })}
       </div>
       
       <div 
-        className="absolute left-1/2 -translate-x-1/2 w-1"
+        className="absolute left-1/2 -translate-x-1/2 w-1 timeline-line"
         style={{
           top: '35px', // Starts below Now marker
           height: `${timelineHeight + 300}px`, // Step 5.1 Fix 8: Includes 300px continuation after timeline end per line 66
-          background: `linear-gradient(to bottom, #00D492 0%, #00D492 ${(timelineHeight/(timelineHeight+300)*100).toFixed(1)}%, transparent 100%)`, // Step 5.1 Fix 8: Fade only in 300px continuation
-          transition: 'height 300ms ease-out, background 300ms ease-out' // Step 5.1 Fix 10: Smooth timeline expansion
+          transition: 'height 300ms ease-out, background 300ms ease-out', // Step 5.1 Fix 10: Smooth timeline expansion
+          zIndex: 1 // Explicitly set z-index to ensure it's below marker pills
         }}
       >
       </div>
@@ -2330,7 +2616,7 @@ function Timeline({
         className="absolute left-1/2 -translate-x-1/2 text-center"
         style={{ top: `${35 + timelineHeight + 300}px` }} // Step 5.1 Fix 8: At end of 300px continuation per line 66
       >
-        <span className="text-gray-400 text-sm">
+        <span className="timeline-birth-marker">
           Born in Moscow, Russia - July 1st, 1994
         </span>
       </div>

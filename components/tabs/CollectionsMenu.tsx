@@ -78,12 +78,12 @@ export default function CollectionsMenu({
   
   if (isVertical) {
     return (
-      <div className="flex flex-col space-y-2 pt-[15px]">
+      <div className="collections-menu flex flex-col gap-2 pt-[15px] relative overflow-hidden">
         {displayedCollections.map(coll => (
           <div
             key={coll.id}
             onClick={() => onCollectionClick(coll)}
-            className="cursor-pointer text-[#6b7280] hover:text-[#e5e7eb]"
+            className="collections-menu-item cursor-pointer text-text-on-dark-inactive hover:text-text-on-dark overflow-hidden text-ellipsis whitespace-nowrap"
           >
             {coll.name}
           </div>
@@ -98,12 +98,12 @@ export default function CollectionsMenu({
     const reversedCollections = [...displayedCollections].reverse()
     
     return (
-      <div className="flex flex-row-reverse space-x-reverse space-x-2 pt-[15px]">
+      <div className="collections-menu flex flex-row-reverse gap-2 py-[10px] relative overflow-hidden">
         {reversedCollections.map(coll => (
           <div
             key={coll.id}
             onClick={() => onCollectionClick(coll)}
-            className="cursor-pointer text-[#6b7280] hover:text-[#e5e7eb]"
+            className="collections-menu-item cursor-pointer text-text-on-dark-inactive hover:text-text-on-dark overflow-hidden text-ellipsis whitespace-nowrap"
           >
             {coll.name}
           </div>

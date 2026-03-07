@@ -1,12 +1,14 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import Profile from '@/components/Profile'
+import Profile, { ProfileRef } from '@/components/Profile'
 import BottomTabBar from '@/components/BottomTabBar'
 import ResumeTab from '@/components/tabs/ResumeTab'
 import PortfolioContent from '@/components/tabs/PortfolioContent'
+import MobileBanner from '@/components/MobileBanner'
 import { createClient } from '@/lib/supabase/client'
 import { generateArticlePDF, generateCollectionPDF } from '@/lib/pdf-generator'
+import { useMobileState } from '@/lib/responsive'
 
 type Collection = {
   slug: string
@@ -25,6 +27,7 @@ const STORAGE_KEY = 'bottomNavState'
 
 export default function Home() {
   const supabase = createClient()
+  const { isMobile } = useMobileState()
   const [activeTab, setActiveTab] = useState<string>('portfolio')
   const [activeCollections, setActiveCollections] = useState<Collection[]>([])
   const [activeContents, setActiveContents] = useState<ContentTab[]>([])
@@ -38,6 +41,14 @@ export default function Home() {
   const [resumeNowMarkerVisible, setResumeNowMarkerVisible] = useState<boolean>(true)
   const [resumeHasExpandedSideEntry, setResumeHasExpandedSideEntry] = useState<boolean>(false)
   const [portfolioMenuExpanded, setPortfolioMenuExpanded] = useState<boolean>(true)
+  // State memory for Portfolio tab to persist across remounts
+  const [savedPortfolioMenuState, setSavedPortfolioMenuState] = useState<{
+    pageState: 'expanded-empty' | 'expanded-reader' | 'collapsed-reader' | null
+    contentId: string | null
+    categoryId: string | null
+    subcategoryId: string | null
+  }>({ pageState: null, contentId: null, categoryId: null, subcategoryId: null })
+  const profileRef = useRef<ProfileRef>(null)
   const urlAppliedRef = useRef(false)
   const lastDownloadContextRef = useRef<{
     contentTitle: string | null
@@ -173,7 +184,25 @@ export default function Home() {
     }
   }, [activeCollections, activeContents, activeTab, mounted])
 
+  // Step 0: Toggle body.menu-expanded class when menu expands
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    if (portfolioMenuExpanded) {
+      document.body.classList.add('menu-expanded')
+    } else {
+      document.body.classList.remove('menu-expanded')
+    }
+    // Cleanup on unmount
+    return () => {
+      document.body.classList.remove('menu-expanded')
+    }
+  }, [portfolioMenuExpanded])
+
   const handleTabChange = (tab: string) => {
+    // Collapse profile whenever Portfolio or Resume is clicked
+    if ((tab === 'portfolio' || tab === 'resume') && profileRef.current) {
+      profileRef.current.collapse()
+    }
     setActiveTab(tab)
     setSelectedContentId(null)
   }
@@ -200,6 +229,19 @@ export default function Home() {
   }
 
   const handleOpenContent = (id: string, title: string) => {
+    // In mobile, when clicking content asset from Resume tab, switch to Portfolio and auto-select content
+    if (isMobile && activeTab === 'resume') {
+      // Set selectedContentId FIRST, then change tab, so PortfolioContent can see it before menu state memory effect runs
+      setSelectedContentId(id)
+      // Use setTimeout to ensure selectedContentId is set before tab change triggers effects
+      setTimeout(() => {
+        setActiveTab('portfolio')
+      }, 0)
+      // Don't add to activeContents - we want collapsed mode, not a new tab
+      return
+    }
+    
+    // Desktop behavior: open content in its own tab
     if (!activeContents.find(c => c.id === id)) {
       setActiveContents(prev => [...prev, { id, title }])
     }
@@ -393,6 +435,16 @@ export default function Home() {
             profileHeight={profileHeight}
             onDownloadContextChange={handleDownloadContextChange}
             onMenuExpandedChange={setPortfolioMenuExpanded}
+            selectedContentIdFromResume={selectedContentId}
+            onContentSelectedFromResume={() => setSelectedContentId(null)}
+            savedMenuState={savedPortfolioMenuState.pageState}
+            savedSelectedContentId={savedPortfolioMenuState.contentId}
+            savedSelectedCategoryId={savedPortfolioMenuState.categoryId}
+            savedSelectedSubcategoryId={savedPortfolioMenuState.subcategoryId}
+            onSaveMenuState={(state) => {
+              console.log('[DEBUG] Parent received save request:', state)
+              setSavedPortfolioMenuState(state)
+            }}
           />
         )
     }
@@ -403,8 +455,9 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0f1419] text-white flex flex-col">
+    <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg-main)' }}>
       <Profile
+        ref={profileRef}
         onHeightChange={setProfileHeight}
         onOpenCollection={handleOpenCollection}
         condensedMode={shouldCondenseProfile}
@@ -413,7 +466,7 @@ export default function Home() {
       {isPortfolioOrCollection ? (
         renderContent()
       ) : (
-        <div className="flex-1 flex pb-24">
+        <div className="flex-1 flex" style={{ paddingBottom: '96px' }}>
           <div className="w-full p-8">
             {renderContent()}
           </div>
@@ -436,6 +489,9 @@ export default function Home() {
         onDownload={handleDownload}
         isMenuExpanded={portfolioMenuExpanded}
       />
+
+      {/* Step 6: Mobile first-load banner */}
+      <MobileBanner />
     </div>
   )
 }

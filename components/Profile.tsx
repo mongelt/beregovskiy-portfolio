@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, forwardRef, useImperativeHandle, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import EditorRenderer from '@/components/EditorRenderer'
 import { motion, AnimatePresence } from 'framer-motion'
 import { MapPin, ChevronDown, ChevronUp } from 'lucide-react'
-
-const BOTTOM_NAV_HEIGHT_PX = 265 // matches BottomTabBar h-16
+import { useMobileState } from '@/lib/responsive'
+import { BOTTOM_NAV_HEIGHT_PX } from '@/lib/constants'
 
 type ProfileData = {
   full_name: string | null
@@ -44,17 +44,72 @@ interface ProfileProps {
   condensedMode?: boolean
 }
 
-export default function Profile({
+export interface ProfileRef {
+  collapse: () => void
+}
+
+// Simple renderer for short bio that pre-renders content immediately to avoid loading delay
+function ShortBioRenderer({ data }: { data: any }) {
+  // Memoize the check to prevent switching between renderers
+  const shouldUseSimpleRender = useMemo(() => {
+    // Handle missing or invalid data
+    if (!data || !data.blocks || !Array.isArray(data.blocks) || data.blocks.length === 0) {
+      return false
+    }
+    
+    // Check if all blocks are simple paragraphs
+    return data.blocks.every((block: any) => {
+      return block && block.type === 'paragraph' && block.data && typeof block.data.text === 'string'
+    })
+  }, [data])
+  
+  // Memoize the rendered paragraphs to prevent re-rendering
+  const simpleContent = useMemo(() => {
+    if (!shouldUseSimpleRender || !data?.blocks) return null
+    
+    const paragraphs = data.blocks
+      .map((block: any, index: number) => {
+        const text = block.data?.text || ''
+        // Convert basic HTML entities if present
+        const htmlText = text.replace(/&nbsp;/g, ' ').trim()
+        if (!htmlText) return null
+        return <p key={index} dangerouslySetInnerHTML={{ __html: htmlText }} />
+      })
+      .filter(Boolean)
+    
+    return paragraphs.length > 0 ? paragraphs : null
+  }, [shouldUseSimpleRender, data])
+  
+  // For simple paragraph-only content, render directly without EditorJS
+  // This eliminates any loading delay or layout shift
+  if (simpleContent) {
+    return <div>{simpleContent}</div>
+  }
+  
+  // For complex content (non-paragraph blocks), use EditorRenderer normally
+  // This should be rare for short_bio, but handle it gracefully
+  return <EditorRenderer data={data} />
+}
+
+const Profile = forwardRef<ProfileRef, ProfileProps>(({
   onHeightChange,
   onOpenCollection,
   condensedMode = false
-}: ProfileProps) {
-  const [isExpanded, setIsExpanded] = useState(false)
+}, ref) => {
+  const [isExpanded, setIsExpanded] = useState(true) // CRITICAL: Redesign - expanded by default
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [skills, setSkills] = useState<ProfileSkill[]>([])
   const supabase = createClient()
   const headerRef = useRef<HTMLElement | null>(null)
   const resizeDebounceTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const { isMobile } = useMobileState()
+
+  // Expose collapse method via ref
+  useImperativeHandle(ref, () => ({
+    collapse: () => {
+      setIsExpanded(false)
+    }
+  }))
 
   useEffect(() => {
     loadProfile()
@@ -79,20 +134,37 @@ export default function Profile({
       updateHeight()
     }, 0)
 
+    // Determine if we're transitioning to condensed mode
+    const isCondensed = condensedMode && !isExpanded
+    // Use shorter debounce (0ms) when transitioning to condensed for immediate menu bar positioning
+    // Use normal debounce (100ms) for other transitions to prevent rapid re-renders
+    const debounceDelay = isCondensed ? 0 : 100
+
     const resizeObserver = new ResizeObserver(() => {
       // Debounce ResizeObserver callbacks to prevent rapid re-renders
       // Clear any existing timer
       if (resizeDebounceTimerRef.current) {
         clearTimeout(resizeDebounceTimerRef.current)
       }
-      // Set new timer with ~100ms delay
+      // Set timer with delay based on condensed state
       resizeDebounceTimerRef.current = setTimeout(() => {
         updateHeight()
         resizeDebounceTimerRef.current = null
-      }, 100)
+      }, debounceDelay)
     })
 
     resizeObserver.observe(element)
+
+    // When condensedMode changes, trigger immediate height update after a brief delay
+    // This ensures menu bar position updates quickly when transitioning to condensed
+    // The delay accounts for the CSS transition starting (requestAnimationFrame ensures DOM has updated)
+    if (condensedMode !== undefined) {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          updateHeight()
+        })
+      })
+    }
 
     return () => {
       clearTimeout(timeoutId)
@@ -102,7 +174,7 @@ export default function Profile({
       }
       resizeObserver.disconnect()
     }
-  }, [onHeightChange, profile, isExpanded]) // Added profile and isExpanded to dependencies
+  }, [onHeightChange, profile, isExpanded, condensedMode]) // Added condensedMode to dependencies for immediate reaction
 
 
   async function loadProfile() {
@@ -140,95 +212,136 @@ export default function Profile({
   return (
     <header
       ref={headerRef}
-      className="border-b border-gray-800 transition-all duration-300 sticky top-0 z-40 bg-[#0f1419] relative"
-      style={
-        !isExpanded && !isCondensed && profile?.collapsed_profile_height
+      className={`border-b-2 border-accent-light transition-all duration-300 sticky top-0 z-40 font-body text-text-on-dark-secondary bg-bg-profile backdrop-saturate-[180%] backdrop-blur-[20px] shadow-[0_2px_12px_rgba(0,0,0,0.08)] relative ${!isExpanded && !isCondensed && !isMobile ? 'collapsed' : ''} ${isExpanded && !isMobile ? 'flex flex-col' : ''}`}
+      style={{
+        backgroundColor: '#121212', // Explicit background color to ensure it's not overridden
+        ...(!isExpanded && !isCondensed && profile?.collapsed_profile_height && !isMobile
           ? { height: `${profile.collapsed_profile_height}px`, overflow: 'hidden' }
-          : undefined
-      }
+          : isExpanded && !isMobile
+          ? { maxHeight: `calc(100vh - ${BOTTOM_NAV_HEIGHT_PX}px)`, minHeight: `calc(100vh - ${BOTTOM_NAV_HEIGHT_PX}px)` }
+          : {})
+      }}
     >
-      {isCondensed ? (
+      {/* Mobile collapsed layout */}
+      {isMobile && !isExpanded && !isCondensed ? (
+        <div className="px-[15px] py-4">
+          <div className="flex justify-between items-start w-full mb-2">
+            {/* Name upper-left */}
+            <h1 className="font-display text-[2rem] font-bold uppercase text-text-on-dark tracking-[-0.012em] mb-1">
+              {profile.full_name?.toUpperCase() || 'YOUR NAME'}
+            </h1>
+            
+            {/* Job titles upper-right */}
+            <div className="flex flex-col gap-0.5 text-xs text-text-on-dark-secondary text-right">
+              {profile.job_title_1 && <p>{profile.job_title_1}</p>}
+              {profile.job_title_2 && <p>{profile.job_title_2}</p>}
+              {profile.job_title_3 && <p>{profile.job_title_3}</p>}
+              {profile.job_title_4 && <p>{profile.job_title_4}</p>}
+            </div>
+          </div>
+          
+          {/* Short bio below name/titles */}
+          <div className="font-body text-sm text-text-on-dark-secondary leading-relaxed mt-2">
+            {profile.short_bio ? (
+              profile.short_bio.blocks ? (
+                <ShortBioRenderer data={profile.short_bio} />
+              ) : (
+                <p>{profile.short_bio}</p>
+              )
+            ) : (
+              <p>No bio available</p>
+            )}
+          </div>
+          
+          {/* Expand button */}
+          <div className="flex justify-center mt-4">
+            <motion.button
+              onClick={() => setIsExpanded(true)}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="flex items-center gap-2 font-ui text-sm font-medium text-accent-dark hover:text-accent-light uppercase tracking-[0.05em] transition-colors"
+            >
+              <span>EXPAND</span>
+              <ChevronDown size={16} />
+            </motion.button>
+          </div>
+        </div>
+      ) : isCondensed ? (
         <div className="px-8 py-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-white text-2xl font-bold">
+            <h1 className="font-display text-[2rem] font-bold uppercase text-text-on-dark tracking-[-0.012em] mb-1">
               {profile.full_name?.toUpperCase() || 'YOUR NAME'}
             </h1>
             <motion.button
               onClick={() => setIsExpanded(true)}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="flex items-center gap-2 text-emerald-400 hover:text-emerald-300 transition-colors"
+              className="flex items-center gap-2 font-ui text-sm font-medium text-accent-dark hover:text-accent-light uppercase tracking-[0.05em] transition-colors"
             >
-              <span className="text-sm tracking-wider font-medium">EXPAND</span>
+              <span>EXPAND</span>
               <ChevronDown size={16} />
             </motion.button>
           </div>
         </div>
-      ) : (
-        <div
-          className="px-8 py-6 relative"
-          style={
-            !isExpanded && profile?.collapsed_profile_height
-              ? { height: `${profile.collapsed_profile_height}px`, overflow: 'hidden' }
-              : undefined
-          }
-        >
-          <div className="flex items-start relative">
-            <div className="w-[50%]">
-              <h1 className="text-white text-2xl font-bold mb-1">
-                {profile.full_name?.toUpperCase() || 'YOUR NAME'}
-              </h1>
-              
-              {profile.location && (
-                <div className="flex items-center gap-1 text-gray-400 text-sm mb-3">
-                  <MapPin size={14} />
-                  <p>{profile.location}</p>
-                </div>
-              )}
-
-              <div className="space-y-0.5 text-sm text-gray-300">
-                {profile.job_title_1 && <p>{profile.job_title_1}</p>}
-                {profile.job_title_2 && <p>{profile.job_title_2}</p>}
-                {profile.job_title_3 && <p>{profile.job_title_3}</p>}
-                {profile.job_title_4 && <p>{profile.job_title_4}</p>}
-              </div>
-            </div>
-
-            <div className="w-[40%]">
-                      <div className="text-gray-300 text-sm leading-relaxed">
-                {profile.short_bio ? (
-                  profile.short_bio.blocks ? (
-                    <EditorRenderer data={profile.short_bio} />
-                  ) : (
-                    <p>{profile.short_bio}</p>
-                  )
-                ) : (
-                  <p>No bio available</p>
+      ) : !isMobile ? (
+        <>
+          {/* Profile Expanded - matches mockup structure */}
+          <div className="py-6 px-8" style={!isExpanded && profile?.collapsed_profile_height ? { height: `${profile.collapsed_profile_height}px`, overflow: 'hidden' } : undefined}>
+            <div className="flex items-start">
+              <div className="w-[50%]">
+                <h1 className="font-display text-[2rem] font-bold uppercase text-text-on-dark tracking-[-0.012em] mb-1">
+                  {profile.full_name?.toUpperCase() || 'YOUR NAME'}
+                </h1>
+                
+                {profile.location && (
+                  <div className="flex items-center gap-1 font-body text-sm text-text-on-dark-secondary mb-3">
+                    <MapPin size={14} />
+                    <p>{profile.location}</p>
+                  </div>
                 )}
+
+                <div className="space-y-0.5 font-body text-sm text-text-on-dark-secondary">
+                  {profile.job_title_1 && <p>{profile.job_title_1}</p>}
+                  {profile.job_title_2 && <p>{profile.job_title_2}</p>}
+                  {profile.job_title_3 && <p>{profile.job_title_3}</p>}
+                  {profile.job_title_4 && <p>{profile.job_title_4}</p>}
+                </div>
               </div>
+
+              <div className="w-[40%]">
+                <div className="font-body text-sm text-text-on-dark-secondary leading-relaxed" style={{ lineHeight: '1.625' }}>
+                  {profile.short_bio ? (
+                    profile.short_bio.blocks ? (
+                      <ShortBioRenderer data={profile.short_bio} />
+                    ) : (
+                      <p>{profile.short_bio}</p>
+                    )
+                  ) : (
+                    <p>No bio available</p>
+                  )}
+                </div>
+              </div>
+              
+              <div className="w-[10%]"></div>
             </div>
-            
-            <div className="w-[10%]"></div>
           </div>
 
+          {/* Collapsed expand button */}
           {!isExpanded && (
-            <div
-              className="flex justify-center"
-              style={{ position: 'absolute', left: 0, right: 0, bottom: 15 }}
-            >
+            <div className="absolute left-0 right-0 bottom-[15px] flex justify-center">
               <motion.button
                 onClick={() => setIsExpanded(true)}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="flex items-center gap-2 text-emerald-400 hover:text-emerald-300 transition-colors"
+                className="flex items-center gap-2 font-ui text-sm font-medium text-accent-dark hover:text-accent-light uppercase tracking-[0.05em] transition-colors"
               >
-                <span className="text-sm tracking-wider font-medium">EXPAND</span>
+                <span>EXPAND</span>
                 <ChevronDown size={16} />
               </motion.button>
             </div>
           )}
-        </div>
-      )}
+        </>
+      ) : null}
 
       <AnimatePresence>
         {isExpanded && (
@@ -237,81 +350,122 @@ export default function Profile({
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3, ease: 'easeInOut' }}
-            className="overflow-hidden flex flex-col"
-            style={{ maxHeight: `calc(100vh - ${BOTTOM_NAV_HEIGHT_PX}px)` }}
+            className={isMobile ? 'bg-bg-profile' : 'bg-bg-profile overflow-hidden flex flex-col flex-1'}
+            style={{ 
+              ...(isMobile ? { 
+                position: 'fixed',
+                top: 0,
+                bottom: `${BOTTOM_NAV_HEIGHT_PX}px`,
+                left: 0,
+                right: 0,
+                overflow: 'hidden',
+                zIndex: 45,
+                backgroundColor: '#121212'
+              } : {
+                flex: 1,
+                minHeight: 0,
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column'
+              })
+            }}
           >
-            <div className="flex-1 overflow-auto">
-              <div className="px-8 pb-3 border-t border-gray-800 mt-4 pt-4">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  <div className="lg:col-span-2">
-                    <div className="mb-3">
-                      <h3 className="text-sm font-semibold text-gray-400 uppercase mb-2">About</h3>
-                      <div className="text-gray-300 text-sm leading-relaxed">
-                        {profile.full_bio ? (
-                          profile.full_bio.blocks ? (
-                            <EditorRenderer data={profile.full_bio} imageSizes={profile.full_bio_image_sizes} />
-                          ) : (
-                            <p>{profile.full_bio}</p>
-                          )
-                        ) : profile.short_bio ? (
-                          profile.short_bio.blocks ? (
-                            <EditorRenderer data={profile.short_bio} />
-                          ) : (
-                            <p>{profile.short_bio}</p>
-                          )
-                        ) : (
-                          <p>No bio available</p>
-                        )}
+            {isMobile ? (
+              // Mobile expanded layout
+              <>
+                {/* Dual-column header: Name 30%, Titles 70% */}
+                <div className="px-[15px] pt-4 pb-2 border-b border-border-gray-800">
+                  <div className="flex items-start">
+                    <div className="w-[30%]">
+                <h1 className="font-display text-[2rem] font-bold uppercase text-text-on-dark tracking-[-0.012em] mb-1">
+                      {profile.full_name?.toUpperCase() || 'YOUR NAME'}
+                    </h1>
+                    </div>
+                    <div className="w-[70%] pl-4">
+                      <div className="flex flex-col gap-0.5 font-body text-xs text-text-on-dark-secondary text-right">
+                        {profile.job_title_1 && <p>{profile.job_title_1}</p>}
+                        {profile.job_title_2 && <p>{profile.job_title_2}</p>}
+                        {profile.job_title_3 && <p>{profile.job_title_3}</p>}
+                        {profile.job_title_4 && <p>{profile.job_title_4}</p>}
                       </div>
                     </div>
                   </div>
+                </div>
 
-                  <div className="space-y-6 lg:col-span-1">
+                {/* Single-column content: Full bio → Education → Skills → Languages */}
+                <div className="px-[15px] py-4 space-y-6">
+                    {/* Short bio with simple cutoff */}
+                    <div>
+                      <h3 className="font-ui text-sm font-semibold text-text-on-dark-inactive uppercase tracking-[0.06em] mb-2">About</h3>
+                      <div 
+                        className="font-body text-sm text-text-on-dark-secondary leading-relaxed"
+                        style={{
+                          maxHeight: '400px',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap' // CRITICAL: Single-line truncation
+                        }}
+                      >
+                      {profile.short_bio ? (
+                        profile.short_bio.blocks ? (
+                          <ShortBioRenderer data={profile.short_bio} />
+                        ) : (
+                          <p>{profile.short_bio}</p>
+                        )
+                      ) : (
+                        <p>No bio available</p>
+                      )}
+                      </div>
+                    </div>
+
+                    {/* Education */}
                     {profile.education && (
                       <div>
-                        <h3 className="text-sm font-semibold text-gray-400 uppercase mb-2">Education</h3>
-                        <p className="text-gray-300">{profile.education}</p>
+                        <h3 className="font-ui text-sm font-semibold text-text-on-dark-inactive uppercase tracking-[0.06em] mb-2">Education</h3>
+                        <p className="font-body text-sm text-text-on-dark-secondary">{profile.education}</p>
                       </div>
                     )}
 
-                  {skills.length > 0 && (
+                    {/* Skills */}
+                    {skills.length > 0 && (
                       <div>
-                        <h3 className="text-sm font-semibold text-gray-400 uppercase mb-2">Skills</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {skills.map((skill) => {
-                          const isLinked = !!skill.collectionSlug && !!skill.collectionName && !!onOpenCollection
-                          return (
-                            <button
-                              key={skill.id}
-                              onClick={() => {
-                                if (isLinked && skill.collectionSlug && skill.collectionName && onOpenCollection) {
-                                  onOpenCollection(skill.collectionSlug, skill.collectionName)
-                                }
-                              }}
-                              className={`
-                                px-3 py-1 rounded-full text-sm transition-colors
-                                ${isLinked
-                                  ? 'bg-emerald-700 text-white hover:bg-emerald-600'
-                                  : 'bg-gray-800 text-gray-300 cursor-default'}
-                              `}
-                              disabled={!isLinked}
-                            >
-                              {skill.skillName}
-                            </button>
-                          )
-                        })}
-                      </div>
+                        <h3 className="font-ui text-sm font-semibold text-text-on-dark-inactive uppercase tracking-[0.06em] mb-2">Skills</h3>
+                        <div className="flex flex-wrap gap-2">
+                          {skills.map((skill) => {
+                            const isLinked = !!skill.collectionSlug && !!skill.collectionName && !!onOpenCollection
+                            return (
+                              <button
+                                key={skill.id}
+                                onClick={() => {
+                                  if (isLinked && skill.collectionSlug && skill.collectionName && onOpenCollection) {
+                                    onOpenCollection(skill.collectionSlug, skill.collectionName)
+                                  }
+                                }}
+                                className={`
+                                  py-1 px-3 rounded-full text-sm transition-colors text-white
+                                  ${isLinked
+                                    ? 'bg-accent-emerald-700 hover:bg-accent-emerald-300'
+                                    : 'bg-bg-unlinked-skills-pill cursor-default'}
+                                `}
+                                disabled={!isLinked}
+                              >
+                                {skill.skillName}
+                              </button>
+                            )
+                          })}
+                        </div>
                       </div>
                     )}
 
+                    {/* Languages */}
                     {profile.languages && profile.languages.length > 0 && (
                       <div>
-                        <h3 className="text-sm font-semibold text-gray-400 uppercase mb-2">Languages</h3>
+                        <h3 className="font-ui text-sm font-semibold text-text-on-dark-inactive uppercase tracking-[0.06em] mb-2">Languages</h3>
                         <div className="flex flex-wrap gap-2">
                           {profile.languages.map((language, i) => (
                             <span 
                               key={i}
-                              className="px-3 py-1 bg-gray-800 text-gray-300 rounded-full text-sm"
+                              className="py-1 px-3 rounded-full text-sm bg-bg-unlinked-skills-pill text-white"
                             >
                               {language}
                             </span>
@@ -320,60 +474,190 @@ export default function Profile({
                       </div>
                     )}
                   </div>
+
+                {/* Contact row */}
+                {(profile.show_phone && profile.phone) ||
+                 (profile.show_email && profile.email) ||
+                 (profile.show_social_media && profile.linkedin) ? (
+                  <div className="border-t border-border-gray-800 bg-bg-profile px-[15px] py-4 flex flex-wrap gap-4 items-center justify-start">
+                    {profile.show_phone && profile.phone && (
+                      <div className="flex items-center gap-2 font-body text-sm text-text-on-dark-secondary">
+                        <span>📞</span>
+                        <span>{profile.phone}</span>
+                      </div>
+                    )}
+                    {profile.show_email && profile.email && (
+                      <div className="flex items-center gap-2 font-body text-sm text-text-on-dark-secondary">
+                        <span>✉️</span>
+                        <a href={`mailto:${profile.email}`} className="text-text-on-dark-secondary hover:text-accent-light transition-colors">
+                          {profile.email}
+                        </a>
+                      </div>
+                    )}
+                    {profile.show_social_media && profile.linkedin && (
+                      <div className="flex items-center gap-2 font-body text-sm text-text-on-dark-secondary">
+                        <span>💼</span>
+                        <a 
+                          href={profile.linkedin} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-text-on-dark-secondary hover:text-accent-light transition-colors"
+                        >
+                          LinkedIn
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+              </>
+            ) : (
+              // Desktop expanded layout - matches mockup structure
+              <>
+                {/* Profile Expanded Content - matches mockup .profile-expanded-content */}
+                <div className="flex-1 overflow-hidden">
+                  <div className="py-4 px-8 border-t border-border-gray-800 mt-4">
+                    {/* Profile Expanded Grid - matches mockup .profile-expanded-grid (2fr 1fr) */}
+                    <div className="grid grid-cols-[2fr_1fr] gap-6">
+                      {/* Left column - About section */}
+                      <div>
+                        <h3 className="font-ui text-sm font-semibold text-text-on-dark-inactive uppercase tracking-[0.06em] mb-2">About</h3>
+                        <div className="font-body text-sm text-text-on-dark-secondary leading-relaxed" style={{ lineHeight: '1.625' }}>
+                          {profile.full_bio ? (
+                            profile.full_bio.blocks ? (
+                              <EditorRenderer data={profile.full_bio} imageSizes={profile.full_bio_image_sizes} />
+                            ) : (
+                              <p>{profile.full_bio}</p>
+                            )
+                          ) : profile.short_bio ? (
+                            profile.short_bio.blocks ? (
+                              <EditorRenderer data={profile.short_bio} />
+                            ) : (
+                              <p>{profile.short_bio}</p>
+                            )
+                          ) : (
+                            <p>No bio available</p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Right column - Education, Skills, Languages */}
+                      <div>
+                        {profile.education && (
+                          <div className="mb-6">
+                            <h3 className="font-ui text-sm font-semibold text-text-on-dark-inactive uppercase tracking-[0.06em] mb-2">Education</h3>
+                            <p className="font-body text-text-on-dark-secondary">{profile.education}</p>
+                          </div>
+                        )}
+
+                        {skills.length > 0 && (
+                          <div className="mb-6">
+                            <h3 className="font-ui text-sm font-semibold text-text-on-dark-inactive uppercase tracking-[0.06em] mb-2">Skills</h3>
+                            <div className="flex flex-wrap gap-2">
+                              {skills.map((skill) => {
+                                const isLinked = !!skill.collectionSlug && !!skill.collectionName && !!onOpenCollection
+                                return (
+                                  <button
+                                    key={skill.id}
+                                    onClick={() => {
+                                      if (isLinked && skill.collectionSlug && skill.collectionName && onOpenCollection) {
+                                        onOpenCollection(skill.collectionSlug, skill.collectionName)
+                                      }
+                                    }}
+                                    className={`
+                                      py-1 px-3 rounded-full text-sm transition-colors text-white
+                                      ${isLinked
+                                        ? 'bg-accent-emerald-700 hover:bg-accent-emerald-300'
+                                        : 'bg-bg-unlinked-skills-pill cursor-default'}
+                                    `}
+                                    disabled={!isLinked}
+                                  >
+                                    {skill.skillName}
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {profile.languages && profile.languages.length > 0 && (
+                          <div>
+                            <h3 className="font-ui text-sm font-semibold text-text-on-dark-inactive uppercase tracking-[0.06em] mb-2">Languages</h3>
+                            <div className="flex flex-wrap gap-2">
+                              {profile.languages.map((language, i) => (
+                                <span 
+                                  key={i}
+                                  className="py-1 px-3 text-white rounded-full text-sm bg-bg-unlinked-skills-pill"
+                                >
+                                  {language}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            {(profile.show_phone && profile.phone) ||
-             (profile.show_email && profile.email) ||
-             (profile.show_social_media && profile.linkedin) ? (
-              <div className="border-t border-gray-800 bg-[#0f1419] px-8 py-4 flex flex-wrap gap-4 items-center justify-start">
-                {profile.show_phone && profile.phone && (
-                  <div className="flex items-center gap-2 text-gray-300">
-                    <span>📞</span>
-                    <span>{profile.phone}</span>
+                {/* Contact Row - matches mockup .profile-contact-row */}
+                {(profile.show_phone && profile.phone) ||
+                 (profile.show_email && profile.email) ||
+                 (profile.show_social_media && profile.linkedin) ? (
+                  <div className="border-t border-border-gray-800 bg-bg-profile px-8 py-4 flex flex-wrap gap-4 items-center">
+                    {profile.show_phone && profile.phone && (
+                      <div className="flex items-center gap-2 font-body text-sm text-text-on-dark-secondary">
+                        <span>📞</span>
+                        <span>{profile.phone}</span>
+                      </div>
+                    )}
+                    {profile.show_email && profile.email && (
+                      <div className="flex items-center gap-2 font-body text-sm text-text-on-dark-secondary">
+                        <span>✉️</span>
+                        <a href={`mailto:${profile.email}`} className="text-text-on-dark-secondary hover:text-accent-light transition-colors" style={{ textDecoration: 'none' }}>
+                          {profile.email}
+                        </a>
+                      </div>
+                    )}
+                    {profile.show_social_media && profile.linkedin && (
+                      <div className="flex items-center gap-2 font-body text-sm text-text-on-dark-secondary">
+                        <span>💼</span>
+                        <a 
+                          href={profile.linkedin} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-text-on-dark-secondary hover:text-accent-light transition-colors"
+                          style={{ textDecoration: 'none' }}
+                        >
+                          LinkedIn
+                        </a>
+                      </div>
+                    )}
                   </div>
-                )}
-                {profile.show_email && profile.email && (
-                  <div className="flex items-center gap-2 text-gray-300">
-                    <span>✉️</span>
-                    <a href={`mailto:${profile.email}`} className="hover:text-emerald-400 transition-colors">
-                      {profile.email}
-                    </a>
-                  </div>
-                )}
-                {profile.show_social_media && profile.linkedin && (
-                  <div className="flex items-center gap-2 text-gray-300">
-                    <span>💼</span>
-                    <a 
-                      href={profile.linkedin} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="hover:text-emerald-400 transition-colors"
-                    >
-                      LinkedIn
-                    </a>
-                  </div>
-                )}
-              </div>
-            ) : null}
+                ) : null}
 
-            <div className="px-8 pb-4 flex justify-center">
-              <motion.button
-                onClick={() => setIsExpanded(false)}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="flex items-center gap-2 text-emerald-400 hover:text-emerald-300 transition-colors"
-              >
-                <span className="text-sm tracking-wider font-medium">COLLAPSE</span>
-                <ChevronUp size={16} />
-              </motion.button>
-            </div>
+                {/* Expand Button Wrapper - matches mockup .profile-expand-button-wrapper */}
+                <div className="px-8 py-4 flex justify-center">
+                  <motion.button
+                    onClick={() => setIsExpanded(false)}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="flex items-center gap-2 font-ui text-sm font-medium text-accent-dark hover:text-accent-light uppercase tracking-[0.05em] transition-colors bg-transparent border-none cursor-pointer p-0"
+                  >
+                    <span>COLLAPSE</span>
+                    <ChevronUp size={16} />
+                  </motion.button>
+                </div>
+              </>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
     </header>
   )
-}
+})
+
+Profile.displayName = 'Profile'
+
+export default Profile
 
 

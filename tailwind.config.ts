@@ -44,7 +44,47 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Enhanced brand colors
+        // Redesign Design Tokens - Background Colors
+        // Use as: bg-bg-main, bg-bg-menu-bar, etc.
+        'bg-main': 'var(--bg-main)',
+        'bg-menu-bar': 'var(--bg-menu-bar)',
+        'bg-card': 'var(--bg-card)',
+        'bg-card-alt': 'var(--bg-card-alt)',
+        'bg-profile': 'var(--bg-profile)',
+        'bg-info-menu': 'var(--bg-info-menu)',
+        'bg-gray-800': 'var(--bg-gray-800)',
+        'bg-gray-700': 'var(--bg-gray-700)',
+        'bg-unlinked-skills-pill': 'var(--bg-unlinked-skills-pill)',
+        // Redesign Design Tokens - Text Colors
+        // Use as: text-text-headings, text-text-body, etc.
+        'text-headings': 'var(--text-headings)',
+        'text-body': 'var(--text-body)',
+        'text-secondary': 'var(--text-secondary)',
+        'text-metadata': 'var(--text-metadata)',
+        'text-on-dark': 'var(--text-on-dark)',
+        'text-on-dark-secondary': 'var(--text-on-dark-secondary)',
+        'text-on-dark-inactive': 'var(--text-on-dark-inactive)',
+        'text-on-dark-hover': 'var(--text-on-dark-hover)',
+        'text-white': 'var(--text-white)',
+        'text-primary': 'var(--text-primary)',
+        'text-gray-400': 'var(--text-gray-400)',
+        'text-gray-500': 'var(--text-gray-500)',
+        // Redesign Design Tokens - Accent Colors (Burgundy Family)
+        // Use as: bg-accent-light, text-accent-light, border-accent-light, etc.
+        'accent-light': 'var(--accent-light)', // Primary burgundy accent
+        'accent-dark': 'var(--accent-dark)', // Darker burgundy for selected states
+        'accent-emerald-300': 'var(--accent-emerald-300)', // Hover states
+        // Consolidated aliases (all point to accent-light)
+        'accent-emerald-400': 'var(--accent-emerald-400)', // Alias to accent-light
+        'accent-emerald-700': 'var(--accent-emerald-700)', // Alias to accent-light
+        'accent-purple-600': 'var(--accent-purple-600)', // Alias to accent-light
+        'accent-blue': 'var(--accent-blue)', // Alias to accent-light
+        // Redesign Design Tokens - Border Colors
+        // Use as: border-border-gray-800, border-border-card, etc.
+        'border-gray-800': 'var(--border-gray-800)',
+        'border-gray-700': 'var(--border-gray-700)',
+        'border-card': 'var(--border-card)',
+        // Legacy/Backwards Compatibility
         brand: {
           50: '#eff6ff',
           100: '#dbeafe',
@@ -58,16 +98,13 @@ const config: Config = {
           900: '#1e3a8a',
           950: '#172554',
         },
-        // Figma Design - Emerald accent colors
         emerald: {
           300: 'oklch(0.845 0.143 164.978)',
           400: 'oklch(0.765 0.177 163.223)',
         },
-        // Figma Design - Additional colors
         'figma-red': {
           400: 'oklch(0.704 0.191 22.216)',
         },
-        // Keep existing accent colors for backwards compatibility
         purple: {
           500: '#8b5cf6',
           600: '#7c3aed',
@@ -90,8 +127,13 @@ const config: Config = {
         },
       },
       fontFamily: {
+        // Redesign Fonts
+        display: ['var(--font-display)', 'serif'], // Crimson Pro
+        body: ['var(--font-body)', 'sans-serif'], // Public Sans
+        ui: ['var(--font-ui)', 'sans-serif'], // Space Grotesk
+        mono: ['var(--font-mono)', 'ui-monospace', 'monospace'], // JetBrains Mono
+        // Legacy/Backwards Compatibility
         sans: ['var(--font-space-grotesk)', 'system-ui', 'sans-serif'],
-        mono: ['var(--font-jetbrains)', 'ui-monospace', 'monospace'],
       },
       fontSize: {
         'xs': ['0.75rem', { lineHeight: '1rem' }],
