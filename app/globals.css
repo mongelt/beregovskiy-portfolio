@@ -1828,3 +1828,15 @@ code.inline-code {
 .resume-entry-card-right .resume-entry-action:hover {
   color: var(--accent-dark);
 }
+
+/* ============================================
+   MOBILE OVERRIDES
+   ============================================ */
+
+@media (max-width: 767px) {
+  .resume-entry-card-left .resume-entry-description-expanded,
+  .resume-entry-card-right .resume-entry-description-expanded {
+    padding-left: 1px !important;
+    padding-right: 1px !important;
+  }
+}

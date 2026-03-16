@@ -5,9 +5,9 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import dynamic from 'next/dynamic'
-import type { OutputData } from '@editorjs/editorjs'
+import type { PartialBlock } from '@blocknote/core'
 
-const EditorJS = dynamic(() => import('@/components/editor/EditorJS'), {
+const BlockNoteEditor = dynamic(() => import('@/components/editor/BlockNoteEditorDynamic'), {
   ssr: false,
 })
 
@@ -24,11 +24,11 @@ export default function CollectionsManagement() {
   const supabase = createClient()
   const [collections, setCollections] = useState<Collection[]>([])
   const [newName, setNewName] = useState('')
-  const [newDescriptionData, setNewDescriptionData] = useState<OutputData | undefined>()
+  const [newDescriptionData, setNewDescriptionData] = useState<PartialBlock[] | undefined>()
   const [newFeatured, setNewFeatured] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
-  const [editDescriptionData, setEditDescriptionData] = useState<OutputData | undefined>()
+  const [editDescriptionData, setEditDescriptionData] = useState<PartialBlock[] | undefined>()
   const [editFeatured, setEditFeatured] = useState(false)
   const [editingCollectionOrder, setEditingCollectionOrder] = useState<string | null>(null)
   const [editCollectionOrder, setEditCollectionOrder] = useState('')
@@ -85,6 +85,40 @@ export default function CollectionsManagement() {
 
   async function deleteCollection(id: string) {
     if (!confirm('Delete collection? Content will not be deleted, just removed from this collection.')) return
+    
+    // Check if collection is used in profile skills
+    const { data: profileSkills, error: profileCheckError } = await supabase
+      .from('profile_skills')
+      .select('id')
+      .eq('collection_id', id)
+      .limit(1)
+    
+    if (profileCheckError) {
+      alert('Error checking collection usage: ' + profileCheckError.message)
+      return
+    }
+    
+    if (profileSkills && profileSkills.length > 0) {
+      alert("Collection can't be deleted because it is used in the profile")
+      return
+    }
+    
+    // Check if collection is used in resume entries
+    const { data: resumeEntries, error: resumeCheckError } = await supabase
+      .from('resume_entries')
+      .select('id')
+      .eq('collection_id', id)
+      .limit(1)
+    
+    if (resumeCheckError) {
+      alert('Error checking collection usage: ' + resumeCheckError.message)
+      return
+    }
+    
+    if (resumeEntries && resumeEntries.length > 0) {
+      alert("Collection can't be deleted because it is used in a resume entry")
+      return
+    }
     
     const { error } = await supabase
       .from('collections')
@@ -203,11 +237,13 @@ export default function CollectionsManagement() {
               Description
             </label>
             <p className="text-xs text-gray-500 mb-2">Detailed description (shows when "More Info" is expanded)</p>
-            <EditorJS 
-              holder="new-collection-description"
-              data={newDescriptionData}
-              onChange={setNewDescriptionData}
-            />
+            <div className="rounded-lg border border-gray-700 min-h-[300px] p-6" style={{ backgroundColor: '#1f1f1f', colorScheme: 'light' }}>
+              <BlockNoteEditor 
+                holder="new-collection-description"
+                data={newDescriptionData}
+                onChange={setNewDescriptionData}
+              />
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
@@ -250,11 +286,13 @@ export default function CollectionsManagement() {
                     <label className="block text-sm font-medium text-gray-300 mb-2">
                       Description
                     </label>
-                    <EditorJS 
-                      holder={`edit-collection-description-${collection.id}`}
-                      data={editDescriptionData}
-                      onChange={setEditDescriptionData}
-                    />
+                    <div className="rounded-lg border border-gray-700 min-h-[300px] p-6" style={{ backgroundColor: '#1f1f1f', colorScheme: 'light' }}>
+                      <BlockNoteEditor 
+                        holder={`edit-collection-description-${collection.id}`}
+                        data={editDescriptionData}
+                        onChange={setEditDescriptionData}
+                      />
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <input

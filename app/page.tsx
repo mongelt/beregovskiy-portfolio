@@ -252,6 +252,31 @@ export default function Home() {
     handleOpenCollection(collection.slug, collection.name)
   }
 
+  // Listen for tab-open events dispatched by Button blocks in renderer mode.
+  // Using refs so the listener is registered only once but always calls the
+  // latest version of each handler.
+  const openCollectionRef = useRef(handleOpenCollection)
+  openCollectionRef.current = handleOpenCollection
+  const openContentRef = useRef(handleOpenContent)
+  openContentRef.current = handleOpenContent
+
+  useEffect(() => {
+    const onOpenCollection = (e: Event) => {
+      const { slug, name } = (e as CustomEvent<{ slug: string; name: string }>).detail
+      openCollectionRef.current(slug, name)
+    }
+    const onOpenContent = (e: Event) => {
+      const { id, title } = (e as CustomEvent<{ id: string; title: string }>).detail
+      openContentRef.current(id, title)
+    }
+    window.addEventListener('bn-button-open-collection', onOpenCollection)
+    window.addEventListener('bn-button-open-content', onOpenContent)
+    return () => {
+      window.removeEventListener('bn-button-open-collection', onOpenCollection)
+      window.removeEventListener('bn-button-open-content', onOpenContent)
+    }
+  }, [])
+
   async function handleDownload(target: 'resume' | 'content' | 'collection') {
     const downloadBlob = (blob: Blob, name: string) => {
       const url = URL.createObjectURL(blob)

@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(taskkill /PID 24636 /F)",
+      "Bash(npm run:*)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000)",
+      "Bash(find d:/Mongelt/Workspace/PortfolioWebsiteForGithub/beregovskiy-portfolio-cursor/beregovskiy-portfolio/docs/blocknote-documentation -name *side* -o -name *drag*)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/blocknote-test)",
+      "Bash(node -e \":*)",
+      "Bash(node -e \"const ri = require\\(''react-icons/ri''\\); const candidates = [''RiLinkM'',''RiLinksLine'',''RiLink2Line'',''RiLink'',''RiExternalLinkLine'',''RiBookmarkLine'',''RiPageLine'']; candidates.forEach\\(k => console.log\\(k, k in ri\\)\\);\")",
+      "Bash(npx tsc:*)",
+      "Bash(xargs grep:*)",
+      "Bash(xargs dirname:*)",
+      "Bash(grep -r createReactInlineContentSpec d:MongeltWorkspacePortfolioWebsiteForGithubberegovskiy-portfolio-cursorberegovskiy-portfolionode_modules@blocknote --include=*.ts --include=*.tsx -l)",
+      "Bash(grep -r .render.*= d:MongeltWorkspacePortfolioWebsiteForGithubberegovskiy-portfolio-cursorberegovskiy-portfolionode_modules@blocknotereact --include=*.ts --include=*.tsx -A 10 -B 2)",
+      "Bash(find d:MongeltWorkspacePortfolioWebsiteForGithubberegovskiy-portfolio-cursorberegovskiy-portfolionode_modules@blocknote -type f \\\\\\(-name *example* -o -name *demo* -o -name *test* \\\\\\) -print)",
+      "Bash(find /d/Mongelt/Workspace/PortfolioWebsiteForGithub/beregovskiy-portfolio-cursor/beregovskiy-portfolio/lib -type f -name *.ts -o -name *.tsx -o -name *.css)",
+      "Bash(ls -1 /d/Mongelt/Workspace/PortfolioWebsiteForGithub/beregovskiy-portfolio-cursor/beregovskiy-portfolio/lib/blocknote/blocks/*.tsx)",
+      "Bash(xargs -I {} basename {})",
+      "Bash(grep -E \"\\\\.\\(css|scss\\)$\")",
+      "Bash(ls -1 /d/Mongelt/Workspace/PortfolioWebsiteForGithub/beregovskiy-portfolio-cursor/beregovskiy-portfolio/lib/blocknote/blocks/*.css)",
+      "Bash(grep -r \"group.*Media\\\\|Media.*group\\\\|group.*media\\\\|media.*group\" d:/Mongelt/Workspace/PortfolioWebsiteForGithub/beregovskiy-portfolio-cursor/beregovskiy-portfolio/node_modules/@blocknote --include=*.js -l)",
+      "Bash(grep -r data-content-type d:MongeltWorkspacePortfolioWebsiteForGithubberegovskiy-portfolio-cursorberegovskiy-portfolionode_modules@blocknotemantinedist --include=*.css -l)",
+      "Bash(find d:MongeltWorkspacePortfolioWebsiteForGithubberegovskiy-portfolio-cursorberegovskiy-portfolionode_modules@blocknotemantinedist -name *.css)",
+      "Bash(grep -E \"\\\\.\\(tsx|ts|css\\)$\")",
+      "Bash(grep -r \"user-select:\\\\|user-select :\" /d/Mongelt/Workspace/PortfolioWebsiteForGithub/beregovskiy-portfolio-cursor/beregovskiy-portfolio/lib/blocknote --include=*.css)",
+      "Bash(grep -r \"visual-media-wrapper\\\\|file-block.*resize\\\\|resize.*visual\" /d/Mongelt/Workspace/PortfolioWebsiteForGithub/beregovskiy-portfolio-cursor/beregovskiy-portfolio/node_modules/@blocknote --include=*.css)",
+      "Bash(grep -r \"\\\\.bn-visual-media-wrapper\\\\|\\\\.bn-file-block-wrapper\" /d/Mongelt/Workspace/PortfolioWebsiteForGithub/beregovskiy-portfolio-cursor/beregovskiy-portfolio/node_modules/@blocknote --include=*.css)",
+      "Bash(grep -r \"user-select\\\\|pointer-events\" /d/Mongelt/Workspace/PortfolioWebsiteForGithub/beregovskiy-portfolio-cursor/beregovskiy-portfolio/app --include=*.css -n)",
+      "Bash(find d:/Mongelt/Workspace/PortfolioWebsiteForGithub/beregovskiy-portfolio-cursor/beregovskiy-portfolio/node_modules/@blocknote -name *.css)",
+      "Bash(grep -E '\\\\.\\(tsx|css\\)$')",
+      "WebSearch",
+      "WebFetch(domain:www.agnosticui.com)"
+    ]
+  }
+}

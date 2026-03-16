@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
 import { tapScale } from '@/lib/animations'
 import { useMobileState } from '@/lib/responsive'
-import { ArrowUp, ArrowUpRight } from 'lucide-react'
+import { ArrowDown, ArrowUpRight } from 'lucide-react'
 
 type Collection = {
   slug: string
@@ -246,7 +246,7 @@ export default function BottomTabBar({
   return (
     <div className="fixed bottom-0 left-0 right-0 h-16 border-t border-border-gray-800 z-50 bg-bg-menu-bar backdrop-saturate-[180%] backdrop-blur-[20px] shadow-[0_-2px_12px_rgba(0,0,0,0.1)]">
       <div className="relative flex items-center justify-center h-16 px-4">
-        <div className="absolute left-[25px]">
+        <div className={`absolute ${isMobile ? 'left-[9px]' : 'left-[25px]'}`}>
           <div className="relative">
             <button
               ref={downloadBtnRef}
@@ -264,15 +264,15 @@ export default function BottomTabBar({
                         : 'border border-[#b8b0aa] text-[#b8b0aa] hover:border-[1.5px] hover:border-text-on-dark hover:text-text-on-dark-hover hover:opacity-50 hover:shadow-[0_0_0_1px_rgba(232,226,221,0.2)]'
                     }`
               }
-              style={isMobile ? { padding: '6px 12px' } : { padding: '6px 12px' }}
+              style={isMobile ? { padding: '4px 12px', width: '52px' } : { padding: '6px 12px' }}
             >
               {isMobile ? (
                 <>
-                  <ArrowUp size={18} />
-                  <span className="text-[10px] leading-none invisible">Share</span>
+                  <ArrowDown size={18} />
+                  <span className="text-[10px] leading-none">Download</span>
                 </>
               ) : (
-                'Download ↑'
+                'Download ↓'
               )}
             </button>
             {downloadsOpen && (
@@ -315,7 +315,7 @@ export default function BottomTabBar({
           </div>
         </div>
 
-        <div className="absolute right-[25px]">
+        <div className={`absolute ${isMobile ? 'right-[9px]' : 'right-[25px]'}`}>
           <div className="relative">
             <button
               ref={shareBtnRef}
@@ -371,7 +371,7 @@ export default function BottomTabBar({
         </div>
 
         <div
-          className="flex items-center gap-2 absolute left-1/2 -translate-x-1/2"
+          className={`flex items-center ${isMobile ? 'gap-1' : 'gap-2'} absolute left-1/2 -translate-x-1/2`}
           ref={mainTabsRef}
         >
           {tabs.map((tab) => (
@@ -397,7 +397,7 @@ export default function BottomTabBar({
                 {activeTab === tab.id && (
                   <motion.div
                     layoutId="activeTabUnderline"
-                    className="absolute bottom-0 left-0 right-0 bg-accent-light"
+                    className={`absolute bottom-0 bg-accent-light ${isMobile ? 'left-4 right-4' : 'left-0 right-0'}`}
                     style={{ height: '2px' }}
                     transition={{ 
                       type: 'spring', 

@@ -5,9 +5,9 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import dynamic from 'next/dynamic'
-import type { OutputData } from '@editorjs/editorjs'
+import type { PartialBlock } from '@blocknote/core'
 
-const EditorJS = dynamic(() => import('@/components/editor/EditorJS'), {
+const BlockNoteEditor = dynamic(() => import('@/components/editor/BlockNoteEditorDynamic'), {
   ssr: false,
 })
 
@@ -35,9 +35,8 @@ export default function ProfileManagement() {
   const [jobTitle3, setJobTitle3] = useState('')
   const [jobTitle4, setJobTitle4] = useState('')
   const [profileImage, setProfileImage] = useState('')
-  const [shortBioData, setShortBioData] = useState<OutputData | undefined>()
-  const [fullBioData, setFullBioData] = useState<OutputData | undefined>()
-  const [executiveSummaryData, setExecutiveSummaryData] = useState<OutputData | undefined>()
+  const [shortBioData, setShortBioData] = useState<PartialBlock[] | undefined>()
+  const [fullBioData, setFullBioData] = useState<PartialBlock[] | undefined>()
   const [collapsedProfileHeight, setCollapsedProfileHeight] = useState<string>('') // pixels
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
@@ -80,7 +79,6 @@ export default function ProfileManagement() {
       setProfileImage(profileData.profile_image || '')
       setShortBioData(profileData.short_bio)
       setFullBioData(profileData.full_bio)
-      setExecutiveSummaryData(profileData.executive_summary)
       setCollapsedProfileHeight(
         profileData.collapsed_profile_height !== null && profileData.collapsed_profile_height !== undefined
           ? String(profileData.collapsed_profile_height)
@@ -172,10 +170,26 @@ export default function ProfileManagement() {
       }
     }
 
-    const fullBioImageSizes =
-      fullBioEditorRef.current && typeof fullBioEditorRef.current.getImageSizeMap === 'function'
-        ? await fullBioEditorRef.current.getImageSizeMap()
-        : null
+    // Extract image sizes from BlockNote image blocks in full_bio
+    // BlockNote only stores previewWidth - let browser calculate height to preserve aspect ratio
+    let fullBioImageSizes: Record<string, { width?: number; height?: number }> | null = null
+    if (fullBioData) {
+      fullBioImageSizes = {}
+      fullBioData.forEach((block) => {
+        if (block.type === 'image' && block.props?.url) {
+          const url = block.props.url as string
+          const width = block.props.previewWidth as number | undefined
+          if (width) {
+            // Only store width - browser will calculate height to maintain aspect ratio
+            fullBioImageSizes![url] = { width }
+          }
+        }
+      })
+      // Set to null if no images found (matches original behavior)
+      if (fullBioImageSizes && Object.keys(fullBioImageSizes).length === 0) {
+        fullBioImageSizes = null
+      }
+    }
 
     const profileData = {
       full_name: fullName,
@@ -188,7 +202,6 @@ export default function ProfileManagement() {
       short_bio: shortBioData,
       full_bio: fullBioData,
       full_bio_image_sizes: fullBioImageSizes,
-      executive_summary: executiveSummaryData,
       collapsed_profile_height: parsedHeight,
       email: email,
       phone: phone,
@@ -378,11 +391,13 @@ export default function ProfileManagement() {
               Short Bio
             </label>
             <p className="text-xs text-gray-500 mb-2">Brief professional summary (shows on collapsed business card)</p>
-            <EditorJS 
-              holder="short-bio-editor"
-              data={shortBioData}
-              onChange={setShortBioData}
-            />
+            <div className="rounded-lg border border-gray-700 min-h-[300px] p-6" style={{ backgroundColor: '#1f1f1f', colorScheme: 'light' }}>
+              <BlockNoteEditor 
+                holder="short-bio-editor"
+                data={shortBioData}
+                onChange={setShortBioData}
+              />
+            </div>
           </div>
 
           <div>
@@ -390,26 +405,16 @@ export default function ProfileManagement() {
               Full Bio
             </label>
             <p className="text-xs text-gray-500 mb-2">Detailed bio (shows when business card is expanded)</p>
-            <EditorJS 
-              holder="full-bio-editor"
-              data={fullBioData}
-              onChange={setFullBioData}
-              onReady={(editor) => {
-                fullBioEditorRef.current = editor
-              }}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Executive Summary
-            </label>
-            <p className="text-xs text-gray-500 mb-2">Shows at the top of your resume page</p>
-            <EditorJS 
-              holder="executive-summary-editor"
-              data={executiveSummaryData}
-              onChange={setExecutiveSummaryData}
-            />
+            <div className="rounded-lg border border-gray-700 min-h-[400px] p-6" style={{ backgroundColor: '#1f1f1f', colorScheme: 'light' }}>
+              <BlockNoteEditor 
+                holder="full-bio-editor"
+                data={fullBioData}
+                onChange={setFullBioData}
+                onReady={(editor) => {
+                  fullBioEditorRef.current = editor
+                }}
+              />
+            </div>
           </div>
 
           <div className="border-t border-gray-800 pt-6">

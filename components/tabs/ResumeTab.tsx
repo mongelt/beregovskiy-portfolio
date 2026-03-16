@@ -3,13 +3,18 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import type { RefObject } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import EditorRenderer from '@/components/EditorRenderer'
+import BlockNoteRenderer from '@/components/BlockNoteRendererDynamic'
 import { useMobileState } from '@/lib/responsive'
 
 const TIMELINE_TOP_OFFSET = 35
 
 // TEMPORARY: Set to false to disable side lines rendering
 const SHOW_SIDE_LINES = false
+
+// Helper function to check if data is in BlockNote format (array of PartialBlock)
+function isBlockNoteFormat(data: any): boolean {
+  return Array.isArray(data) && data.length > 0 && data.every((block: any) => block && typeof block === 'object' && 'id' in block && 'type' in block)
+}
 
 type DebugSettings = {
   showDebugWindow: boolean
@@ -1767,37 +1772,34 @@ function EntryCard({
     // Center entries have different visual styling (no card background/border, drop shadow) and are centered
     if (position === 'center') {
       return (
-        <div 
+        <div
           ref={measureRef}
-          className="py-3 px-2 w-full text-center relative"
-          style={{
-            filter: 'drop-shadow(0 4px 12px rgba(0, 0, 0, 0.6)) drop-shadow(0 8px 24px rgba(0, 0, 0, 0.4))' // Preserve drop shadow
-          }}
+          className="py-3 px-2 w-full text-center relative resume-entry-card-center"
         >
-          <div className="text-sm text-gray-400 mb-2">
+          <div className="resume-entry-date text-sm mb-2">
             {formatSingleDate(entry.date_end_normalized || entry.date_start_normalized)}
           </div>
-          
-          <h3 className="text-xl font-bold text-white mb-2">
+
+          <h3 className="text-xl font-bold resume-entry-title mb-2">
             {entry.title}
           </h3>
-          
+
           {isExpanded && entry.short_description && (
-            <div className="transition-all duration-300 ease-in-out overflow-hidden text-sm text-gray-300 mb-3">
+            <div className="transition-all duration-300 ease-in-out overflow-hidden resume-entry-description text-sm mb-3">
               {entry.short_description}
             </div>
           )}
-          
+
           {entry.date_start_normalized && entry.date_end_normalized && (
-            <div className="text-sm text-gray-400 mb-3">
+            <div className="resume-entry-date text-sm mb-3">
               {formatSingleDate(entry.date_start_normalized)}
             </div>
           )}
-          
+
           {shouldShowExpandButtonCenter(entry) && (
-            <div 
+            <div
               onClick={onToggleExpand}
-              className="text-emerald-400 hover:text-emerald-300 font-semibold text-sm cursor-pointer"
+              className="center-entry-expand-btn text-sm cursor-pointer"
             >
               {isExpanded ? '▲' : '▼'}
             </div>
@@ -1808,36 +1810,36 @@ function EntryCard({
     
     // Side entries (left/right) use card styling
     return (
-      <div 
+      <div
         ref={measureRef}
         className={`${baseClasses} w-full text-left relative`}
       >
-        <div className="text-gray-400 text-sm mb-3">
+        <div className={`resume-entry-date text-sm mb-3 ${dateRange.includes('Present') ? 'has-present' : ''}`}>
           {dateRange}
         </div>
-        
-        <h3 className="text-xl font-bold text-white mb-1">
+
+        <h3 className="text-xl font-bold resume-entry-title mb-1">
           {entry.title}
         </h3>
-        
+
         {entry.subtitle && (
-          <div className="text-gray-400 text-base mb-2">
+          <div className="resume-entry-subtitle text-base mb-2">
             {entry.subtitle}
           </div>
         )}
-        
+
         {entry.short_description && (
-          <div className="text-gray-300 text-base mb-4">
+          <div className="resume-entry-description text-base mb-4">
             {entry.short_description}
           </div>
         )}
-        
-        {isExpanded && entry.description && (
-          <div className="transition-all duration-300 ease-in-out overflow-hidden mb-4">
-            <EditorRenderer data={entry.description} imageSizes={entry.description_image_sizes} onReady={handleEditorReady} />
+
+        {isExpanded && entry.description && isBlockNoteFormat(entry.description) && (
+          <div className="resume-entry-description-expanded transition-all duration-300 ease-in-out overflow-hidden mb-4">
+            <BlockNoteRenderer data={entry.description} imageSizes={entry.description_image_sizes} onReady={handleEditorReady} />
           </div>
         )}
-        
+
         {entry.resume_assets && entry.resume_assets.length > 0 && (
           <div className="flex justify-start gap-3 mb-3">
             {entry.resume_assets.map(asset => {
@@ -1856,30 +1858,26 @@ function EntryCard({
               return (
                 <div
                   key={asset.id}
-                  className="cursor-pointer rounded-md border border-gray-800 bg-gray-850/80 hover:border-emerald-500 transition-colors"
+                  className="resume-entry-asset cursor-pointer relative"
                   style={{ width: '100px', height: '140px' }}
                   onClick={handleAssetClick}
                 >
-                  <div className="flex flex-col justify-between h-full p-2">
+                  <div className="flex flex-col h-full">
                     <div className="flex items-start">
                       {iconUrl ? (
                         <img
                           src={iconUrl}
                           alt={asset.resume_asset_icons?.name || 'icon'}
-                          style={{
-                            maxWidth: '30px',
-                            maxHeight: '30px',
-                            objectFit: 'contain'
-                          }}
+                          className="resume-entry-asset-icon absolute"
                         />
                       ) : (
                         <div
-                          className="bg-gray-700 rounded-sm"
-                          style={{ width: '20px', height: '20px' }}
+                          className="bg-gray-700 rounded-sm absolute"
+                          style={{ width: '20px', height: '20px', top: '8px', left: '8px' }}
                         />
                       )}
                     </div>
-                    <div className="text-gray-200 text-sm leading-4 overflow-hidden">
+                    <div className="resume-entry-asset-caption absolute overflow-hidden">
                       {caption}
                     </div>
                   </div>
@@ -1888,30 +1886,13 @@ function EntryCard({
             })}
           </div>
         )}
-        
-        {/* Step 5 Stage 4: Same layout as desktop (Expand button, assets in row), Samples button hidden in mobile */}
-        <div className="flex items-center justify-between">
-          {!isMobile && shouldShowSamplesButton(entry) ? (
-            <div
-              className="text-emerald-400 hover:text-emerald-300 font-semibold text-sm cursor-pointer"
-              onClick={() => {
-                const slug = entry.collections?.slug
-                const name = entry.collections?.name
-                if (slug && name) {
-                  onOpenCollection?.(slug, name)
-                }
-              }}
-            >
-              Samples →
-            </div>
-          ) : (
-            <div></div> // Spacer if no Samples button or mobile
-          )}
-          
+
+        <div className="resume-entry-actions">
+          <div></div>
           {shouldShowExpandButton(entry) && (
-            <div 
+            <div
               onClick={onToggleExpand}
-              className="text-emerald-400 hover:text-emerald-300 font-semibold text-sm cursor-pointer"
+              className="resume-entry-action text-sm cursor-pointer"
             >
               {isExpanded ? 'Collapse ▲' : 'Expand ▼'}
             </div>
@@ -1953,9 +1934,9 @@ function EntryCard({
           </div>
         )}
         
-        {isExpanded && entry.description && (
+        {isExpanded && entry.description && isBlockNoteFormat(entry.description) && (
           <div className="resume-entry-description-expanded transition-all duration-300 ease-in-out overflow-hidden mb-4">
-            <EditorRenderer data={entry.description} imageSizes={entry.description_image_sizes} onReady={handleEditorReady} />
+            <BlockNoteRenderer data={entry.description} imageSizes={entry.description_image_sizes} onReady={handleEditorReady} />
           </div>
         )}
         
@@ -2068,9 +2049,9 @@ function EntryCard({
           </div>
         )}
         
-        {isExpanded && entry.description && (
+        {isExpanded && entry.description && isBlockNoteFormat(entry.description) && (
           <div className="resume-entry-description-expanded transition-all duration-300 ease-in-out overflow-hidden mb-4">
-            <EditorRenderer data={entry.description} imageSizes={entry.description_image_sizes} onReady={handleEditorReady} />
+            <BlockNoteRenderer data={entry.description} imageSizes={entry.description_image_sizes} onReady={handleEditorReady} />
           </div>
         )}
         

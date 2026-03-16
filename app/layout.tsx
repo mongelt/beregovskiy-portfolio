@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, JetBrains_Mono, Crimson_Pro, Public_Sans } from 'next/font/google'
 import "./globals.css";
+// Import BlockNote CSS globally to ensure styles are available for all components
+import '@blocknote/core/fonts/inter.css'
+import '@blocknote/mantine/style.css'
 
 // Redesign Fonts
 const crimsonPro = Crimson_Pro({ 

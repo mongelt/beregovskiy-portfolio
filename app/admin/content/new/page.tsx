@@ -7,11 +7,11 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import dynamic from 'next/dynamic'
-import type { OutputData } from '@editorjs/editorjs'
+import type { PartialBlock } from '@blocknote/core'
 import AudioEditor from '@/components/AudioEditor'
 import VideoEditor from '@/components/VideoEditor'
 
-const EditorJS = dynamic(() => import('@/components/editor/EditorJS'), {
+const BlockNoteEditor = dynamic(() => import('@/components/editor/BlockNoteEditorDynamic'), {
   ssr: false,
 })
 
@@ -75,7 +75,7 @@ export default function NewContent() {
   const [imageUrl, setImageUrl] = useState('')
   const [videoUrl, setVideoUrl] = useState('')
   const [audioUrl, setAudioUrl] = useState('')
-  const [editorData, setEditorData] = useState<OutputData | undefined>()
+  const [editorData, setEditorData] = useState<PartialBlock[] | undefined>()
   const editorInstanceRef = useRef<any>(null)
   const [selectedCollections, setSelectedCollections] = useState<string[]>([])
   const [downloadEnabled, setDownloadEnabled] = useState(true)
@@ -241,20 +241,28 @@ export default function NewContent() {
     }
 
     try {
-      const latestEditorData =
-        contentType === 'article' && editorInstanceRef.current
-          ? await (typeof editorInstanceRef.current.getEnrichedData === 'function'
-              ? editorInstanceRef.current.getEnrichedData()
-              : editorInstanceRef.current.save
-                ? editorInstanceRef.current.save()
-                : editorInstanceRef.current.saver?.save?.())
-          : editorData
-      const imageSizeMap =
-        contentType === 'article' && editorInstanceRef.current
-          ? await (typeof editorInstanceRef.current.getImageSizeMap === 'function'
-              ? editorInstanceRef.current.getImageSizeMap()
-              : {})
-          : null
+      // BlockNote: data is already in editorData from onChange callback
+      const latestEditorData = editorData
+      
+      // Extract image sizes from BlockNote image blocks
+      let imageSizeMap: Record<string, { width?: number; height?: number }> | null = null
+      if (contentType === 'article' && editorData) {
+        imageSizeMap = {}
+        editorData.forEach((block) => {
+          if (block.type === 'image' && block.props?.url) {
+            const url = block.props.url as string
+            const width = block.props.previewWidth as number | undefined
+            if (width) {
+              // Only store width - browser will calculate height to maintain aspect ratio
+              imageSizeMap![url] = { width }
+            }
+          }
+        })
+        // Set to null if no images found (matches original behavior)
+        if (imageSizeMap && Object.keys(imageSizeMap).length === 0) {
+          imageSizeMap = null
+        }
+      }
 
       const { data: contentData, error: contentError } = await supabase
         .from('content')
@@ -547,14 +555,16 @@ export default function NewContent() {
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Article Content
               </label>
-              <EditorJS 
-                holder="editorjs"
-                data={editorData}
-                onChange={setEditorData}
-                onReady={(editor) => {
-                  editorInstanceRef.current = editor
-                }}
-              />
+              <div className="rounded-lg border border-gray-700 min-h-[500px] p-6" style={{ backgroundColor: '#1f1f1f', colorScheme: 'light' }}>
+                <BlockNoteEditor 
+                  holder="editorjs"
+                  data={editorData}
+                  onChange={setEditorData}
+                  onReady={(editor) => {
+                    editorInstanceRef.current = editor
+                  }}
+                />
+              </div>
             </div>
           )}
 

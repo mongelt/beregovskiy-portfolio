@@ -8,7 +8,12 @@ import { useMobileState } from '@/lib/responsive'
 import { BOTTOM_NAV_HEIGHT_PX } from '@/lib/constants'
 
 
-const EditorRenderer = dynamic(() => import('@/components/EditorRenderer'), { ssr: false })
+import BlockNoteRenderer from '@/components/BlockNoteRendererDynamic'
+
+// Helper function to check if data is in BlockNote format (array of PartialBlock)
+function isBlockNoteFormat(data: any): boolean {
+  return Array.isArray(data) && data.length > 0 && data.every((block: any) => block && typeof block === 'object' && 'id' in block && 'type' in block)
+}
 
 interface ContentItem {
   id: string
@@ -157,7 +162,7 @@ export default function ContentReader({ content, isVisible, positioning, onTitle
   }, [content, isVisible, onTitleVisibilityChange])
   
   // Desktop positioning
-  const marginTop = '105px' // Collapsed: 105px spacing (35px + 70px fix)
+  const marginTop = '70px' // Collapsed: tight below menu bar
   const marginRight = '50px' // Gap from right edge (layout-reset.md line 323)
   const marginLeft = 'calc(var(--info-menu-width) + 30px)' // Starts after Info Menu (280px + 30px gap)
   
@@ -200,9 +205,9 @@ export default function ContentReader({ content, isVisible, positioning, onTitle
         {isArticleLoading && (
           <div className="text-gray-400 text-sm">Loading content...</div>
         )}
-        {content.type === 'article' && content.content_body && (
+        {content.type === 'article' && content.content_body && isBlockNoteFormat(content.content_body) && (
           <div className="content-body">
-            <EditorRenderer data={content.content_body} imageSizes={content.image_sizes} />
+            <BlockNoteRenderer data={content.content_body} imageSizes={content.image_sizes} />
           </div>
         )}
         {content.type === 'image' && content.image_url && (

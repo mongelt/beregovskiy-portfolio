@@ -1,5 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+function decodeHTMLEntities(text: string): string {
+  return text
+    // Hex numeric entities (e.g. &#x27; → ')
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+    // Decimal numeric entities (e.g. &#39; → ')
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(parseInt(dec, 10)))
+    // Named entities
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+}
 
 async function fetchLinkMetadata(urlString: string) {
   let validatedUrl: URL
@@ -28,12 +42,12 @@ async function fetchLinkMetadata(urlString: string) {
 
     // Extract title
     const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i)
-    const title = titleMatch ? titleMatch[1].trim() : validatedUrl.hostname
+    const title = decodeHTMLEntities(titleMatch ? titleMatch[1].trim() : validatedUrl.hostname)
 
     // Extract description (try meta description first, then og:description)
     const descMatch = html.match(/<meta[^>]*name=["\']description["\'][^>]*content=["\']([^"\']+)["\']/i) ||
                      html.match(/<meta[^>]*property=["\']og:description["\'][^>]*content=["\']([^"\']+)["\']/i)
-    const description = descMatch ? descMatch[1].trim() : ''
+    const description = decodeHTMLEntities(descMatch ? descMatch[1].trim() : '')
 
     // Extract favicon from multiple sources
     let favicon = ''

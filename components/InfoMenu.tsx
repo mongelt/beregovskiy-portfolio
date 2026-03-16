@@ -107,12 +107,15 @@ export default function InfoMenu({
   // Mobile positioning: relative, 10px below collapsed menu, full width with 15px margins
   const mobileStyles = isMobile ? {
     position: 'relative' as const,
+    top: 'auto',    // Override CSS class's top: 264px (which offsets relative elements down)
+    left: 'auto',
+    bottom: 'auto',
     width: '100%',
     paddingLeft: '15px',
     paddingRight: '15px',
-    paddingTop: '10px', // 10px gap below collapsed main menu
+    paddingTop: '10px',
     paddingBottom: '15px',
-    marginTop: '0',
+    marginTop: '-10px',
     marginBottom: '0',
     borderBottom: '1px solid #1f2937' // border-gray-800
   } : {

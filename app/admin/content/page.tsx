@@ -54,6 +54,24 @@ export default function ContentManagement() {
     if (!confirm('Are you sure you want to delete this content?')) return
     
     try {
+      // Check if content is used in resume entries
+      const { data: resumeAssets, error: checkError } = await supabase
+        .from('resume_assets')
+        .select('id')
+        .eq('content_id', id)
+        .eq('asset_type', 'content')
+        .limit(1)
+      
+      if (checkError) {
+        alert('Error checking content usage: ' + checkError.message)
+        return
+      }
+      
+      if (resumeAssets && resumeAssets.length > 0) {
+        alert("Content item can't be deleted because it is used in a resume entry")
+        return
+      }
+      
       const { error } = await supabase
         .from('content')
         .delete()
