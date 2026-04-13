@@ -49,21 +49,25 @@ function hexWithOpacity(hex: string, opacity: number): string {
 // ---------------------------------------------------------------------------
 
 /**
- * Returns background and title text colors for a card at the given score.
+ * Returns background, title text, and description text colors for a card at the given score.
  * Apply as: `<div style={interpolateMenuScore(score)}>`
+ *
+ * descColor:
+ *   score <= 0.50 (related/dark bg): '#989898' — lighter for legibility on dark
+ *   score >  0.50 (focus/light bg):  '#303030' — darker for legibility on light
  */
-export function interpolateMenuScore(score: number): { background: string; color: string } {
-  if (score <= 0) return { background: '#0f0e0e', color: '#b0b0b0' }
-  if (score >= 1) return { background: '#c7c7c2', color: '#1a1a1a' }
+export function interpolateMenuScore(score: number): { background: string; color: string; descColor: string } {
+  if (score <= 0) return { background: '#0f0e0e', color: '#b0b0b0', descColor: '#989898' }
+  if (score >= 1) return { background: '#c7c7c2', color: '#1a1a1a', descColor: '#303030' }
 
   if (score <= 0.50) {
     // Gradient A: #0f0e0e → #2e2c2c, title always #b0b0b0
     const t = score / 0.50
-    return { background: lerpHex('#0f0e0e', '#2e2c2c', t), color: '#b0b0b0' }
+    return { background: lerpHex('#0f0e0e', '#2e2c2c', t), color: '#b0b0b0', descColor: '#989898' }
   } else {
     // Gradient B: #9a9994 → #c7c7c2, title always #1a1a1a
     const t = (score - 0.50) / 0.50
-    return { background: lerpHex('#9a9994', '#c7c7c2', t), color: '#1a1a1a' }
+    return { background: lerpHex('#9a9994', '#c7c7c2', t), color: '#1a1a1a', descColor: '#303030' }
   }
 }
 

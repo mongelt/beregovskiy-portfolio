@@ -1,12 +1,18 @@
 'use client'
 
 /**
- * Stage 6 + Stage 8 visual verification page — /cards-test
+ * Card visual reference page — /cards-test
  *
- * Shows all 7 card types with representative props, mirroring
- * card_design_mockup.html rows 1–4. Also has an interactive
- * CategoryPlane section for Stage 8 verification.
- * Hover each card to verify transitions.
+ * All card types and states from the live dynamic menu, organized by row.
+ * Hover each card to verify transitions and animations.
+ *
+ * Row 1 — NavCard · Categories
+ * Row 2 — NavCard + PeriSolo + PeriPair · Subcategories (layout="nav")
+ * Row 3 — CollectionCard · Collections (bottom row)
+ * Row 4 — SubheaderCard
+ * Row 5 — ThumbCard + PeriSolo + PeriPair · Content (layout="content")
+ * Score Spectrum (0.01 → 1.00)
+ * Interactive plane demos (CategoryPlane, ContentPlane, CollectionPlane)
  */
 
 import React, { useState } from 'react'
@@ -26,7 +32,7 @@ import { CollectionPlane } from '@/components/dynamic-menu/CollectionPlane'
 import { ScoredCollection } from '@/lib/menu/collectionLayout'
 
 // ---------------------------------------------------------------------------
-// Score spectrum data (from score_spectrum_prototype.html)
+// Score spectrum data
 // ---------------------------------------------------------------------------
 
 const SPECTRUM_CARDS = [
@@ -94,10 +100,6 @@ const divider: React.CSSProperties = {
 }
 
 // ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
 // Stage 8 — CategoryPlane test data
 // ---------------------------------------------------------------------------
 
@@ -115,7 +117,6 @@ const TEST_SUBCATEGORIES: ScoredSubcategory[] = [
   { id: 'sub-5', category_id: 'cat-2', name: 'Policy Reports',    shortDesc: 'Institutional',           desc: 'Institutional policy reports and white papers.',                 collectionIds: ['col-2'], score: 0.40, classification: 'related', pairingRole: 'none' },
 ]
 
-// 7-item list for testing peri-pair threshold (>5 subcategories)
 const TEST_SUBCATEGORIES_LARGE: ScoredSubcategory[] = [
   ...TEST_SUBCATEGORIES,
   { id: 'sub-6', category_id: 'cat-3', name: 'Feature Writing',   shortTitle: 'Features',  shortDesc: 'Long-form',   desc: 'Long-form feature writing and narrative journalism.', collectionIds: ['col-1'], score: 0.30, classification: 'related', pairingRole: 'left',  pairWithId: 'sub-7' },
@@ -144,7 +145,6 @@ function CategoryPlaneDemo() {
 
   return (
     <div>
-      {/* Controls */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
         <button style={isCollapsed ? btnInactive : btnActive} onClick={() => setIsCollapsed(false)}>
           Expanded
@@ -162,14 +162,12 @@ function CategoryPlaneDemo() {
         </button>
       </div>
 
-      {/* Status readout */}
       <div style={{ fontSize: 10, color: '#555', marginBottom: 16, fontFamily: 'monospace' }}>
         category: {activeCategoryId ?? 'null'} &nbsp;|&nbsp;
         subcategory: {activeSubcategoryId ?? 'null'} &nbsp;|&nbsp;
         collapsed: {String(isCollapsed)}
       </div>
 
-      {/* The plane — wrap in a relative container so absolute overlay is bounded */}
       <div style={{ position: 'relative', display: 'inline-flex', minHeight: 300 }}>
         <CategoryPlane
           categories={TEST_CATEGORIES}
@@ -286,7 +284,6 @@ function ContentPlaneDemo() {
 
   return (
     <div>
-      {/* Controls */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
         {([1, 2, 3] as const).map(n => (
           <button key={n} style={colCount === n ? btnOn : btnOff} onClick={() => setColCount(n)}>
@@ -303,12 +300,10 @@ function ContentPlaneDemo() {
         </button>
       </div>
 
-      {/* Status */}
       <div style={{ fontSize: 10, color: '#555', marginBottom: 16, fontFamily: 'monospace' }}>
         active item: {activeContentId ?? 'null'}
       </div>
 
-      {/* Content plane — fixed height to make scroll testable */}
       <div style={{ height: 380, overflow: 'hidden', display: 'flex' }}>
         <ContentPlane
           columns={columns}
@@ -362,7 +357,6 @@ const RIGHT_ZONE: ScoredCollection[] = [
 function CollectionPlaneDemo() {
   const [activeId, setActiveId] = useState<string | null>('col-a')
 
-  // Rebuild zones reflecting current active state
   const leftZone  = LEFT_ZONE.map(c  => ({ ...c,  isActive: c.id  === activeId }))
   const rightZone = RIGHT_ZONE.map(c => ({ ...c, isActive: c.id === activeId }))
 
@@ -414,136 +408,247 @@ function CollectionPlaneDemo() {
   )
 }
 
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
+
 export default function CardsTestPage() {
   return (
     <div style={pageStyle}>
       <h1 style={{ fontSize: 18, fontWeight: 600, color: '#e0e0e0', marginBottom: 6 }}>
-        Card Components — Current Layouts
+        Card Components — Visual Reference
       </h1>
-      <p style={{ fontSize: 12, color: '#888', marginBottom: 6, lineHeight: 1.6 }}>
-        Visual reference for all dynamic-menu card types. Hover each card to test transitions.
-      </p>
-      <p style={{ fontSize: 11, color: '#555', marginBottom: 30, lineHeight: 1.7, maxWidth: 640 }}>
-        <strong style={{ color: '#888' }}>Hover color rule (all non-active scored cards):</strong> on hover, background → <code style={{ color: '#b0a0a0' }}>#c7c7c2</code>, title → <code style={{ color: '#b0a0a0' }}>#1a1a1a</code>, border → <code style={{ color: '#b0a0a0' }}>#1c1818</code>. Applies to ThumbCard, NavCard (all variants), and PeriCards (nav layout). PeriCards in content layout use <code style={{ color: '#b0a0a0' }}>#b4b0ac</code>.
+      <p style={{ fontSize: 12, color: '#888', marginBottom: 30, lineHeight: 1.6 }}>
+        All card types and states from the live dynamic menu. Hover each card to test transitions.
       </p>
 
-      {/* ── Row 1: ThumbCard ──────────────────────────────────────────── */}
-      <div style={sectionTitle}>Row 1 — ThumbCard (focus + active + related)</div>
+      {/* ── Row 1: NavCard — Categories ───────────────────────────── */}
+      <div style={sectionTitle}>Row 1 — NavCard · Categories</div>
       <p style={{ fontSize: 11, color: '#555', marginBottom: 16, lineHeight: 1.6 }}>
-        300px wide. Active: fixed accent colors, desc always visible, thumbnail always lifted. Non-active: score-driven colors at rest → focus colors (#c7c7c2 bg, #1a1a1a text) on hover + desc expands + thumbnail lifts.
+        Categories always render as NavCard. Expanded variant: 300px always, shortDesc at rest, desc + ThumbnailStack on hover.
+        Collapsed variant: 90px at rest → 300px on individual hover. Hover-overlay: plane-wide 300px, shortDesc at rest, desc on individual hover.
+        Note: categories have no peri card state — only NavCard in all states.
       </p>
       <div style={row}>
+
         <div style={col}>
-          <div style={label}>Active — fixed accent colors, desc always visible</div>
-          <ThumbCard
-            name="Comprehensive accession policy analysis"
-            shortDesc="Accession policy analysis"
-            desc="Comprehensive accession policy analysis and strategic overview for southeastern European EU integration tactics."
-            publication="Report"
-            year={2023}
+          <div style={label}>Active (selected)</div>
+          <NavCard
+            variant="expanded"
+            name="Analysis"
+            shortDesc="Policy · AI · Geopolitics"
+            desc="In-depth analysis across policy, AI governance, and international affairs. Ground-level reporting from Eastern Europe."
             score={1.0}
             isActive={true}
+            thumbnails={[]}
             onClick={() => {}}
           />
         </div>
 
         <div style={col}>
-          <div style={label}>Focus (score 1.0) — hover: #c7c7c2 bg + desc</div>
-          <ThumbCard
-            name="AI Agents in Integration"
-            shortDesc="Agentic workflows in pipelines"
-            desc="Agentic workflows and architecture in modern data pipelines — implementation patterns and case studies."
-            publication="White paper"
-            year={2024}
+          <div style={label}>Collapsed — hover to expand (90→300px)</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, width: 90 }}>
+            <NavCard
+              variant="collapsed"
+              name="Analysis"
+              shortDesc="Policy · AI · Geopolitics"
+              desc="In-depth analysis across policy, AI governance, and international affairs."
+              score={1.0}
+              isActive={true}
+              thumbnails={[]}
+              onClick={() => {}}
+            />
+            <NavCard
+              variant="collapsed"
+              name="Research"
+              shortDesc="Academic · Reports"
+              desc="Academic papers, white papers, and policy reports spanning technology and law."
+              score={0.80}
+              isActive={false}
+              thumbnails={[]}
+              onClick={() => {}}
+            />
+            <NavCard
+              variant="collapsed"
+              name="Creative"
+              shortDesc="Writing · Narrative"
+              desc="Long-form narrative writing, essays, and creative non-fiction."
+              score={0.25}
+              isActive={false}
+              thumbnails={[]}
+              onClick={() => {}}
+            />
+          </div>
+        </div>
+
+        <div style={col}>
+          <div style={label}>Hover-overlay mode (isHoverOverlay=true) — plane-wide 300px, shortDesc at rest</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <NavCard
+              variant="collapsed"
+              isHoverOverlay={true}
+              name="Analysis"
+              shortDesc="Policy · AI · Geopolitics"
+              desc="In-depth analysis across policy, AI governance, and international affairs."
+              score={1.0}
+              isActive={true}
+              thumbnails={[]}
+              onClick={() => {}}
+            />
+            <NavCard
+              variant="collapsed"
+              isHoverOverlay={true}
+              name="Research"
+              shortDesc="Academic · Reports"
+              desc="Academic papers, white papers, and policy reports."
+              score={0.80}
+              isActive={false}
+              thumbnails={[]}
+              onClick={() => {}}
+            />
+            <NavCard
+              variant="collapsed"
+              isHoverOverlay={true}
+              name="Creative"
+              shortDesc="Writing · Narrative"
+              desc="Long-form narrative writing and creative non-fiction."
+              score={0.25}
+              isActive={false}
+              thumbnails={[]}
+              onClick={() => {}}
+            />
+          </div>
+        </div>
+
+        <div style={col}>
+          <div style={label}>Focus (score 0.80) — expanded variant</div>
+          <NavCard
+            variant="expanded"
+            name="Research"
+            shortDesc="Academic · Reports"
+            desc="Academic papers, white papers, and policy reports spanning technology, international law, and political economy."
+            score={0.80}
+            isActive={false}
+            thumbnails={[]}
+            onClick={() => {}}
+          />
+        </div>
+
+        <div style={col}>
+          <div style={label}>Related (score 0.25) — expanded variant</div>
+          <NavCard
+            variant="expanded"
+            name="Creative"
+            shortDesc="Writing · Narrative"
+            desc="Long-form narrative writing, essays, and creative non-fiction exploring contemporary issues."
+            score={0.25}
+            isActive={false}
+            thumbnails={[]}
+            onClick={() => {}}
+          />
+        </div>
+
+      </div>
+      <hr style={divider} />
+
+      {/* ── Row 2: NavCard + Peri — Subcategories ─────────────────── */}
+      <div style={sectionTitle}>Row 2 — NavCard + PeriSolo + PeriPair · Subcategories (layout=&quot;nav&quot;)</div>
+      <p style={{ fontSize: 11, color: '#555', marginBottom: 16, lineHeight: 1.6 }}>
+        Active/focus subcategories: NavCard (same as categories). Related subcategories with &gt;5 items in list: PeriSolo (isolated) or PeriPair (paired).
+        PeriSolo/PeriPair layout=&quot;nav&quot;: text left, ThumbnailStack right, 150px rest → 300px hover.
+        Note: score 0.28 is in the related zone (below 0.50 seam) — title color is #b0b0b0 grey, not #1a1a1a dark.
+      </p>
+      <div style={row}>
+
+        <div style={col}>
+          <div style={label}>Active (selected)</div>
+          <NavCard
+            variant="expanded"
+            name="EU Integration"
+            shortDesc="Accession · Balkans"
+            desc="European Union accession politics in Southeast Europe — tracking reforms and diplomatic milestones."
             score={1.0}
+            isActive={true}
+            thumbnails={[]}
+            onClick={() => {}}
+          />
+        </div>
+
+        <div style={col}>
+          <div style={label}>Collapsed — hover to expand (90→300px)</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, width: 90 }}>
+            <NavCard
+              variant="collapsed"
+              name="EU Integration"
+              desc="European Union accession politics in Southeast Europe."
+              score={1.0}
+              isActive={true}
+              thumbnails={[]}
+              onClick={() => {}}
+            />
+            <NavCard
+              variant="collapsed"
+              name="AI Policy"
+              desc="Policy frameworks for artificial intelligence governance."
+              score={0.85}
+              isActive={false}
+              thumbnails={[]}
+              onClick={() => {}}
+            />
+            <NavCard
+              variant="collapsed"
+              name="Media Studies"
+              desc="Press freedom, media ecosystems, and disinformation."
+              score={0.70}
+              isActive={false}
+              thumbnails={[]}
+              onClick={() => {}}
+            />
+          </div>
+        </div>
+
+        <div style={col}>
+          <div style={label}>Focus (score 1.00)</div>
+          <NavCard
+            variant="expanded"
+            name="EU Integration"
+            shortDesc="Accession · Balkans"
+            desc="European Union accession politics in Southeast Europe — tracking reforms and diplomatic milestones."
+            score={1.00}
             isActive={false}
+            thumbnails={[]}
             onClick={() => {}}
           />
         </div>
 
         <div style={col}>
-          <div style={label}>Focus (score 0.72) — hover: #c7c7c2 bg + desc</div>
-          <ThumbCard
-            name="Machine Learning in Policy Analysis"
-            shortDesc="ML pipelines for policy"
-            desc="How machine learning transforms evidence-based policy development and international affairs research."
-            publication="Article"
-            year={2024}
-            score={0.72}
+          <div style={label}>Focus (score 0.70)</div>
+          <NavCard
+            variant="expanded"
+            name="Media Studies"
+            shortDesc="Press · Disinformation"
+            desc="Press freedom, media ecosystems, and disinformation research across Southeastern Europe."
+            score={0.70}
             isActive={false}
+            thumbnails={[]}
             onClick={() => {}}
           />
         </div>
 
         <div style={col}>
-          <div style={label}>Related (score 0.35) — hover: #c7c7c2 bg + desc</div>
-          <ThumbCard
-            name="LCB Dispatch #14"
-            shortDesc="Eastern Europe"
-            desc="Weekly geopolitical briefing from Eastern Europe covering politics, economics, and regional developments."
-            publication="Newsletter"
-            year={2023}
-            score={0.35}
+          <div style={label}>Related (score 0.28) — below 0.50 seam, grey title</div>
+          <NavCard
+            variant="expanded"
+            name="Photo Essays"
+            shortDesc="Visual storytelling"
+            desc="Documentary photography and visual storytelling for editorial platforms."
+            score={0.28}
             isActive={false}
-            onClick={() => {}}
-          />
-        </div>
-      </div>
-
-      <hr style={divider} />
-
-      {/* ── Row 2: PeriSolo + PeriPair ───────────────────────────────── */}
-      <div style={sectionTitle}>Row 2a — PeriSolo + PeriPair · layout=&quot;content&quot; (default, used in ContentPlane)</div>
-      <p style={{ fontSize: 11, color: '#555', marginBottom: 16, lineHeight: 1.6 }}>
-        150px at rest → 300px (solo) / 290px (pair) on hover. Single thumbnail lifts from left with 3D perspective. Text right-aligned. Non-hovered pair card collapses to 10px sliver. Background: #b4b0ac on hover.
-      </p>
-      <div style={row}>
-        <div style={col}>
-          <div style={label}>PeriSolo — 150px rest → 300px hover, thumbnail left</div>
-          <PeriSolo
-            name="GEO Training Materials for Journalists"
-            shortTitle="GEO for Journalists"
-            shortDesc="Generative engines"
-            desc="Optimization strategies for journalists navigating AI-driven search engines and content discovery platforms."
-            publication="Guide"
-            year={2024}
+            thumbnails={[]}
             onClick={() => {}}
           />
         </div>
 
-        <div style={col}>
-          <div style={label}>PeriPair — hover one card, partner collapses to sliver</div>
-          <PeriPair
-            left={{
-              name: 'Ethical governance frameworks for enterprises',
-              shortTitle: 'Op-Ed: Tech Ethics',
-              shortDesc: 'Responsible AI use',
-              desc: 'Ethical AI governance frameworks for enterprise AI deployment and ethical decision-making.',
-              publication: 'Op-ed',
-              year: 2024,
-            }}
-            right={{
-              name: 'LCB Dispatch #14',
-              shortTitle: 'LCB Dispatch #14',
-              shortDesc: 'Eastern Europe',
-              desc: 'Weekly geopolitical briefing from Eastern Europe covering politics, economics, and regional developments.',
-              publication: 'Newsletter',
-              year: 2023,
-            }}
-            onLeftClick={() => {}}
-            onRightClick={() => {}}
-          />
-        </div>
-      </div>
-
-      <hr style={divider} />
-
-      {/* ── Row 2b: PeriSolo + PeriPair nav layout ───────────────────── */}
-      <div style={sectionTitle}>Row 2b — PeriSolo + PeriPair · layout=&quot;nav&quot; (used in CategoryPlane for subcategories)</div>
-      <p style={{ fontSize: 11, color: '#555', marginBottom: 16, lineHeight: 1.6 }}>
-        Same width animation as content layout. Text left-aligned. ThumbnailStack (multi-asset) slides in from right on hover. Description expands inline below name (maxHeight, same pattern as NavCard). Background: #c7c7c2 on hover. Passes full thumbnails array from subcategory data.
-      </p>
-      <div style={row}>
         <div style={col}>
           <div style={label}>PeriSolo nav — 150px rest → 300px hover, ThumbnailStack right</div>
           <PeriSolo
@@ -579,53 +684,21 @@ export default function CardsTestPage() {
             onRightClick={() => {}}
           />
         </div>
-      </div>
 
+      </div>
       <hr style={divider} />
 
-      {/* ── Row 3a: SubheaderCard ────────────────────────────────────── */}
-      <div style={sectionTitle}>Row 3a — SubheaderCard (content plane column header)</div>
+      {/* ── Row 3: CollectionCard ──────────────────────────────────── */}
+      <div style={sectionTitle}>Row 3 — CollectionCard · Collections (bottom row)</div>
       <p style={{ fontSize: 11, color: '#555', marginBottom: 16, lineHeight: 1.6 }}>
-        300px (columns=1) or 608px (columns=2, spanning split pair). 42px at rest → 72px on hover. Dark bg #0d0a0a → #c7c7c2 on hover. shortDesc slides out, desc slides in. ThumbnailStack fades in on hover. isCollectionActive: name #A85A5A, border #6B2A2A at rest.
-      </p>
-      <div style={row}>
-        <div style={col}>
-          <div style={label}>Standard 300px — hover: #c7c7c2 bg + desc + thumbnails</div>
-          <SubheaderCard
-            name="Politics & Society"
-            shortDesc="Geopolitics, policy analysis, international relations"
-            desc="Geopolitics, policy analysis, and international relations — exploring EU dynamics, Balkan politics, and global power shifts through in-depth ground-level reporting and analysis."
-            itemCount={12}
-            thumbnails={[]}
-            isCollectionActive={false}
-            onClick={() => {}}
-          />
-        </div>
-
-        <div style={col}>
-          <div style={label}>Collection active (name #A85A5A)</div>
-          <SubheaderCard
-            name="Technology & AI"
-            shortDesc="Machine learning, AI policy, future of work"
-            desc="Exploring the intersection of artificial intelligence, policy, and society — from governance frameworks to frontier research."
-            itemCount={8}
-            thumbnails={[]}
-            isCollectionActive={true}
-            onClick={() => {}}
-          />
-        </div>
-      </div>
-
-      <hr style={divider} />
-
-      {/* ── Row 3b: CollectionCard ───────────────────────────────────── */}
-      <div style={sectionTitle}>Row 3b — CollectionCard (bottom row)</div>
-      <p style={{ fontSize: 11, color: '#555', marginBottom: 16, lineHeight: 1.6 }}>
-        140px at rest (160px when active) → 290px on hover. shortTitle at rest → name uppercase on hover. Description expands inline below name (maxHeight animation, same pattern as NavCard). ThumbnailStack slides in from right. Card grows upward (CollectionPlane uses height:36 + overflow:visible + alignItems:flex-end). Active: red left border + dismiss (×) button. Focus/related hover: #c7c7c2 bg.
+        140px at rest (160px when active) → 290px on hover. Cards grow upward (CollectionPlane uses overflow:visible + alignItems:flex-end).
+        Active: red left border + dismiss (×) button. Focus: light bg at rest. Related: dark bg at rest → #b4b0ac on hover.
+        Hover any card to expand: name goes uppercase, desc reveals, ThumbnailStack slides in from right.
       </p>
       <div style={{ ...row, alignItems: 'flex-end' }}>
+
         <div style={col}>
-          <div style={label}>Active — red left border, dismiss button, desc inline</div>
+          <div style={label}>Active — red left border, × dismiss</div>
           <CollectionCard
             name="Eastern Europe Analysis"
             shortTitle="E. Europe"
@@ -640,13 +713,13 @@ export default function CardsTestPage() {
         </div>
 
         <div style={col}>
-          <div style={label}>Focus (score ≥ 0.50) — #c7c7c2 bg at rest and on hover</div>
+          <div style={label}>Focus (score 1.00) — light bg at rest</div>
           <CollectionCard
             name="AI & Technology"
             shortTitle="AI / Tech"
             shortDesc="Machine learning and policy"
             desc="Coverage of AI policy, machine learning research, and technology governance."
-            score={1.0}
+            score={1.00}
             isActive={false}
             thumbnails={[]}
             onClick={() => {}}
@@ -654,111 +727,227 @@ export default function CardsTestPage() {
         </div>
 
         <div style={col}>
-          <div style={label}>Related (score &lt; 0.50) — dark at rest → #b4b0ac on hover</div>
+          <div style={label}>Focus (score 0.52) — just above 0.50 seam</div>
           <CollectionCard
-            name="International Development"
-            shortTitle="Int'l Dev"
-            shortDesc="Development economics"
-            desc="International development economics, aid effectiveness, and capacity building."
-            score={0.30}
+            name="Policy Reports"
+            shortTitle="Policy"
+            shortDesc="Institutional · White papers"
+            desc="Institutional policy reports and white papers spanning technology and governance."
+            score={0.52}
             isActive={false}
             thumbnails={[]}
             onClick={() => {}}
           />
         </div>
-      </div>
 
+        <div style={col}>
+          <div style={label}>Related (score 0.28) — dark bg at rest</div>
+          <CollectionCard
+            name="Media Studies"
+            shortTitle="Media"
+            shortDesc="Press · Disinformation"
+            desc="Press freedom, media ecosystems, and disinformation research."
+            score={0.28}
+            isActive={false}
+            thumbnails={[]}
+            onClick={() => {}}
+          />
+        </div>
+
+        <div style={col}>
+          <div style={label}>Related (score 0.05) — deep related, dark bg</div>
+          <CollectionCard
+            name="Creative Writing"
+            shortTitle="Creative"
+            shortDesc="Essays · Fiction"
+            desc="Long-form creative writing, essays, and literary non-fiction."
+            score={0.05}
+            isActive={false}
+            thumbnails={[]}
+            onClick={() => {}}
+          />
+        </div>
+
+      </div>
       <hr style={divider} />
 
-      {/* ── Row 4: NavCard ───────────────────────────────────────────── */}
-      <div style={sectionTitle}>Row 4 — NavCard (category + subcategory navigation)</div>
+      {/* ── Row 4: SubheaderCard ───────────────────────────────────── */}
+      <div style={sectionTitle}>Row 4 — SubheaderCard (content plane column header)</div>
       <p style={{ fontSize: 11, color: '#555', marginBottom: 16, lineHeight: 1.6 }}>
-        Expanded variant: always 300px, shortDesc visible at rest, desc + ThumbnailStack on hover. Collapsed variant: 90px at rest → 300px on individual hover (Framer Motion). Overlay mode: plane expands plane-wide, individual hover still swaps desc and reveals thumbnails. Hover color rule applies in ALL modes: score-driven → #c7c7c2 bg + #1a1a1a text + #1c1818 border on hover.
+        300px (columns=1) or 608px (columns=2, spanning a split PeriPair column). 42px at rest → 72px on hover.
+        Dark bg #0d0a0a → #c7c7c2 on hover. shortDesc slides out, full desc slides in. ThumbnailStack fades in on hover.
+        isCollectionActive=true: name shifts to #A85A5A, border to #6B2A2A (collection is selected but subheader is still visible because
+        the column belongs to a non-active collection).
       </p>
       <div style={row}>
+
         <div style={col}>
-          <div style={label}>Expanded — active (fixed accent, no hover change)</div>
-          <NavCard
-            variant="expanded"
-            name="Analysis"
-            shortDesc="Policy · AI · Geopolitics"
-            desc="In-depth analysis across policy, AI governance, and international affairs. Ground-level reporting from Eastern Europe."
-            score={1.0}
-            isActive={true}
+          <div style={label}>At rest — hover to see expanded + desc + thumbnails</div>
+          <SubheaderCard
+            name="Politics & Society"
+            shortDesc="Geopolitics, policy analysis, international relations"
+            desc="Geopolitics, policy analysis, and international relations — exploring EU dynamics, Balkan politics, and global power shifts through in-depth ground-level reporting and analysis."
+            itemCount={12}
             thumbnails={[]}
+            isCollectionActive={false}
             onClick={() => {}}
           />
         </div>
 
         <div style={col}>
-          <div style={label}>Expanded — focus (score 1.0) — hover: #c7c7c2 + desc</div>
-          <NavCard
-            variant="expanded"
-            name="Research"
-            shortDesc="Academic · Reports"
-            desc="Academic papers, white papers, and policy reports spanning technology, international law, and political economy."
-            score={1.0}
-            isActive={false}
+          <div style={label}>Collection active (name #A85A5A, border #6B2A2A) — hover to expand</div>
+          <SubheaderCard
+            name="Technology & AI"
+            shortDesc="Machine learning, AI policy, future of work"
+            desc="Exploring the intersection of artificial intelligence, policy, and society — from governance frameworks to frontier research."
+            itemCount={8}
             thumbnails={[]}
+            isCollectionActive={true}
             onClick={() => {}}
           />
         </div>
 
         <div style={col}>
-          <div style={label}>Expanded — related (score 0.35) — hover: #c7c7c2 + desc</div>
-          <NavCard
-            variant="expanded"
-            name="Creative"
-            shortDesc="Writing · Narrative"
-            desc="Long-form narrative writing, essays, and creative non-fiction exploring contemporary issues."
-            score={0.35}
-            isActive={false}
+          <div style={label}>Wide (columns=2, 608px) — spans a PeriPair split column</div>
+          <SubheaderCard
+            name="Eastern Europe"
+            shortDesc="Politics, economics, and society across the region"
+            desc="In-depth reporting on Eastern European politics, economics, and society — EU accession, press freedom, and regional development."
+            itemCount={10}
             thumbnails={[]}
+            isCollectionActive={false}
+            columns={2}
             onClick={() => {}}
           />
         </div>
 
-        <div style={col}>
-          <div style={label}>Collapsed — 90px → 300px on hover, focus colors apply</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, width: 90 }}>
-            <NavCard
-              variant="collapsed"
-              name="Analysis"
-              desc="Policy, AI governance, and international affairs — ground-level reporting from Eastern Europe."
-              score={1.0}
-              isActive={true}
-              thumbnails={[]}
-              onClick={() => {}}
-            />
-            <NavCard
-              variant="collapsed"
-              name="Research"
-              desc="Academic papers, white papers, and policy reports spanning technology and political economy."
-              score={0.8}
-              isActive={false}
-              thumbnails={[]}
-              onClick={() => {}}
-            />
-            <NavCard
-              variant="collapsed"
-              name="Creative"
-              desc="Long-form narrative writing, essays, and creative non-fiction."
-              score={0.3}
-              isActive={false}
-              thumbnails={[]}
-              onClick={() => {}}
-            />
-          </div>
-        </div>
       </div>
-
       <hr style={divider} />
 
-      {/* ── Score Spectrum ───────────────────────────────────────────── */}
+      {/* ── Row 5: ThumbCard + Peri — Content ─────────────────────── */}
+      <div style={sectionTitle}>Row 5 — ThumbCard + PeriSolo + PeriPair · Content (layout=&quot;content&quot;)</div>
+      <p style={{ fontSize: 11, color: '#555', marginBottom: 16, lineHeight: 1.6 }}>
+        ThumbCard: 300px wide, focus/active content items. Active: desc always visible, thumbnail always lifted, red left border.
+        Focus/related: score-driven colors at rest → #c7c7c2 bg + desc expands + thumbnail lifts on hover.
+        PeriSolo/PeriPair layout=&quot;content&quot;: text right-aligned, single thumbnail lifts from left with 3D perspective, 150px rest → 300px hover.
+      </p>
+      <div style={row}>
+
+        <div style={col}>
+          <div style={label}>Active (selected) — desc always visible, thumbnail always lifted</div>
+          <ThumbCard
+            name="Serbia EU Accession Analysis"
+            shortDesc="Accession policy analysis"
+            desc="Comprehensive accession policy analysis and strategic overview for southeastern European EU integration tactics."
+            publication="Report"
+            year={2023}
+            score={1.0}
+            isActive={true}
+            onClick={() => {}}
+          />
+        </div>
+
+        <div style={col}>
+          <div style={label}>Focus (score 1.00) — hover: desc expands, thumbnail lifts</div>
+          <ThumbCard
+            name="AI Agents in Integration"
+            shortDesc="Agentic workflows in pipelines"
+            desc="Agentic workflows and architecture in modern data pipelines — implementation patterns and case studies."
+            publication="White paper"
+            year={2024}
+            score={1.0}
+            isActive={false}
+            onClick={() => {}}
+          />
+        </div>
+
+        <div style={col}>
+          <div style={label}>Focus (score 0.70)</div>
+          <ThumbCard
+            name="GEO for Journalists"
+            shortDesc="Generative engine optimization"
+            desc="Optimization strategies for journalists navigating AI-driven search engines and content discovery platforms."
+            publication="Guide"
+            year={2024}
+            score={0.70}
+            isActive={false}
+            onClick={() => {}}
+          />
+        </div>
+
+        <div style={col}>
+          <div style={label}>Focus (score 0.52) — just above 0.50 seam</div>
+          <ThumbCard
+            name="Machine Learning in Policy Analysis"
+            shortDesc="ML pipelines for policy"
+            desc="How machine learning transforms evidence-based policy development and international affairs research."
+            publication="Article"
+            year={2024}
+            score={0.52}
+            isActive={false}
+            onClick={() => {}}
+          />
+        </div>
+
+        <div style={col}>
+          <div style={label}>Related (score 0.28) — below 0.50 seam, grey title</div>
+          <ThumbCard
+            name="LCB Dispatch #14"
+            shortDesc="Eastern Europe"
+            desc="Weekly geopolitical briefing from Eastern Europe covering politics, economics, and regional developments."
+            publication="Newsletter"
+            year={2023}
+            score={0.28}
+            isActive={false}
+            onClick={() => {}}
+          />
+        </div>
+
+        <div style={col}>
+          <div style={label}>PeriSolo content — 150px rest → 300px hover, thumbnail left (3D lift)</div>
+          <PeriSolo
+            name="GEO Training Materials for Journalists"
+            shortTitle="GEO for Journalists"
+            shortDesc="Generative engines"
+            desc="Optimization strategies for journalists navigating AI-driven search engines and content discovery platforms."
+            publication="Guide"
+            year={2024}
+            onClick={() => {}}
+          />
+        </div>
+
+        <div style={col}>
+          <div style={label}>PeriPair content — hover one, partner collapses to sliver; thumbnail left</div>
+          <PeriPair
+            left={{
+              name: 'Ethical governance frameworks for enterprises',
+              shortTitle: 'Op-Ed: Tech Ethics',
+              shortDesc: 'Responsible AI use',
+              desc: 'Ethical AI governance frameworks for enterprise AI deployment and ethical decision-making.',
+              publication: 'Op-ed',
+              year: 2024,
+            }}
+            right={{
+              name: 'LCB Dispatch #14',
+              shortTitle: 'LCB Dispatch #14',
+              shortDesc: 'Eastern Europe',
+              desc: 'Weekly geopolitical briefing from Eastern Europe covering politics, economics, and regional developments.',
+              publication: 'Newsletter',
+              year: 2023,
+            }}
+            onLeftClick={() => {}}
+            onRightClick={() => {}}
+          />
+        </div>
+
+      </div>
+      <hr style={divider} />
+
+      {/* ── Score Spectrum ─────────────────────────────────────────── */}
       <div style={sectionTitle}>Score Spectrum (0.01 → 1.00)</div>
       <p style={{ fontSize: 11, color: '#555', marginBottom: 20, lineHeight: 1.7, maxWidth: 560 }}>
-        Ten cards scored 0.01 → 1.00. Score drives background and text color continuously.
-        Two gradients meet at the 0.50 seam: gradient A (dark, #b0b0b0 text) and gradient B (light, #1a1a1a text).
+        Ten cards scored 0.01 → 1.00. Score drives background, title color, and description color continuously.
+        Two gradients meet at the 0.50 seam: gradient A (dark bg, #b0b0b0 title, #989898 desc) and gradient B (light bg, #1a1a1a title, #303030 desc).
       </p>
 
       {/* Active reference */}
@@ -771,7 +960,7 @@ export default function CardsTestPage() {
         }}>
           <div style={{ fontSize: 13, fontWeight: 500, color: '#6b2a2a', lineHeight: 1.4 }}>Serbia&apos;s EU Path</div>
           <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.03em', color: '#8a5050', marginTop: 1 }}>Reuters · 2023</div>
-          <div style={{ fontSize: 11, lineHeight: 1.45, color: '#8a5050', marginTop: 3 }}>Accession policy analysis and the road to membership.</div>
+          <div style={{ fontSize: 12, lineHeight: 1.45, color: '#8a5050', marginTop: 3 }}>Accession policy analysis and the road to membership.</div>
         </div>
       </div>
 
@@ -787,7 +976,7 @@ export default function CardsTestPage() {
               {showSeam && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '4px 0 4px 50px' }}>
                   <div style={{ width: 300, height: 1, background: '#fc545430' }} />
-                  <div style={{ fontSize: 9, color: '#fc545460', whiteSpace: 'nowrap' }}>← text switches to #b0b0b0 below seam 0.50</div>
+                  <div style={{ fontSize: 9, color: '#fc545460', whiteSpace: 'nowrap' }}>← text switches to #b0b0b0 + desc to #989898 below seam 0.50</div>
                 </div>
               )}
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -800,8 +989,8 @@ export default function CardsTestPage() {
                   background: colors.background, border: `0.5px solid ${borderColor}`,
                 }}>
                   <div style={{ fontSize: 13, fontWeight: 500, color: colors.color, lineHeight: 1.4 }}>{card.title}</div>
-                  <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.03em', color: colors.color, marginTop: 1, opacity: 0.7 }}>{card.meta}</div>
-                  <div style={{ fontSize: 11, lineHeight: 1.45, color: colors.color, marginTop: 3, opacity: 0.75 }}>{card.desc}</div>
+                  <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.03em', color: colors.color, marginTop: 1 }}>{card.meta}</div>
+                  <div style={{ fontSize: 12, lineHeight: 1.45, color: colors.descColor, marginTop: 3 }}>{card.desc}</div>
                 </div>
                 <div style={{ width: 60, height: 4, background: '#1a1616', borderRadius: 2, overflow: 'hidden', flexShrink: 0 }}>
                   <div style={{ height: '100%', background: '#6B2A2A', borderRadius: 2, width: `${card.score * 100}%` }} />
@@ -814,7 +1003,7 @@ export default function CardsTestPage() {
 
       <hr style={divider} />
 
-      {/* ── ThumbnailStack ───────────────────────────────────────────── */}
+      {/* ── ThumbnailStack ─────────────────────────────────────────── */}
       <div style={sectionTitle}>ThumbnailStack — standalone (isVisible=true)</div>
       <div style={row}>
         <div style={col}>
@@ -833,7 +1022,7 @@ export default function CardsTestPage() {
 
       <hr style={divider} />
 
-      {/* ── CategoryPlane ────────────────────────────────────────────── */}
+      {/* ── CategoryPlane ──────────────────────────────────────────── */}
       <div style={{ ...sectionTitle, color: '#5a8aA8' }}>CategoryPlane — interactive demo</div>
       <p style={{ fontSize: 11, color: '#555', marginBottom: 20, lineHeight: 1.7, maxWidth: 600 }}>
         Toggle <strong style={{ color: '#888' }}>Expanded / Collapsed</strong> to test layout animation.
@@ -846,7 +1035,7 @@ export default function CardsTestPage() {
 
       <hr style={divider} />
 
-      {/* ── ContentPlane ─────────────────────────────────────────────── */}
+      {/* ── ContentPlane ───────────────────────────────────────────── */}
       <div style={{ ...sectionTitle, color: '#5a8aA8' }}>ContentPlane — interactive demo</div>
       <p style={{ fontSize: 11, color: '#555', marginBottom: 20, lineHeight: 1.7, maxWidth: 600 }}>
         Tests 1–3 columns with SubheaderCard, ThumbCard, PeriSolo, PeriPair (layout=&quot;content&quot;).
@@ -858,7 +1047,7 @@ export default function CardsTestPage() {
 
       <hr style={divider} />
 
-      {/* ── CollectionPlane ──────────────────────────────────────────── */}
+      {/* ── CollectionPlane ────────────────────────────────────────── */}
       <div style={{ ...sectionTitle, color: '#5a8aA8' }}>CollectionPlane — interactive demo</div>
       <p style={{ fontSize: 11, color: '#555', marginBottom: 20, lineHeight: 1.7, maxWidth: 600 }}>
         Single horizontal row pinned to bottom. Container is height:36 + overflow:visible so expanding cards grow upward without shifting layout above.
