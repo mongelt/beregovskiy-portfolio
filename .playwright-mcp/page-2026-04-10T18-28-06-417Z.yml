@@ -1,0 +1,158 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e389]:
+        - generic [ref=e390]:
+          - heading "ANDREY BEREGOVSKIY" [level=1] [ref=e391]
+          - generic [ref=e392]:
+            - img [ref=e393]
+            - paragraph [ref=e396]: Washington, DC
+          - generic [ref=e397]:
+            - paragraph [ref=e398]: Brand Journalist at Axway
+            - paragraph [ref=e399]: Correspondent at The LCB
+            - paragraph [ref=e400]: Editor at Ask a Pol
+            - paragraph [ref=e401]: Contributor at the Editorial Office
+        - paragraph [ref=e405]: Sint veniam nostrud do laborum consequat quis deserunt sit ut anim incididunt exercitation adipisicing et do. Proident est ut in in sit enim reprehenderit fugiat culpa dolor velit voluptate. Duis in aliqua labore incididunt consequat do tempor sint occaecat ullamco commodo exercitation est.
+      - button "EXPAND" [ref=e407]:
+        - generic [ref=e408]: EXPAND
+        - img [ref=e409]
+    - generic [ref=e411]:
+      - generic [ref=e413]:
+        - generic [ref=e414]:
+          - generic [ref=e416] [cursor=pointer]:
+            - generic [ref=e418]: Political Theory
+            - generic [ref=e419]:
+              - generic:
+                - generic [ref=e421]: No img
+                - generic [ref=e423]: No img
+                - generic [ref=e425]: No img
+                - generic [ref=e427]: No img
+                - generic [ref=e429]: No img
+          - generic [ref=e431] [cursor=pointer]:
+            - generic [ref=e433]: Governance
+            - generic:
+              - generic:
+                - generic [ref=e435]: No img
+                - generic [ref=e437]: No img
+                - generic [ref=e439]: No img
+                - generic [ref=e441]: No img
+                - generic [ref=e443]: No img
+          - generic [ref=e445] [cursor=pointer]:
+            - generic [ref=e447]: Law & Sovereignty
+            - generic:
+              - generic:
+                - generic [ref=e449]: No img
+                - generic [ref=e451]: No img
+                - generic [ref=e453]: No img
+                - generic [ref=e455]: No img
+                - generic [ref=e457]: No img
+          - generic [ref=e459] [cursor=pointer]:
+            - generic [ref=e461]: Economic Systems
+            - generic:
+              - generic:
+                - generic [ref=e463]: No img
+                - generic [ref=e465]: No img
+                - generic [ref=e467]: No img
+                - generic [ref=e469]: No img
+                - generic [ref=e471]: No img
+          - generic [ref=e473] [cursor=pointer]:
+            - generic [ref=e475]: Historical Analysis
+            - generic:
+              - generic:
+                - generic [ref=e477]: No img
+                - generic [ref=e479]: No img
+                - generic [ref=e481]: No img
+                - generic [ref=e483]: No img
+                - generic [ref=e485]: No img
+        - generic [ref=e486]:
+          - generic [ref=e487] [cursor=pointer]:
+            - generic [ref=e489]: State Formation
+            - generic:
+              - generic:
+                - generic [ref=e491]: No img
+                - generic [ref=e493]: No img
+                - generic [ref=e495]: No img
+                - generic [ref=e497]: No img
+                - generic [ref=e499]: No img
+          - generic [ref=e500] [cursor=pointer]:
+            - generic [ref=e502]: Sovereignty Theory
+            - generic:
+              - generic:
+                - generic [ref=e504]: No img
+                - generic [ref=e506]: No img
+                - generic [ref=e508]: No img
+                - generic [ref=e510]: No img
+                - generic [ref=e512]: No img
+          - generic [ref=e513] [cursor=pointer]:
+            - generic [ref=e515]: Social Contract
+            - generic:
+              - generic:
+                - generic [ref=e517]: No img
+                - generic [ref=e519]: No img
+                - generic [ref=e521]: No img
+                - generic [ref=e523]: No img
+                - generic [ref=e525]: No img
+          - generic [ref=e526] [cursor=pointer]:
+            - generic [ref=e528]: Authority Models
+            - generic:
+              - generic:
+                - generic [ref=e530]: No img
+                - generic [ref=e532]: No img
+                - generic [ref=e534]: No img
+                - generic [ref=e536]: No img
+                - generic [ref=e538]: No img
+      - generic [ref=e539]:
+        - generic [ref=e541] [cursor=pointer]:
+          - generic [ref=e543]: Weber & Jellinek
+          - generic:
+            - generic:
+              - generic [ref=e545]: No img
+              - generic [ref=e547]: No img
+              - generic [ref=e549]: No img
+              - generic [ref=e551]: No img
+              - generic [ref=e553]: No img
+        - generic [ref=e555] [cursor=pointer]:
+          - generic [ref=e557]: Social Contract
+          - generic:
+            - generic:
+              - generic [ref=e559]: No img
+              - generic [ref=e561]: No img
+              - generic [ref=e563]: No img
+              - generic [ref=e565]: No img
+              - generic [ref=e567]: No img
+        - generic [ref=e569] [cursor=pointer]:
+          - generic [ref=e571]: Constitutionalism
+          - generic:
+            - generic:
+              - generic [ref=e573]: No img
+              - generic [ref=e575]: No img
+              - generic [ref=e577]: No img
+              - generic [ref=e579]: No img
+              - generic [ref=e581]: No img
+        - generic [ref=e583] [cursor=pointer]:
+          - generic [ref=e585]: Market Theory
+          - generic:
+            - generic:
+              - generic [ref=e587]: No img
+              - generic [ref=e589]: No img
+              - generic [ref=e591]: No img
+              - generic [ref=e593]: No img
+              - generic [ref=e595]: No img
+        - generic [ref=e597] [cursor=pointer]:
+          - generic [ref=e599]: Federalism Studies
+          - generic:
+            - generic:
+              - generic [ref=e601]: No img
+              - generic [ref=e603]: No img
+              - generic [ref=e605]: No img
+              - generic [ref=e607]: No img
+              - generic [ref=e609]: No img
+    - generic [ref=e208]:
+      - button "Download ↓" [ref=e211]
+      - button "Share ↗" [ref=e214]
+      - generic [ref=e215]:
+        - button "PORTFOLIO" [ref=e217]: PORTFOLIO
+        - button "RESUME" [ref=e220]
+  - button "Open Next.js Dev Tools" [ref=e226] [cursor=pointer]:
+    - img [ref=e227]
+  - alert [ref=e230]

@@ -395,7 +395,7 @@ export default function ProfileManagement() {
               <BlockNoteEditor 
                 holder="short-bio-editor"
                 data={shortBioData}
-                onChange={setShortBioData}
+                onChange={(data) => setShortBioData(data as any)}
               />
             </div>
           </div>
@@ -409,7 +409,7 @@ export default function ProfileManagement() {
               <BlockNoteEditor 
                 holder="full-bio-editor"
                 data={fullBioData}
-                onChange={setFullBioData}
+                onChange={(data) => setFullBioData(data as any)}
                 onReady={(editor) => {
                   fullBioEditorRef.current = editor
                 }}

@@ -1,0 +1,247 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - heading "Stage 6 — Card Components" [level=1] [ref=e3]
+    - paragraph [ref=e4]: Visual verification against card_design_mockup.html rows 1–4. Hover each card to test transitions.
+    - generic [ref=e5]: Row 1 — ThumbCard (focus + active)
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - generic [ref=e8]: Active content
+        - generic [ref=e9] [cursor=pointer]:
+          - generic [ref=e10]:
+            - generic [ref=e12]: No thumbnail
+            - generic [ref=e13]:
+              - generic [ref=e14]: Report · 2023
+              - generic [ref=e15]: Comprehensive accession policy analysis
+          - generic [ref=e16]: Comprehensive accession policy analysis and strategic overview for southeastern European EU integration tactics.
+      - generic [ref=e17]:
+        - generic [ref=e18]: Focus (score 1.0) — hover to expand
+        - generic [ref=e19] [cursor=pointer]:
+          - generic [ref=e20]:
+            - generic [ref=e22]: No thumbnail
+            - generic [ref=e23]:
+              - generic [ref=e24]: White paper · 2024
+              - generic [ref=e25]: AI Agents in Integration
+              - generic [ref=e26]: Agentic workflows in pipelines
+          - generic: Agentic workflows and architecture in modern data pipelines — implementation patterns and case studies.
+      - generic [ref=e27]:
+        - generic [ref=e28]: Focus (score 0.72)
+        - generic [ref=e29] [cursor=pointer]:
+          - generic [ref=e30]:
+            - generic [ref=e32]: No thumbnail
+            - generic [ref=e33]:
+              - generic [ref=e34]: Article · 2024
+              - generic [ref=e35]: Machine Learning in Policy Analysis
+              - generic [ref=e36]: ML pipelines for policy
+          - generic: How machine learning transforms evidence-based policy development and international affairs research.
+      - generic [ref=e37]:
+        - generic [ref=e38]: Related (score 0.35) — hover to expand
+        - generic [ref=e39] [cursor=pointer]:
+          - generic [ref=e40]:
+            - generic [ref=e42]: No thumbnail
+            - generic [ref=e43]:
+              - generic [ref=e44]: Newsletter · 2023
+              - generic [ref=e45]: "LCB Dispatch #14"
+              - generic [ref=e46]: Eastern Europe
+          - generic: Weekly geopolitical briefing from Eastern Europe covering politics, economics, and regional developments.
+    - separator [ref=e47]
+    - generic [ref=e48]: Row 2 — PeriSolo + PeriPair (related content)
+    - generic [ref=e49]:
+      - generic [ref=e50]:
+        - generic [ref=e51]: PeriSolo — hover expands to focus
+        - generic [ref=e52] [cursor=pointer]:
+          - generic [ref=e54]:
+            - generic [ref=e55]: Guide · 2024
+            - generic [ref=e309]: GEO for Journalists
+            - generic [ref=e310]: Generative engines
+          - generic: Optimization strategies for journalists navigating AI-driven search engines and content discovery platforms.
+      - generic [ref=e58]:
+        - generic [ref=e59]: PeriPair — hover one, other condenses
+        - generic [ref=e60]:
+          - generic [ref=e62] [cursor=pointer]:
+            - generic [ref=e63]:
+              - generic [ref=e312]: No img
+              - generic [ref=e64]:
+                - generic [ref=e65]: Op-ed · 2024
+                - generic [ref=e313]: Ethical governance frameworks for enterprises
+            - generic [ref=e314]: Ethical AI governance frameworks for enterprise AI deployment and ethical decision-making.
+          - generic [ref=e69] [cursor=pointer]:
+            - generic [ref=e71]:
+              - generic [ref=e72]: Newsletter · 2023
+              - generic [ref=e73]: "LCB Dispatch #14"
+              - generic [ref=e74]: Eastern Europe
+            - generic: Weekly geopolitical briefing from Eastern Europe covering politics, economics, and regional developments.
+    - separator [ref=e75]
+    - generic [ref=e76]: Row 3a — SubheaderCard
+    - generic [ref=e77]:
+      - generic [ref=e78]:
+        - generic [ref=e79]: Standard (hover to expand)
+        - generic [ref=e81] [cursor=pointer]:
+          - generic [ref=e82]:
+            - generic [ref=e83]: Politics & Society
+            - generic [ref=e84]: 12 items · Geopolitics, policy analysis, international relations
+            - generic: Geopolitics, policy analysis, and international relations — exploring EU dynamics, Balkan politics, and global power shifts through in-depth ground-level reporting and analysis.
+          - generic [ref=e85]:
+            - generic [ref=e87]: No img
+            - generic [ref=e89]: No img
+            - generic [ref=e91]: No img
+            - generic [ref=e93]: No img
+            - generic [ref=e95]: No img
+      - generic [ref=e96]:
+        - generic [ref=e97]: "Collection active (name #A85A5A)"
+        - generic [ref=e99] [cursor=pointer]:
+          - generic [ref=e100]:
+            - generic [ref=e101]: Technology & AI
+            - generic [ref=e102]: 8 items · Machine learning, AI policy, future of work
+            - generic: Exploring the intersection of artificial intelligence, policy, and society — from governance frameworks to frontier research.
+          - generic [ref=e103]:
+            - generic [ref=e105]: No img
+            - generic [ref=e107]: No img
+            - generic [ref=e109]: No img
+            - generic [ref=e111]: No img
+            - generic [ref=e113]: No img
+    - separator [ref=e114]
+    - generic [ref=e115]: Row 3b — CollectionCard (bottom row)
+    - generic [ref=e116]:
+      - generic [ref=e117]:
+        - generic [ref=e118]: Active (with dismiss)
+        - generic [ref=e119] [cursor=pointer]:
+          - generic [ref=e120]:
+            - generic [ref=e121]:
+              - generic [ref=e122]: E. Europe
+              - generic: In-depth analysis of Eastern European politics, economics, and society.
+            - generic:
+              - generic:
+                - generic [ref=e124]: No img
+                - generic [ref=e126]: No img
+                - generic [ref=e128]: No img
+                - generic [ref=e130]: No img
+                - generic [ref=e132]: No img
+          - button "×" [ref=e133]
+      - generic [ref=e134]:
+        - generic [ref=e135]: Focus (score 1.0)
+        - generic [ref=e137] [cursor=pointer]:
+          - generic [ref=e138]:
+            - generic [ref=e139]: AI / Tech
+            - generic: Coverage of AI policy, machine learning research, and technology governance.
+          - generic:
+            - generic:
+              - generic [ref=e141]: No img
+              - generic [ref=e143]: No img
+              - generic [ref=e145]: No img
+              - generic [ref=e147]: No img
+              - generic [ref=e149]: No img
+      - generic [ref=e150]:
+        - generic [ref=e151]: Related (score 0.30) — hover changes bg
+        - generic [ref=e153] [cursor=pointer]:
+          - generic [ref=e154]:
+            - generic [ref=e155]: Int'l Dev
+            - generic: International development economics, aid effectiveness, and capacity building.
+          - generic:
+            - generic:
+              - generic [ref=e157]: No img
+              - generic [ref=e159]: No img
+              - generic [ref=e161]: No img
+              - generic [ref=e163]: No img
+              - generic [ref=e165]: No img
+    - separator [ref=e166]
+    - generic [ref=e167]: Row 4 — NavCard (expanded + collapsed)
+    - generic [ref=e168]:
+      - generic [ref=e169]:
+        - generic [ref=e170]: Expanded — active (selected)
+        - generic [ref=e172] [cursor=pointer]:
+          - generic [ref=e173]:
+            - generic [ref=e174]: Analysis
+            - generic [ref=e175]: Policy · AI · Geopolitics
+            - generic: In-depth analysis across policy, AI governance, and international affairs. Ground-level reporting from Eastern Europe.
+          - generic [ref=e176]:
+            - generic [ref=e178]: No img
+            - generic [ref=e180]: No img
+            - generic [ref=e182]: No img
+            - generic [ref=e184]: No img
+            - generic [ref=e186]: No img
+      - generic [ref=e187]:
+        - generic [ref=e188]: Expanded — focus (score 1.0, hover for desc)
+        - generic [ref=e190] [cursor=pointer]:
+          - generic [ref=e191]:
+            - generic [ref=e192]: Research
+            - generic [ref=e193]: Academic · Reports
+            - generic: Academic papers, white papers, and policy reports spanning technology, international law, and political economy.
+          - generic [ref=e194]:
+            - generic [ref=e196]: No img
+            - generic [ref=e198]: No img
+            - generic [ref=e200]: No img
+            - generic [ref=e202]: No img
+            - generic [ref=e204]: No img
+      - generic [ref=e205]:
+        - generic [ref=e206]: Expanded — related (score 0.35)
+        - generic [ref=e208] [cursor=pointer]:
+          - generic [ref=e209]:
+            - generic [ref=e210]: Creative
+            - generic [ref=e211]: Writing · Narrative
+            - generic: Long-form narrative writing, essays, and creative non-fiction exploring contemporary issues.
+          - generic [ref=e212]:
+            - generic [ref=e214]: No img
+            - generic [ref=e216]: No img
+            - generic [ref=e218]: No img
+            - generic [ref=e220]: No img
+            - generic [ref=e222]: No img
+      - generic [ref=e223]:
+        - generic [ref=e224]: Collapsed — hover expands to 300px
+        - generic [ref=e225]:
+          - generic [ref=e226] [cursor=pointer]:
+            - generic [ref=e227]:
+              - generic [ref=e228]: Analysis
+              - generic: Policy, AI governance, and international affairs — ground-level reporting from Eastern Europe.
+            - generic:
+              - generic:
+                - generic [ref=e230]: No img
+                - generic [ref=e232]: No img
+                - generic [ref=e234]: No img
+                - generic [ref=e236]: No img
+                - generic [ref=e238]: No img
+          - generic [ref=e239] [cursor=pointer]:
+            - generic [ref=e240]:
+              - generic [ref=e241]: Research
+              - generic: Academic papers, white papers, and policy reports spanning technology and political economy.
+            - generic:
+              - generic:
+                - generic [ref=e243]: No img
+                - generic [ref=e245]: No img
+                - generic [ref=e247]: No img
+                - generic [ref=e249]: No img
+                - generic [ref=e251]: No img
+          - generic [ref=e252] [cursor=pointer]:
+            - generic [ref=e253]:
+              - generic [ref=e254]: Creative
+              - generic: Long-form narrative writing, essays, and creative non-fiction.
+            - generic:
+              - generic:
+                - generic [ref=e256]: No img
+                - generic [ref=e258]: No img
+                - generic [ref=e260]: No img
+                - generic [ref=e262]: No img
+                - generic [ref=e264]: No img
+    - separator [ref=e265]
+    - generic [ref=e266]: ThumbnailStack — standalone (isVisible=true)
+    - generic [ref=e267]:
+      - generic [ref=e268]:
+        - generic [ref=e269]: Empty (no thumbnails)
+        - generic [ref=e270]:
+          - generic:
+            - generic [ref=e272]: No img
+            - generic [ref=e274]: No img
+            - generic [ref=e276]: No img
+            - generic [ref=e278]: No img
+            - generic [ref=e280]: No img
+      - generic [ref=e281]:
+        - generic [ref=e282]: isVisible=false (opacity 0)
+        - generic [ref=e283]:
+          - generic:
+            - generic [ref=e285]: No img
+            - generic [ref=e287]: No img
+            - generic [ref=e289]: No img
+            - generic [ref=e291]: No img
+            - generic [ref=e293]: No img
+  - button "Open Next.js Dev Tools" [ref=e299] [cursor=pointer]:
+    - img [ref=e300]
+  - alert [ref=e303]: Stage 6 — Card Components

@@ -9,6 +9,9 @@ type Category = {
   id: string
   name: string
   order_index: number
+  short_title?: string | null
+  short_desc?: string | null
+  desc?: string | null
 }
 
 type Subcategory = {
@@ -16,6 +19,10 @@ type Subcategory = {
   category_id: string
   name: string
   order_index: number
+  short_title?: string | null
+  short_desc?: string | null
+  desc?: string | null
+  collection_column_override?: string | null
 }
 
 export default function CategoriesManagement() {
@@ -33,6 +40,24 @@ export default function CategoriesManagement() {
   const [editCategoryOrder, setEditCategoryOrder] = useState('')
   const [editingSubcategoryOrder, setEditingSubcategoryOrder] = useState<string | null>(null)
   const [editSubcategoryOrder, setEditSubcategoryOrder] = useState('')
+
+  // Category menu display fields
+  const [newCategoryShortTitle, setNewCategoryShortTitle] = useState('')
+  const [newCategoryShortDesc, setNewCategoryShortDesc] = useState('')
+  const [newCategoryDesc, setNewCategoryDesc] = useState('')
+  const [editCategoryShortTitle, setEditCategoryShortTitle] = useState('')
+  const [editCategoryShortDesc, setEditCategoryShortDesc] = useState('')
+  const [editCategoryDesc, setEditCategoryDesc] = useState('')
+
+  // Subcategory menu display fields
+  const [newSubcategoryShortTitle, setNewSubcategoryShortTitle] = useState('')
+  const [newSubcategoryShortDesc, setNewSubcategoryShortDesc] = useState('')
+  const [newSubcategoryDesc, setNewSubcategoryDesc] = useState('')
+  const [newSubcategoryCollectionOverride, setNewSubcategoryCollectionOverride] = useState('auto')
+  const [editSubcategoryShortTitle, setEditSubcategoryShortTitle] = useState('')
+  const [editSubcategoryShortDesc, setEditSubcategoryShortDesc] = useState('')
+  const [editSubcategoryDesc, setEditSubcategoryDesc] = useState('')
+  const [editSubcategoryCollectionOverride, setEditSubcategoryCollectionOverride] = useState('auto')
 
   useEffect(() => {
     loadData()
@@ -53,15 +78,21 @@ export default function CategoriesManagement() {
     
     const { error } = await supabase
       .from('categories')
-      .insert({ 
+      .insert({
         name: newCategoryName,
-        order_index: categories.length 
+        order_index: categories.length,
+        short_title: newCategoryShortTitle || null,
+        short_desc: newCategoryShortDesc || null,
+        desc: newCategoryDesc || null,
       })
-    
+
     if (error) {
       alert('Error creating category: ' + error.message)
     } else {
       setNewCategoryName('')
+      setNewCategoryShortTitle('')
+      setNewCategoryShortDesc('')
+      setNewCategoryDesc('')
       loadData()
     }
   }
@@ -75,16 +106,24 @@ export default function CategoriesManagement() {
     
     const { error } = await supabase
       .from('subcategories')
-      .insert({ 
+      .insert({
         name: newSubcategoryName,
         category_id: selectedCategoryForSub,
-        order_index: categorySubcategories.length
+        order_index: categorySubcategories.length,
+        short_title: newSubcategoryShortTitle || null,
+        short_desc: newSubcategoryShortDesc || null,
+        desc: newSubcategoryDesc || null,
+        collection_column_override: newSubcategoryCollectionOverride,
       })
-    
+
     if (error) {
       alert('Error creating subcategory: ' + error.message)
     } else {
       setNewSubcategoryName('')
+      setNewSubcategoryShortTitle('')
+      setNewSubcategoryShortDesc('')
+      setNewSubcategoryDesc('')
+      setNewSubcategoryCollectionOverride('auto')
       loadData()
     }
   }
@@ -124,14 +163,22 @@ export default function CategoriesManagement() {
     
     const { error } = await supabase
       .from('categories')
-      .update({ name: editCategoryName })
+      .update({
+        name: editCategoryName,
+        short_title: editCategoryShortTitle || null,
+        short_desc: editCategoryShortDesc || null,
+        desc: editCategoryDesc || null,
+      })
       .eq('id', id)
-    
+
     if (error) {
       alert('Error: ' + error.message)
     } else {
       setEditingCategory(null)
       setEditCategoryName('')
+      setEditCategoryShortTitle('')
+      setEditCategoryShortDesc('')
+      setEditCategoryDesc('')
       loadData()
     }
   }
@@ -141,14 +188,24 @@ export default function CategoriesManagement() {
     
     const { error } = await supabase
       .from('subcategories')
-      .update({ name: editSubcategoryName })
+      .update({
+        name: editSubcategoryName,
+        short_title: editSubcategoryShortTitle || null,
+        short_desc: editSubcategoryShortDesc || null,
+        desc: editSubcategoryDesc || null,
+        collection_column_override: editSubcategoryCollectionOverride,
+      })
       .eq('id', id)
-    
+
     if (error) {
       alert('Error: ' + error.message)
     } else {
       setEditingSubcategory(null)
       setEditSubcategoryName('')
+      setEditSubcategoryShortTitle('')
+      setEditSubcategoryShortDesc('')
+      setEditSubcategoryDesc('')
+      setEditSubcategoryCollectionOverride('auto')
       loadData()
     }
   }
@@ -156,11 +213,18 @@ export default function CategoriesManagement() {
   function startEditCategory(category: Category) {
     setEditingCategory(category.id)
     setEditCategoryName(category.name)
+    setEditCategoryShortTitle(category.short_title || '')
+    setEditCategoryShortDesc(category.short_desc || '')
+    setEditCategoryDesc(category.desc || '')
   }
 
   function startEditSubcategory(subcategory: Subcategory) {
     setEditingSubcategory(subcategory.id)
     setEditSubcategoryName(subcategory.name)
+    setEditSubcategoryShortTitle(subcategory.short_title || '')
+    setEditSubcategoryShortDesc(subcategory.short_desc || '')
+    setEditSubcategoryDesc(subcategory.desc || '')
+    setEditSubcategoryCollectionOverride(subcategory.collection_column_override || 'auto')
   }
 
   async function updateCategoryOrder(id: string, newOrder: string) {
@@ -228,14 +292,30 @@ export default function CategoriesManagement() {
           <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
             <h2 className="text-xl font-semibold text-white mb-4">Categories</h2>
             
-            <div className="flex gap-2 mb-6">
-              <Input
-                value={newCategoryName}
-                onChange={(e) => setNewCategoryName(e.target.value)}
-                placeholder="New category name"
-                onKeyPress={(e) => e.key === 'Enter' && createCategory()}
-              />
-              <Button onClick={createCategory}>Add</Button>
+            <div className="space-y-3 mb-6">
+              <div className="flex gap-2">
+                <Input
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  placeholder="New category name *"
+                  onKeyPress={(e) => e.key === 'Enter' && createCategory()}
+                />
+                <Button onClick={createCategory}>Add</Button>
+              </div>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <label className="block text-xs text-gray-400 mb-1">Short Title <span className="text-gray-500">{newCategoryShortTitle.length}/15</span></label>
+                  <Input value={newCategoryShortTitle} onChange={(e) => setNewCategoryShortTitle(e.target.value)} placeholder="Short title" maxLength={15} />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-xs text-gray-400 mb-1">Short Desc <span className="text-gray-500">{newCategoryShortDesc.length}/30</span></label>
+                  <Input value={newCategoryShortDesc} onChange={(e) => setNewCategoryShortDesc(e.target.value)} placeholder="Short description" maxLength={30} />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Description</label>
+                <textarea value={newCategoryDesc} onChange={(e) => setNewCategoryDesc(e.target.value)} placeholder="Full description" rows={2} className="w-full rounded-md border border-gray-700 bg-gray-950 px-3 py-2 text-white text-sm resize-y" />
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -246,14 +326,29 @@ export default function CategoriesManagement() {
                 >
                   {editingCategory === category.id ? (
                     <div className="flex gap-2 flex-1">
-                      <Input
-                        value={editCategoryName}
-                        onChange={(e) => setEditCategoryName(e.target.value)}
-                        className="flex-1"
-                        onKeyPress={(e) => e.key === 'Enter' && updateCategory(category.id)}
-                      />
-                      <Button size="sm" onClick={() => updateCategory(category.id)}>Save</Button>
-                      <Button size="sm" variant="outline" onClick={() => setEditingCategory(null)}>Cancel</Button>
+                      <div className="flex-1 space-y-2">
+                        <Input
+                          value={editCategoryName}
+                          onChange={(e) => setEditCategoryName(e.target.value)}
+                          placeholder="Name *"
+                          onKeyPress={(e) => e.key === 'Enter' && updateCategory(category.id)}
+                        />
+                        <div className="flex gap-2">
+                          <div className="flex-1">
+                            <label className="block text-xs text-gray-400 mb-1">Short Title <span className="text-gray-500">{editCategoryShortTitle.length}/15</span></label>
+                            <Input value={editCategoryShortTitle} onChange={(e) => setEditCategoryShortTitle(e.target.value)} placeholder="Short title" maxLength={15} />
+                          </div>
+                          <div className="flex-1">
+                            <label className="block text-xs text-gray-400 mb-1">Short Desc <span className="text-gray-500">{editCategoryShortDesc.length}/30</span></label>
+                            <Input value={editCategoryShortDesc} onChange={(e) => setEditCategoryShortDesc(e.target.value)} placeholder="Short description" maxLength={30} />
+                          </div>
+                        </div>
+                        <textarea value={editCategoryDesc} onChange={(e) => setEditCategoryDesc(e.target.value)} placeholder="Description" rows={2} className="w-full rounded-md border border-gray-700 bg-gray-950 px-3 py-2 text-white text-sm resize-y" />
+                      </div>
+                      <div className="flex flex-col gap-2 shrink-0">
+                        <Button size="sm" onClick={() => updateCategory(category.id)}>Save</Button>
+                        <Button size="sm" variant="outline" onClick={() => setEditingCategory(null)}>Cancel</Button>
+                      </div>
                     </div>
                   ) : (
                     <>
@@ -329,20 +424,39 @@ export default function CategoriesManagement() {
                 ))}
               </select>
               
-              <div className="flex gap-2">
-                <Input
-                  value={newSubcategoryName}
-                  onChange={(e) => setNewSubcategoryName(e.target.value)}
-                  placeholder="New subcategory name"
-                  disabled={!selectedCategoryForSub}
-                  onKeyPress={(e) => e.key === 'Enter' && createSubcategory()}
-                />
-                <Button 
-                  onClick={createSubcategory}
-                  disabled={!selectedCategoryForSub}
-                >
-                  Add
-                </Button>
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <Input
+                    value={newSubcategoryName}
+                    onChange={(e) => setNewSubcategoryName(e.target.value)}
+                    placeholder="New subcategory name *"
+                    disabled={!selectedCategoryForSub}
+                    onKeyPress={(e) => e.key === 'Enter' && createSubcategory()}
+                  />
+                  <Button onClick={createSubcategory} disabled={!selectedCategoryForSub}>Add</Button>
+                </div>
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <label className="block text-xs text-gray-400 mb-1">Short Title <span className="text-gray-500">{newSubcategoryShortTitle.length}/15</span></label>
+                    <Input value={newSubcategoryShortTitle} onChange={(e) => setNewSubcategoryShortTitle(e.target.value)} placeholder="Short title" maxLength={15} disabled={!selectedCategoryForSub} />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-xs text-gray-400 mb-1">Short Desc <span className="text-gray-500">{newSubcategoryShortDesc.length}/30</span></label>
+                    <Input value={newSubcategoryShortDesc} onChange={(e) => setNewSubcategoryShortDesc(e.target.value)} placeholder="Short description" maxLength={30} disabled={!selectedCategoryForSub} />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Description</label>
+                  <textarea value={newSubcategoryDesc} onChange={(e) => setNewSubcategoryDesc(e.target.value)} placeholder="Full description" rows={2} className="w-full rounded-md border border-gray-700 bg-gray-950 px-3 py-2 text-white text-sm resize-y disabled:opacity-50" disabled={!selectedCategoryForSub} />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Collection Column</label>
+                  <select value={newSubcategoryCollectionOverride} onChange={(e) => setNewSubcategoryCollectionOverride(e.target.value)} className="w-full h-9 rounded-md border border-gray-700 bg-gray-950 px-3 text-white text-sm" disabled={!selectedCategoryForSub}>
+                    <option value="auto">Auto</option>
+                    <option value="force_on">Force On</option>
+                    <option value="force_off">Force Off</option>
+                  </select>
+                </div>
               </div>
             </div>
 
@@ -361,14 +475,37 @@ export default function CategoriesManagement() {
                       >
                         {editingSubcategory === sub.id ? (
                           <div className="flex gap-2 flex-1">
-                            <Input
-                              value={editSubcategoryName}
-                              onChange={(e) => setEditSubcategoryName(e.target.value)}
-                              className="flex-1"
-                              onKeyPress={(e) => e.key === 'Enter' && updateSubcategory(sub.id)}
-                            />
-                            <Button size="sm" onClick={() => updateSubcategory(sub.id)}>Save</Button>
-                            <Button size="sm" variant="outline" onClick={() => setEditingSubcategory(null)}>Cancel</Button>
+                            <div className="flex-1 space-y-2">
+                              <Input
+                                value={editSubcategoryName}
+                                onChange={(e) => setEditSubcategoryName(e.target.value)}
+                                placeholder="Name *"
+                                onKeyPress={(e) => e.key === 'Enter' && updateSubcategory(sub.id)}
+                              />
+                              <div className="flex gap-2">
+                                <div className="flex-1">
+                                  <label className="block text-xs text-gray-400 mb-1">Short Title <span className="text-gray-500">{editSubcategoryShortTitle.length}/15</span></label>
+                                  <Input value={editSubcategoryShortTitle} onChange={(e) => setEditSubcategoryShortTitle(e.target.value)} placeholder="Short title" maxLength={15} />
+                                </div>
+                                <div className="flex-1">
+                                  <label className="block text-xs text-gray-400 mb-1">Short Desc <span className="text-gray-500">{editSubcategoryShortDesc.length}/30</span></label>
+                                  <Input value={editSubcategoryShortDesc} onChange={(e) => setEditSubcategoryShortDesc(e.target.value)} placeholder="Short description" maxLength={30} />
+                                </div>
+                              </div>
+                              <textarea value={editSubcategoryDesc} onChange={(e) => setEditSubcategoryDesc(e.target.value)} placeholder="Description" rows={2} className="w-full rounded-md border border-gray-700 bg-gray-950 px-3 py-2 text-white text-sm resize-y" />
+                              <div>
+                                <label className="block text-xs text-gray-400 mb-1">Collection Column</label>
+                                <select value={editSubcategoryCollectionOverride} onChange={(e) => setEditSubcategoryCollectionOverride(e.target.value)} className="w-full h-9 rounded-md border border-gray-700 bg-gray-950 px-3 text-white text-sm">
+                                  <option value="auto">Auto</option>
+                                  <option value="force_on">Force On</option>
+                                  <option value="force_off">Force Off</option>
+                                </select>
+                              </div>
+                            </div>
+                            <div className="flex flex-col gap-2 shrink-0">
+                              <Button size="sm" onClick={() => updateSubcategory(sub.id)}>Save</Button>
+                              <Button size="sm" variant="outline" onClick={() => setEditingSubcategory(null)}>Cancel</Button>
+                            </div>
                           </div>
                         ) : (
                           <>

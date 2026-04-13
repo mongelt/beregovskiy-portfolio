@@ -6,6 +6,7 @@ import MainMenu from '@/components/tabs/MainMenu'
 import ContentReader from '@/components/ContentReader'
 import InfoMenu from '@/components/InfoMenu'
 import CollectionsMenu from '@/components/tabs/CollectionsMenu'
+import { DynamicMenu } from '@/components/dynamic-menu/DynamicMenu'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useMobileState } from '@/lib/responsive'
 
@@ -21,6 +22,9 @@ interface Category {
   id: string
   name: string
   order_index: number
+  short_title?: string | null
+  short_desc?: string | null
+  desc?: string | null
 }
 
 interface Subcategory {
@@ -28,6 +32,9 @@ interface Subcategory {
   category_id: string
   name: string
   order_index: number
+  short_title?: string | null
+  short_desc?: string | null
+  desc?: string | null
 }
 
 interface Collection {
@@ -37,6 +44,9 @@ interface Collection {
   description?: any
   order_index: number
   featured: boolean
+  short_title?: string | null
+  short_desc?: string | null
+  desc?: string | null
 }
 
 interface ContentItemRaw {
@@ -61,6 +71,10 @@ interface ContentItemRaw {
   subcategory_id: string | null
   byline_style: string | null
   link_style: string | null
+  short_title?: string | null
+  short_desc?: string | null
+  desc?: string | null
+  menu_thumbnail_url?: string | null
   categories?: { id: string; name: string }[] | null
   subcategories?: { id: string; name: string; category_id: string }[] | null
   byline_options?: { id: string; option_text: string } | { id: string; option_text: string }[] | null
@@ -100,6 +114,10 @@ interface ContentItem {
   subcategory_name?: string
   collection_slugs?: string[]
   collection_names?: string[]
+  short_title?: string | null
+  short_desc?: string | null
+  desc?: string | null
+  menu_thumbnail_url?: string | null
 }
 
 interface CollectionTab {
@@ -161,6 +179,7 @@ export default function PortfolioContent({
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
   const [selectedSubcategory, setSelectedSubcategory] = useState<Subcategory | null>(null)
   const [selectedContent, setSelectedContent] = useState<ContentItem | null>(null)
+  const [selectedCollection, setSelectedCollection] = useState<Collection | null>(null)
   
   // Step 7: States are automatically preserved when crossing breakpoints
   // - pageState (expanded-empty, expanded-reader, collapsed-reader) persists
@@ -191,6 +210,12 @@ export default function PortfolioContent({
   useEffect(() => {
     selectedSubcategoryRef.current = selectedSubcategory
   }, [selectedSubcategory])
+
+  const [useNewMenu, setUseNewMenu] = useState(false)
+  useEffect(() => {
+    setUseNewMenu(localStorage.getItem('dm_new_grid') === 'true')
+  }, [])
+
   const [titleInView, setTitleInView] = useState<boolean>(true)
   const [subtitleInView, setSubtitleInView] = useState<boolean>(true)
 
@@ -307,7 +332,7 @@ export default function PortfolioContent({
   async function loadCategories(): Promise<Category[]> {
     const { data, error } = await supabase
       .from('categories')
-      .select('id, name, order_index')
+      .select('id, name, order_index, short_title, short_desc, desc')
       .order('order_index', { ascending: true })
     
     if (error) throw new Error(`Failed to load categories: ${error.message}`)
@@ -317,7 +342,7 @@ export default function PortfolioContent({
   async function loadSubcategories(): Promise<Subcategory[]> {
     const { data, error } = await supabase
       .from('subcategories')
-      .select('id, name, order_index, category_id')
+      .select('id, name, order_index, category_id, short_title, short_desc, desc')
       .order('order_index', { ascending: true })
     
     if (error) throw new Error(`Failed to load subcategories: ${error.message}`)
@@ -325,7 +350,7 @@ export default function PortfolioContent({
   }
 
   async function loadContentPreview(): Promise<ContentItemRaw[]> {
-    const { data, error } = await supabase
+    let query = supabase
       .from('content')
       .select(`
         id,
@@ -347,14 +372,20 @@ export default function PortfolioContent({
         subcategory_id,
         byline_style,
         link_style,
+        short_title,
+        short_desc,
+        desc,
+        menu_thumbnail_url,
         categories(id, name),
         subcategories(id, name, category_id),
         byline_options(id, option_text),
         link_options(id, option_text),
         content_collections(collection_id, collections(slug, name))
       `)
-      .eq('featured', true)
-      .order('order_index', { ascending: true })
+    if (!useNewMenu) {
+      query = query.eq('featured', true)
+    }
+    const { data, error } = await query.order('order_index', { ascending: true })
     
     if (error) {
       throw new Error(`Failed to load content: ${error.message}`)
@@ -397,6 +428,10 @@ export default function PortfolioContent({
           subcategory_id,
           byline_style,
           link_style,
+          menu_thumbnail_url,
+          short_title,
+          short_desc,
+          desc,
           categories(id, name),
           subcategories(id, name, category_id),
           byline_options(id, option_text),
@@ -427,7 +462,10 @@ export default function PortfolioContent({
         description,
         slug,
         order_index,
-        featured
+        featured,
+        short_title,
+        short_desc,
+        desc
       `)
       .order('order_index', { ascending: true })
     
@@ -503,7 +541,11 @@ export default function PortfolioContent({
       subcategory_name: subcategory?.name || '',
       
       collection_slugs: collectionSlugs,
-      collection_names: collectionNames
+      collection_names: collectionNames,
+      short_title: raw.short_title ?? null,
+      short_desc: raw.short_desc ?? null,
+      desc: raw.desc ?? null,
+      menu_thumbnail_url: raw.menu_thumbnail_url ?? null,
     }
   }
   
@@ -1081,6 +1123,15 @@ export default function PortfolioContent({
     setPageState('expanded-empty')
   }, [onCollectionClick])
 
+  const handleCollectionSelect = useCallback((collection: Collection) => {
+    setSelectedCollection(collection)
+    setSelectedContent(null) // cannot coexist with active content
+  }, [])
+
+  const handleCollectionDismiss = useCallback(() => {
+    setSelectedCollection(null)
+  }, [])
+
   const isLoading = loadingCategories || loadingContent || loadingCollections
   const isExpanded = pageState !== 'collapsed-reader'
 
@@ -1562,7 +1613,7 @@ export default function PortfolioContent({
   
   return (
     <div>
-      {/* MainMenu in mobile expanded mode - rendered outside container */}
+      {/* Location 1 — Mobile expanded overlay. DynamicMenu is desktop-only; old menu always used on mobile. */}
       {isMobile && isExpanded && (
         <MainMenu
           categories={filteredCategories}
@@ -1582,50 +1633,65 @@ export default function PortfolioContent({
           justWentBackFromContentRef={justWentBackRef}
         />
       )}
-      
-      {/* Menu container - for desktop and mobile collapsed mode */}
+
+      {/* Location 2 — Desktop menu bar (and mobile collapsed mode).
+          When useNewMenu is active on desktop, DynamicMenu replaces the entire
+          menu bar including its outer container. Old menu is used on mobile always. */}
       {(!isMobile || !isExpanded) && (
-        <div 
-          ref={menuBarRef}
-          className={`portfolio-menu-bar fixed z-30 bg-bg-menu-bar border-t-2 border-accent-light flex justify-between items-start min-h-16 px-[60px] ${pageState === 'collapsed-reader' ? 'collapsed' : ''}`}
-          style={{ 
-            top: profileHeight ? `${profileHeight}px` : '200px',
-            left: '0',
-            width: '100%',
-            ...(pageState !== 'collapsed-reader' ? { 
-              bottom: '64px', // Extend to bottom nav with 0px gap
-              overflow: 'hidden' // Per redesign spec
-            } : {})
-          }}
-          data-portfolio-menu-bar
-        >
-          <MainMenu
-            categories={filteredCategories}
-            subcategories={filteredSubcategories}
-            content={filteredContent}
-            pageState={pageState}
-            selectedCategory={selectedCategory}
-            selectedSubcategory={selectedSubcategory}
-            selectedContent={selectedContent}
-            onCategorySelect={handleCategorySelect}
-            onSubcategorySelect={handleSubcategorySelect}
-            onContentSelect={handleContentSelect}
-            onMenuClick={handleMainMenuClick}
+        useNewMenu && !isMobile ? (
+          <DynamicMenu
+            categories={categories}
+            subcategories={subcategories}
+            content={content}
+            collections={collections}
             profileHeight={profileHeight}
-            justWentBackFromContent={justWentBackFromContent}
-            justWentBackFromContentRef={justWentBackRef}
+            onContentSelect={handleContentSelect}
+            isCollapsed={pageState === 'collapsed-reader'}
+            onExpand={handleMainMenuClick}
           />
-          {/* Step 4 Stage 8: Featured collections menu hidden in mobile */}
-          {!isMobile && (
-            <CollectionsMenu
-              collections={collections}
-              featuredCollections={featuredCollections}
-              selectedContent={selectedContent}
+        ) : (
+          <div
+            ref={menuBarRef}
+            className={`portfolio-menu-bar fixed z-30 bg-bg-menu-bar border-t-2 border-accent-light flex justify-between items-start min-h-16 px-[60px] ${pageState === 'collapsed-reader' ? 'collapsed' : ''}`}
+            style={{
+              top: profileHeight ? `${profileHeight}px` : '200px',
+              left: '0',
+              width: '100%',
+              ...(pageState !== 'collapsed-reader' ? {
+                bottom: '64px',
+                overflow: 'hidden',
+              } : {}),
+            }}
+            data-portfolio-menu-bar
+          >
+            <MainMenu
+              categories={filteredCategories}
+              subcategories={filteredSubcategories}
+              content={filteredContent}
               pageState={pageState}
-              onCollectionClick={handleCollectionClick}
+              selectedCategory={selectedCategory}
+              selectedSubcategory={selectedSubcategory}
+              selectedContent={selectedContent}
+              onCategorySelect={handleCategorySelect}
+              onSubcategorySelect={handleSubcategorySelect}
+              onContentSelect={handleContentSelect}
+              onMenuClick={handleMainMenuClick}
+              profileHeight={profileHeight}
+              justWentBackFromContent={justWentBackFromContent}
+              justWentBackFromContentRef={justWentBackRef}
             />
-          )}
-        </div>
+            {/* Featured collections menu hidden in mobile */}
+            {!isMobile && (
+              <CollectionsMenu
+                collections={collections}
+                featuredCollections={featuredCollections}
+                selectedContent={selectedContent}
+                pageState={pageState}
+                onCollectionClick={handleCollectionClick}
+              />
+            )}
+          </div>
+        )
       )}
 
       <div 

@@ -1,0 +1,190 @@
+[    1721ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:25630
+[    1907ms] [LOG] [DEBUG] Data loading effect: Starting, isRestoring = false {isMobile: false, savedMenuState: null, savedSelectedContentId: null} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:510
+[    1908ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[    1908ms] [LOG] [DEBUG] Restore effect running: {isMobile: false, activeTab: portfolio, savedMenuState: null, savedSelectedContentId: null, selectedContent: null} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:1247
+[    1909ms] [LOG] [DEBUG] Restore effect: Not mobile, skipping @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:1258
+[    2177ms] [LOG] [DEBUG] Data loading effect: Normal mode, resetting state to default @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:543
+[    2291ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[    2320ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[    2321ms] [LOG] [DEBUG] Restore effect running: {isMobile: false, activeTab: portfolio, savedMenuState: null, savedSelectedContentId: null, selectedContent: aa000009-0000-4000-8000-000000000009} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:1247
+[    2321ms] [LOG] [DEBUG] Restore effect: Not mobile, skipping @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:1258
+[    2339ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[    2683ms] [LOG] [Fast Refresh] done in 392ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[    2759ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[    3024ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[    3069ms] [LOG] [Fast Refresh] done in 45ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[    3852ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[    4194ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[    4243ms] [LOG] [Fast Refresh] done in 49ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[    4657ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[    4939ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[    4971ms] [LOG] [Fast Refresh] done in 32ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[    5378ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[    5648ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[    5685ms] [LOG] [Fast Refresh] done in 38ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[    6059ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[    6334ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[    6373ms] [LOG] [Fast Refresh] done in 39ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[    6742ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[    7047ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[    7100ms] [LOG] [Fast Refresh] done in 53ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[    7498ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[    7772ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[    7819ms] [LOG] [Fast Refresh] done in 47ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[    8186ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[    8449ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[    8486ms] [LOG] [Fast Refresh] done in 38ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[    8874ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[    9160ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[    9210ms] [LOG] [Fast Refresh] done in 51ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[    9565ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[    9842ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[    9880ms] [LOG] [Fast Refresh] done in 39ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   10205ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://res.cloudinary.com/dkzypkiwf/image/upload/v1765384320/wqudguvrq8wzxqq1hh33.jpg:0
+[   10261ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   10698ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   10730ms] [LOG] [Fast Refresh] done in 32ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   11096ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   11452ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   11486ms] [LOG] [Fast Refresh] done in 33ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   11848ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   12072ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   12108ms] [LOG] [Fast Refresh] done in 37ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   12466ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   12820ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   12865ms] [LOG] [Fast Refresh] done in 46ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   13224ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   13499ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   13532ms] [LOG] [Fast Refresh] done in 33ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   13892ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   14170ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   14197ms] [LOG] [Fast Refresh] done in 28ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   14569ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   14826ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   14863ms] [LOG] [Fast Refresh] done in 36ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   15216ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   15638ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   15670ms] [LOG] [Fast Refresh] done in 32ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   16023ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   16295ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   16324ms] [LOG] [Fast Refresh] done in 30ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   16673ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   16949ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   16989ms] [LOG] [Fast Refresh] done in 39ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   17368ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   17625ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   17660ms] [LOG] [Fast Refresh] done in 36ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   18006ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   18294ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   18335ms] [LOG] [Fast Refresh] done in 42ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   18698ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   18965ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   19004ms] [LOG] [Fast Refresh] done in 39ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   19362ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   19656ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   19692ms] [LOG] [Fast Refresh] done in 36ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   20055ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   20317ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   20350ms] [LOG] [Fast Refresh] done in 33ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   20717ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   20984ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   21013ms] [LOG] [Fast Refresh] done in 28ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   21377ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   21647ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   21683ms] [LOG] [Fast Refresh] done in 36ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   22049ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   22310ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   22332ms] [LOG] [Fast Refresh] done in 22ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   22707ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   22996ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   23033ms] [LOG] [Fast Refresh] done in 36ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   23392ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   23801ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   23837ms] [LOG] [Fast Refresh] done in 36ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   24610ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   24929ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   24966ms] [LOG] [Fast Refresh] done in 38ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   25329ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   25643ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   25672ms] [LOG] [Fast Refresh] done in 29ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   26033ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   26290ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   26324ms] [LOG] [Fast Refresh] done in 33ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   26695ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   26985ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   27017ms] [LOG] [Fast Refresh] done in 32ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   27373ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   27646ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   27684ms] [LOG] [Fast Refresh] done in 38ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   28051ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   28312ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   28351ms] [LOG] [Fast Refresh] done in 39ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   28718ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   28998ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   29038ms] [LOG] [Fast Refresh] done in 40ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   29429ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   29684ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   29722ms] [LOG] [Fast Refresh] done in 39ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   30064ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   30331ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   30366ms] [LOG] [Fast Refresh] done in 36ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   30744ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   31001ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   31041ms] [LOG] [Fast Refresh] done in 39ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   31397ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   31643ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   31676ms] [LOG] [Fast Refresh] done in 33ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   32032ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   32282ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   32309ms] [LOG] [Fast Refresh] done in 28ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   32673ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   32935ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   32966ms] [LOG] [Fast Refresh] done in 31ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   33328ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   33605ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   33641ms] [LOG] [Fast Refresh] done in 36ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   34000ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   34254ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   34289ms] [LOG] [Fast Refresh] done in 36ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   34655ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   34907ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   34949ms] [LOG] [Fast Refresh] done in 42ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   35309ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   35586ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   35620ms] [LOG] [Fast Refresh] done in 35ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   35986ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   36249ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   36277ms] [LOG] [Fast Refresh] done in 28ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   36638ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   36910ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   36943ms] [LOG] [Fast Refresh] done in 33ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   37308ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   37551ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   37585ms] [LOG] [Fast Refresh] done in 34ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   37962ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   38237ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   38270ms] [LOG] [Fast Refresh] done in 34ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   38649ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   38908ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   38939ms] [LOG] [Fast Refresh] done in 32ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   39310ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   39598ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   39633ms] [LOG] [Fast Refresh] done in 35ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   39999ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   40268ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   40302ms] [LOG] [Fast Refresh] done in 35ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   40658ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   40915ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   40955ms] [LOG] [Fast Refresh] done in 40ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   41323ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   41580ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   41616ms] [LOG] [Fast Refresh] done in 37ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   41969ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   42232ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   42258ms] [LOG] [Fast Refresh] done in 26ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   42662ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   42932ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   42968ms] [LOG] [Fast Refresh] done in 36ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[   43327ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:968
+[   43728ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[   43759ms] [LOG] [Fast Refresh] done in 31ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13

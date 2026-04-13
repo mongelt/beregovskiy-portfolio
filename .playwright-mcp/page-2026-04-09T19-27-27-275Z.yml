@@ -1,0 +1,8 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e31]:
+    - button "Download ↓" [ref=e34]
+    - button "Share ↗" [ref=e37]
+    - generic [ref=e38]:
+      - button "PORTFOLIO" [ref=e40]: PORTFOLIO
+      - button "RESUME" [ref=e43]
+  - alert [ref=e44]

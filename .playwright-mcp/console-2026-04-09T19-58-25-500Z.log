@@ -1,0 +1,14 @@
+[     534ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:25630
+[     680ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3001/favicon.ico:0
+[    1350ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196
+[    7726ms] [LOG] [Fast Refresh] done in 6376ms @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/report-hmr-latency.js:13
+[    7904ms] [LOG] [DEBUG] Data loading effect: Starting, isRestoring = false {isMobile: false, savedMenuState: null, savedSelectedContentId: null} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:508
+[    7905ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:966
+[    7906ms] [LOG] [DEBUG] Restore effect running: {isMobile: false, activeTab: portfolio, savedMenuState: null, savedSelectedContentId: null, selectedContent: null} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:1245
+[    7906ms] [LOG] [DEBUG] Restore effect: Not mobile, skipping @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:1256
+[    9246ms] [LOG] [DEBUG] Data loading effect: Normal mode, resetting state to default @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:541
+[    9366ms] [LOG] [DEBUG] Menu state memory effect: Effect triggered {activeTab: portfolio, prevActiveTabRef: portfolio, isMobile: false} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:966
+[    9367ms] [LOG] [DEBUG] Restore effect running: {isMobile: false, activeTab: portfolio, savedMenuState: null, savedSelectedContentId: null, selectedContent: null} @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:1245
+[    9367ms] [LOG] [DEBUG] Restore effect: Not mobile, skipping @ webpack-internal:///(app-pages-browser)/./components/tabs/PortfolioContent.tsx:1256
+[   10719ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://res.cloudinary.com/dkzypkiwf/image/upload/v1765384320/wqudguvrq8wzxqq1hh33.jpg:0
+[   23850ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/dev/hot-reloader/app/hot-reloader-app.js:196

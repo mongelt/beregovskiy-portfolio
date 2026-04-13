@@ -1,0 +1,39 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e325]:
+        - heading "ANDREY BEREGOVSKIY" [level=1] [ref=e326]
+        - button "EXPAND" [ref=e327]:
+          - generic [ref=e328]: EXPAND
+          - img [ref=e329]
+    - generic [ref=e331]:
+      - generic [ref=e333] [cursor=pointer]:
+        - generic [ref=e334]:
+          - button "Political Theory" [ref=e335]
+          - generic [ref=e350]:
+            - generic [ref=e352]: Political Theory
+            - generic [ref=e353]:
+              - generic:
+                - generic [ref=e355]: No img
+                - generic [ref=e357]: No img
+                - generic [ref=e359]: No img
+                - generic [ref=e361]: No img
+                - generic [ref=e363]: No img
+        - generic [ref=e336]: ›
+        - button "Authority Models" [ref=e338]
+        - generic [ref=e339]: ›
+        - button "Machiavelli" [ref=e341]
+      - generic [ref=e342]:
+        - generic [ref=e344]: The Prince / 1532
+        - generic [ref=e346]:
+          - heading "Machiavelli on Power and Virtue" [level=1] [ref=e347]
+          - generic [ref=e348]: Loading content...
+    - generic [ref=e208]:
+      - button "Download ↓" [ref=e211]
+      - button "Share ↗" [ref=e214]
+      - generic [ref=e215]:
+        - button "PORTFOLIO" [ref=e217]: PORTFOLIO
+        - button "RESUME" [ref=e220]
+  - button "Open Next.js Dev Tools" [ref=e226] [cursor=pointer]:
+    - img [ref=e227]
+  - alert [ref=e230]

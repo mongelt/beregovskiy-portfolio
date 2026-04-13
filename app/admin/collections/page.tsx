@@ -18,6 +18,9 @@ type Collection = {
   slug: string
   order_index: number
   featured: boolean
+  short_title?: string | null
+  short_desc?: string | null
+  desc?: string | null
 }
 
 export default function CollectionsManagement() {
@@ -26,10 +29,16 @@ export default function CollectionsManagement() {
   const [newName, setNewName] = useState('')
   const [newDescriptionData, setNewDescriptionData] = useState<PartialBlock[] | undefined>()
   const [newFeatured, setNewFeatured] = useState(false)
+  const [newShortTitle, setNewShortTitle] = useState('')
+  const [newShortDesc, setNewShortDesc] = useState('')
+  const [newDesc, setNewDesc] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
   const [editDescriptionData, setEditDescriptionData] = useState<PartialBlock[] | undefined>()
   const [editFeatured, setEditFeatured] = useState(false)
+  const [editShortTitle, setEditShortTitle] = useState('')
+  const [editShortDesc, setEditShortDesc] = useState('')
+  const [editDesc, setEditDesc] = useState('')
   const [editingCollectionOrder, setEditingCollectionOrder] = useState<string | null>(null)
   const [editCollectionOrder, setEditCollectionOrder] = useState('')
 
@@ -65,20 +74,26 @@ export default function CollectionsManagement() {
     
     const { error } = await supabase
       .from('collections')
-      .insert({ 
+      .insert({
         name: newName,
         description: newDescriptionData || null,
         slug: slug,
         order_index: collections.length,
-        featured: newFeatured
+        featured: newFeatured,
+        short_title: newShortTitle || null,
+        short_desc: newShortDesc || null,
+        desc: newDesc || null,
       })
-    
+
     if (error) {
       alert('Error creating collection: ' + error.message)
     } else {
       setNewName('')
       setNewDescriptionData(undefined)
       setNewFeatured(false)
+      setNewShortTitle('')
+      setNewShortDesc('')
+      setNewDesc('')
       loadCollections()
     }
   }
@@ -156,14 +171,17 @@ export default function CollectionsManagement() {
     
     const { error } = await supabase
       .from('collections')
-      .update({ 
+      .update({
         name: editName,
         description: editDescriptionData || null,
         slug: slug,
-        featured: editFeatured
+        featured: editFeatured,
+        short_title: editShortTitle || null,
+        short_desc: editShortDesc || null,
+        desc: editDesc || null,
       })
       .eq('id', editingId)
-    
+
     if (error) {
       alert('Error: ' + error.message)
     } else {
@@ -171,6 +189,9 @@ export default function CollectionsManagement() {
       setEditName('')
       setEditDescriptionData(undefined)
       setEditFeatured(false)
+      setEditShortTitle('')
+      setEditShortDesc('')
+      setEditDesc('')
       loadCollections()
     }
   }
@@ -180,6 +201,9 @@ export default function CollectionsManagement() {
     setEditName(collection.name)
     setEditDescriptionData(collection.description)
     setEditFeatured(collection.featured)
+    setEditShortTitle(collection.short_title || '')
+    setEditShortDesc(collection.short_desc || '')
+    setEditDesc(collection.desc || '')
   }
 
   async function updateCollectionOrder(id: string, newOrder: string) {
@@ -238,10 +262,10 @@ export default function CollectionsManagement() {
             </label>
             <p className="text-xs text-gray-500 mb-2">Detailed description (shows when "More Info" is expanded)</p>
             <div className="rounded-lg border border-gray-700 min-h-[300px] p-6" style={{ backgroundColor: '#1f1f1f', colorScheme: 'light' }}>
-              <BlockNoteEditor 
+              <BlockNoteEditor
                 holder="new-collection-description"
                 data={newDescriptionData}
-                onChange={setNewDescriptionData}
+                onChange={(data) => setNewDescriptionData(data as any)}
               />
             </div>
           </div>
@@ -261,6 +285,24 @@ export default function CollectionsManagement() {
           <p className="text-xs text-gray-500 -mt-2">
             Featured collections appear in the Collections Menu on the Portfolio tab
           </p>
+
+          <div className="border-t border-gray-800 pt-4">
+            <p className="text-sm font-medium text-gray-300 mb-3">Menu Display</p>
+            <div className="flex gap-3 mb-3">
+              <div className="flex-1">
+                <label className="block text-xs text-gray-400 mb-1">Short Title <span className="text-gray-500">{newShortTitle.length}/15</span></label>
+                <Input value={newShortTitle} onChange={(e) => setNewShortTitle(e.target.value)} placeholder="Short title" maxLength={15} />
+              </div>
+              <div className="flex-1">
+                <label className="block text-xs text-gray-400 mb-1">Short Description <span className="text-gray-500">{newShortDesc.length}/30</span></label>
+                <Input value={newShortDesc} onChange={(e) => setNewShortDesc(e.target.value)} placeholder="Short description" maxLength={30} />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">Description</label>
+              <textarea value={newDesc} onChange={(e) => setNewDesc(e.target.value)} placeholder="Full description" rows={2} className="w-full rounded-md border border-gray-700 bg-gray-950 px-3 py-2 text-white text-sm resize-y" />
+            </div>
+          </div>
 
           <Button onClick={createCollection}>Create Collection</Button>
         </div>
@@ -290,7 +332,7 @@ export default function CollectionsManagement() {
                       <BlockNoteEditor 
                         holder={`edit-collection-description-${collection.id}`}
                         data={editDescriptionData}
-                        onChange={setEditDescriptionData}
+                        onChange={(data) => setEditDescriptionData(data as any)}
                       />
                     </div>
                   </div>
@@ -309,6 +351,23 @@ export default function CollectionsManagement() {
                   <p className="text-xs text-gray-500">
                     Featured collections appear in the Collections Menu on the Portfolio tab
                   </p>
+                  <div className="border-t border-gray-700 pt-3">
+                    <p className="text-sm font-medium text-gray-300 mb-3">Menu Display</p>
+                    <div className="flex gap-3 mb-3">
+                      <div className="flex-1">
+                        <label className="block text-xs text-gray-400 mb-1">Short Title <span className="text-gray-500">{editShortTitle.length}/15</span></label>
+                        <Input value={editShortTitle} onChange={(e) => setEditShortTitle(e.target.value)} placeholder="Short title" maxLength={15} />
+                      </div>
+                      <div className="flex-1">
+                        <label className="block text-xs text-gray-400 mb-1">Short Description <span className="text-gray-500">{editShortDesc.length}/30</span></label>
+                        <Input value={editShortDesc} onChange={(e) => setEditShortDesc(e.target.value)} placeholder="Short description" maxLength={30} />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1">Description</label>
+                      <textarea value={editDesc} onChange={(e) => setEditDesc(e.target.value)} placeholder="Full description" rows={2} className="w-full rounded-md border border-gray-700 bg-gray-950 px-3 py-2 text-white text-sm resize-y" />
+                    </div>
+                  </div>
                   <div className="flex gap-2">
                     <Button size="sm" onClick={updateCollection}>Save</Button>
                     <Button size="sm" variant="outline" onClick={() => setEditingId(null)}>Cancel</Button>

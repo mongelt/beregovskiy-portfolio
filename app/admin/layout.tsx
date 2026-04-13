@@ -55,8 +55,14 @@ export default function AdminLayout({
                     >
                       Resume Types
                     </Link>
-                    <Link 
-                      href="/admin/custom-pdfs" 
+                    <Link
+                      href="/admin/menu"
+                      className="text-gray-300 hover:text-white transition-colors"
+                    >
+                      Menu
+                    </Link>
+                    <Link
+                      href="/admin/custom-pdfs"
                       className="text-gray-300 hover:text-white transition-colors"
                     >
                       Custom PDFs

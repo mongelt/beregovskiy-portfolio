@@ -1,0 +1,41 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e45]:
+      - generic [ref=e47]:
+        - generic [ref=e48]:
+          - heading "ANDREY BEREGOVSKIY" [level=1] [ref=e49]
+          - generic [ref=e50]:
+            - img [ref=e51]
+            - paragraph [ref=e54]: Washington, DC
+          - generic [ref=e55]:
+            - paragraph [ref=e56]: Brand Journalist at Axway
+            - paragraph [ref=e57]: Correspondent at The LCB
+            - paragraph [ref=e58]: Editor at Ask a Pol
+            - paragraph [ref=e59]: Contributor at the Editorial Office
+        - paragraph [ref=e63]: Sint veniam nostrud do laborum consequat quis deserunt sit ut anim incididunt exercitation adipisicing et do. Proident est ut in in sit enim reprehenderit fugiat culpa dolor velit voluptate. Duis in aliqua labore incididunt consequat do tempor sint occaecat ullamco commodo exercitation est.
+      - button "EXPAND" [ref=e143]:
+        - generic [ref=e144]: EXPAND
+        - img [ref=e145]
+    - generic [ref=e118]:
+      - generic [ref=e119]:
+        - generic [ref=e120] [cursor=pointer]: Social Management
+        - generic [ref=e121] [cursor=pointer]: Media
+        - generic [ref=e122] [cursor=pointer]: Video
+        - generic [ref=e123] [cursor=pointer]: Photo
+        - generic [ref=e124] [cursor=pointer]: Writing
+      - generic [ref=e125]:
+        - generic [ref=e126] [cursor=pointer]: Short format
+        - generic [ref=e127] [cursor=pointer]: LinkedIn
+        - generic [ref=e128] [cursor=pointer]: Long format
+      - generic [ref=e130] [cursor=pointer]:
+        - generic [ref=e131]: —Blocknote
+        - generic [ref=e132]: Testing BN / 2024
+    - generic [ref=e31]:
+      - button "Download ↓" [ref=e34]
+      - button "Share ↗" [ref=e37]
+      - generic [ref=e38]:
+        - button "PORTFOLIO" [ref=e40]: PORTFOLIO
+        - button "RESUME" [ref=e43]
+  - button "Open Next.js Dev Tools" [ref=e138] [cursor=pointer]:
+    - img [ref=e139]
+  - alert [ref=e44]

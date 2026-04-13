@@ -89,6 +89,9 @@ export default function EditContent() {
   const [orderIndex, setOrderIndex] = useState(0)
   const [uploading, setUploading] = useState(false)
   const [featured, setFeatured] = useState(false)
+  const [menuShortTitle, setMenuShortTitle] = useState('')
+  const [menuShortDesc, setMenuShortDesc] = useState('')
+  const [menuDesc, setMenuDesc] = useState('')
 
   useEffect(() => {
     loadCategories()
@@ -149,6 +152,9 @@ export default function EditContent() {
     setFeatured(data.featured || false)
     setSelectedBylineStyle(data.byline_style || '')
     setSelectedLinkStyle(data.link_style || '')
+    setMenuShortTitle(data.short_title || '')
+    setMenuShortDesc(data.short_desc || '')
+    setMenuDesc(data.desc || '')
 
     const { data: collectionData } = await supabase
       .from('content_collections')
@@ -345,6 +351,9 @@ export default function EditContent() {
           featured: featured,
           byline_style: selectedBylineStyle || null,
           link_style: selectedLinkStyle || null,
+          short_title: menuShortTitle || null,
+          short_desc: menuShortDesc || null,
+          desc: menuDesc || null,
         })
         .eq('id', contentId)
       
@@ -543,12 +552,13 @@ export default function EditContent() {
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Publication Name
+              Publication Name <span className="text-gray-500 text-xs">{publicationName.length}/20</span>
             </label>
             <Input
               value={publicationName}
               onChange={(e) => setPublicationName(e.target.value)}
               placeholder="Where this was published"
+              maxLength={20}
             />
           </div>
 
@@ -620,7 +630,7 @@ export default function EditContent() {
                 <BlockNoteEditor 
                   holder="editorjs-edit"
                   data={editorData}
-                  onChange={setEditorData}
+                  onChange={(data) => setEditorData(data as any)}
                   onReady={(editor) => {
                     editorInstanceRef.current = editor
                   }}
@@ -875,6 +885,48 @@ export default function EditContent() {
             <p className="text-xs text-gray-500 mt-1 ml-6">
               Featured content appears in Main Menu on Portfolio tab
             </p>
+          </div>
+
+          <div className="border-t border-gray-800 pt-6">
+            <h3 className="text-lg font-semibold text-white mb-4">Menu Display</h3>
+            <p className="text-xs text-gray-500 -mt-2 mb-4">Fields used by the dynamic menu cards</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Short Title <span className="text-gray-500 text-xs">{menuShortTitle.length}/15</span>
+            </label>
+            <Input
+              value={menuShortTitle}
+              onChange={(e) => setMenuShortTitle(e.target.value)}
+              placeholder="Short title for menu card"
+              maxLength={15}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Short Description <span className="text-gray-500 text-xs">{menuShortDesc.length}/30</span>
+            </label>
+            <Input
+              value={menuShortDesc}
+              onChange={(e) => setMenuShortDesc(e.target.value)}
+              placeholder="Short description for menu card"
+              maxLength={30}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Description
+            </label>
+            <textarea
+              value={menuDesc}
+              onChange={(e) => setMenuDesc(e.target.value)}
+              placeholder="Full description for menu card"
+              rows={3}
+              className="w-full rounded-md border border-gray-700 bg-gray-950 px-3 py-2 text-white text-sm resize-y"
+            />
           </div>
         </div>
 

@@ -551,7 +551,7 @@ export default function ResumeManagement() {
                 key={editingId ? `edit-${editingId}` : 'new'}
                 holder={editingId ? `resume-description-edit-${editingId}` : 'resume-description-new'}
                 data={descriptionData}
-                onChange={setDescriptionData}
+                onChange={(data) => setDescriptionData(data as any)}
                 onReady={(editor) => {
                   descriptionEditorRef.current = editor
                 }}

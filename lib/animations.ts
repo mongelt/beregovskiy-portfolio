@@ -1,8 +1,33 @@
+import { useEffect, useState } from 'react'
 import { Variants } from 'framer-motion'
 
 export const shouldReduceMotion = () => {
   if (typeof window === 'undefined') return false
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+}
+
+/**
+ * React hook that re-renders when the prefers-reduced-motion media query changes.
+ * Use this in components that need to respond to the user's motion preference.
+ */
+export function useReducedMotion(): boolean {
+  const [reduced, setReduced] = useState(shouldReduceMotion)
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const handler = (e: MediaQueryListEvent) => setReduced(e.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
+  return reduced
+}
+
+/**
+ * Returns a Framer Motion transition for the dynamic menu.
+ * When reduced-motion is active, duration is 0 (instant).
+ */
+export function dmTransition(reduced: boolean) {
+  if (reduced) return { duration: 0 }
+  return { duration: 0.28, ease: [0.4, 0, 0.2, 1] as const }
 }
 
 export const fadeIn: Variants = {

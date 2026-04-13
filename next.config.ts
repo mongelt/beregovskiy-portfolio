@@ -19,6 +19,13 @@ const nextConfig: NextConfig = {
       };
     }
 
+    // Exclude Playwright MCP output from the file watcher so snapshot/screenshot
+    // writes don't trigger HMR rebuilds. Replace watchOptions entirely — the
+    // existing object may be frozen. Use glob strings (webpack always accepts these).
+    config.watchOptions = {
+      ignored: ['**/.playwright-mcp/**', '**/node_modules/**'],
+    }
+
     return config;
   },
 };
