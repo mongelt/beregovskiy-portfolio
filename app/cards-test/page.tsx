@@ -795,7 +795,7 @@ export default function CardsTestPage() {
         </div>
 
         <div style={col}>
-          <div style={label}>Collection active (name #A85A5A, border #6B2A2A) — hover to expand</div>
+          <div style={label}>Collection active (name #A85A5A, border #6B2A2A) — IGNORE, NOT IN USE</div>
           <SubheaderCard
             name="Technology & AI"
             shortDesc="Machine learning, AI policy, future of work"

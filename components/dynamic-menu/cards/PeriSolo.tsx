@@ -108,7 +108,7 @@ export function PeriSolo({
             </div>
             <div style={{
               fontSize: 12,
-              color: '#585050',
+              color: '#989898',
               marginTop: !hovered ? 4 : 0,
               maxHeight: !hovered ? 24 : 0,
               overflow: 'hidden',
@@ -120,7 +120,7 @@ export function PeriSolo({
             </div>
             <div style={{
               fontSize: 12,
-              color: '#585050',
+              color: hovered ? '#303030' : '#989898',
               lineHeight: 1.4,
               maxHeight: hovered ? 80 : 0,
               overflow: 'hidden',
@@ -245,7 +245,7 @@ export function PeriSolo({
               {!hovered && (
                 <div style={{
                   fontSize: 12,
-                  color: '#585050',
+                  color: '#989898',
                   marginTop: 4,
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',

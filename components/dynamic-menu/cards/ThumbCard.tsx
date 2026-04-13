@@ -166,7 +166,7 @@ export function ThumbCard({
           {!isActive && (
             <div style={{
               fontSize: 12,
-              color: '#585050',
+              color: scoreColors.descColor,
               marginTop: 3,
               maxHeight: hovered ? 0 : 20,
               overflow: 'hidden',

@@ -124,7 +124,7 @@ function PairCard({ data, isHovered, isCondensed, isLeft, layout, onClick, onHov
               </div>
               <div style={{
                 fontSize: 12,
-                color: '#585050',
+                color: '#989898',
                 marginTop: !isHovered ? 4 : 0,
                 maxHeight: !isHovered ? 24 : 0,
                 overflow: 'hidden',
@@ -136,7 +136,7 @@ function PairCard({ data, isHovered, isCondensed, isLeft, layout, onClick, onHov
               </div>
               <div style={{
                 fontSize: 12,
-                color: '#585050',
+                color: isHovered ? '#303030' : '#989898',
                 lineHeight: 1.4,
                 maxHeight: isHovered ? 80 : 0,
                 overflow: 'hidden',
@@ -254,7 +254,7 @@ function PairCard({ data, isHovered, isCondensed, isLeft, layout, onClick, onHov
                 {!isHovered && (
                   <div style={{
                     fontSize: 12,
-                    color: '#585050',
+                    color: '#989898',
                     marginTop: 4,
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',

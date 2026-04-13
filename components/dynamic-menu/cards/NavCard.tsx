@@ -151,7 +151,7 @@ export function NavCard({
         {/* shortDesc — shown at rest in expanded / overlay mode */}
         <div style={{
           fontSize: 12,
-          color: '#585050',
+          color: isActive ? '#585050' : scoreColors.descColor,
           marginTop: showShortDesc ? 4 : 0,
           maxHeight: showShortDesc ? 24 : 0,
           overflow: 'hidden',
@@ -165,7 +165,7 @@ export function NavCard({
         {/* desc — revealed on hover */}
         <div style={{
           fontSize: 12,
-          color: '#585050',
+          color: isActive ? '#585050' : scoreColors.descColor,
           lineHeight: 1.4,
           maxHeight: showDesc ? 80 : 0,
           overflow: 'hidden',
