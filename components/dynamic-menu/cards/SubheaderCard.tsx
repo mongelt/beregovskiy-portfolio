@@ -87,7 +87,7 @@ export function SubheaderCard({
           {/* shortDesc: visible at rest, slides out on hover */}
           <div style={{
             fontSize: 11,
-            color: '#808080',
+            color: '#989898',
             marginTop: 3,
             maxHeight: hovered ? 0 : 18,
             overflow: 'hidden',

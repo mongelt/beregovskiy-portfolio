@@ -131,7 +131,7 @@ export function ThumbCard({
           {metaText && (
             <div style={{
               fontSize: 10,
-              color: '#3a3535',
+              color: isActive ? '#3a3535' : scoreColors.color,
               textTransform: 'uppercase',
               marginTop: 3,
               whiteSpace: 'nowrap',
@@ -190,7 +190,7 @@ export function ThumbCard({
           fontSize: 12,
           lineHeight: 1.45,
           textIndent: 98,
-          color: '#585050',
+          color: '#363030',
           display: '-webkit-box',
           WebkitLineClamp: 4,
           WebkitBoxOrient: 'vertical',
@@ -207,7 +207,7 @@ export function ThumbCard({
           fontSize: 12,
           lineHeight: 1.45,
           textIndent: 98,
-          color: '#585050',
+          color: '#363030',
           maxHeight: hovered ? 64 : 0,
           overflow: 'hidden',
           marginTop: hovered ? -15 : 0,

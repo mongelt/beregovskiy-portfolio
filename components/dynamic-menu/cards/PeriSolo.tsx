@@ -198,7 +198,7 @@ export function PeriSolo({
               {metaText && (
                 <div style={{
                   fontSize: 10,
-                  color: hovered ? '#3a3535' : '#808080',
+                  color: hovered ? '#3a3535' : '#989898',
                   textTransform: 'uppercase',
                   marginTop: 3,
                   whiteSpace: 'nowrap',
@@ -264,7 +264,7 @@ export function PeriSolo({
             fontSize: 12,
             lineHeight: 1.45,
             textIndent: 98,
-            color: '#585050',
+            color: '#363030',
             maxHeight: hovered ? 64 : 0,
             overflow: 'hidden',
             marginTop: hovered ? -15 : 0,

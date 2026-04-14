@@ -207,7 +207,7 @@ function PairCard({ data, isHovered, isCondensed, isLeft, layout, onClick, onHov
                 {metaText && (
                   <div style={{
                     fontSize: 10,
-                    color: isHovered ? '#3a3535' : '#808080',
+                    color: isHovered ? '#3a3535' : '#989898',
                     textTransform: 'uppercase',
                     marginTop: 3,
                     whiteSpace: 'nowrap',
