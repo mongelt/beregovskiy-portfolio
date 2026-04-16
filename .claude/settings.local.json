@@ -46,7 +46,8 @@
       "Bash(taskkill /F /IM node.exe)",
       "Bash(tasklist /FI \"PID eq 29752\")",
       "Bash(tasklist)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(grep -v \"^$\")"
     ]
   }
 }

@@ -414,14 +414,16 @@ export default function BottomTabBar({
           ))}
         </div>
 
-        <div
+        {/* Stage 18d: active collection/content display in the bottom nav is deactivated.
+            The component and props are preserved for potential reuse. */}
+        {/* <div
           className={`flex items-center gap-2 absolute ${isMobile ? 'hidden' : ''}`}
           ref={collectionsRef}
           style={{ right: 'calc(50% + 180px)' }}
         >
           <AnimatePresence mode="popLayout">
             {collections.map((collection) => (
-              <motion.div 
+              <motion.div
                 key={collection.slug}
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
@@ -476,16 +478,16 @@ export default function BottomTabBar({
               </motion.div>
             ))}
           </AnimatePresence>
-        </div>
+        </div> */}
 
-        <div
+        {/* <div
           className={`flex items-center gap-2 absolute ${isMobile ? 'hidden' : ''}`}
           ref={contentsRef}
           style={{ left: 'calc(50% + 180px)' }}
         >
           <AnimatePresence mode="popLayout">
             {contentTabs.map((content) => (
-              <motion.div 
+              <motion.div
                 key={content.id}
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
@@ -502,8 +504,8 @@ export default function BottomTabBar({
                     className={`
                       relative font-ui text-sm font-semibold rounded-tl-lg rounded-bl-lg
                       transition-colors duration-300 z-10 bg-transparent
-                      ${activeTab === content.id 
-                        ? 'text-text-on-dark' 
+                      ${activeTab === content.id
+                        ? 'text-text-on-dark'
                         : 'text-text-on-dark-inactive hover:text-text-on-dark-hover hover:opacity-80'
                       }
                     `}
@@ -513,11 +515,11 @@ export default function BottomTabBar({
                       <motion.div
                         layoutId="activeContentUnderline"
                         className="absolute bottom-0 left-0 right-0 bg-accent-light"
-                    style={{ height: '2px' }}
-                        transition={{ 
-                          type: 'spring', 
-                          stiffness: 300, 
-                          damping: 30 
+                        style={{ height: '2px' }}
+                        transition={{
+                          type: 'spring',
+                          stiffness: 300,
+                          damping: 30
                         }}
                       />
                     )}
@@ -527,7 +529,7 @@ export default function BottomTabBar({
                     )}
                   </button>
                 </motion.div>
-                
+
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
@@ -540,7 +542,7 @@ export default function BottomTabBar({
               </motion.div>
             ))}
           </AnimatePresence>
-        </div>
+        </div> */}
       </div>
     </div>
   )

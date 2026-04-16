@@ -20,6 +20,13 @@ import React, { useState, useRef, useLayoutEffect } from 'react'
 import { interpolateMenuScore, borderColorFromScore } from '@/lib/menu/scoreSpectrum'
 import { useReducedMotion } from '@/lib/animations'
 
+/** Pre-sizes the thumbnail to the exact container dimensions (2× for retina).
+ *  Non-Cloudinary URLs are returned unchanged. */
+function cloudinaryCrop(url: string, w: number, h: number): string {
+  if (!url || !url.includes('/image/upload/')) return url
+  return url.replace('/image/upload/', `/image/upload/c_fill,w_${w},h_${h}/`)
+}
+
 export interface ThumbCardProps {
   name: string
   shortDesc?: string
@@ -110,7 +117,7 @@ export function ThumbCard({
           justifyContent: 'center',
         }}>
           {thumbnail ? (
-            <img src={thumbnail} alt="" style={{ width: '100%', height: '100%', objectFit: 'fill', display: 'block' }} />
+            <img src={cloudinaryCrop(thumbnail, 208, 144)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
           ) : (
             <span style={{ fontSize: 9, color: '#8a8480', textAlign: 'center', padding: 8, lineHeight: 1.4 }}>
               No thumbnail

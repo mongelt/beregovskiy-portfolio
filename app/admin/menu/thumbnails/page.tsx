@@ -5,8 +5,14 @@
  * /admin/menu/thumbnails
  *
  * List view: table of all content items with thumbnail status.
- * Capture view: render content_body in read-only BlockNote, crop + capture
- *               via html2canvas, upload to Cloudinary, save URL to Supabase.
+ *
+ * Capture flows by content type:
+ *   article — render content_body in read-only BlockNote, crop + capture
+ *             via html2canvas, upload to Cloudinary, save URL to Supabase.
+ *   image   — item has a single image_url; save it directly as menu_thumbnail_url
+ *             (already on Cloudinary — no re-upload needed).
+ *   audio   — generate a static waveform SVG canvas, upload to Cloudinary,
+ *             save URL to Supabase.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -27,8 +33,11 @@ const BlockNoteReadOnly = dynamic(
 interface ContentItem {
   id: string
   title: string
+  type: string
   menu_thumbnail_url: string | null
   content_body?: any
+  image_url?: string | null
+  audio_url?: string | null
 }
 
 // Crop dimensions (logical pixels) — matches prototype spec
@@ -44,14 +53,111 @@ function extractCloudinaryPublicId(url: string): string | null {
 }
 
 // Zoom-out factor applied to the BlockNote content before capture.
-// The content renders at CROP_W / CONTENT_ZOOM = 510px (1.5× wider),
-// then is scaled down via CSS zoom to fit the 340px capture frame.
-// This shows 50% more document area, matching the prototype zoom level.
 const CONTENT_ZOOM = 2 / 3
+
+// ---------------------------------------------------------------------------
+// Waveform canvas generator (audio type)
+// ---------------------------------------------------------------------------
+
+/**
+ * Draws a static waveform visual on a canvas and returns a PNG data URL.
+ * Uses multi-frequency sine waves to produce a realistic-looking waveform shape.
+ * Colors match the BlockNote Audio block design: #6B2A2A bars on #c7c7c2 background.
+ */
+function generateWaveformDataUrl(): string {
+  const W = CROP_W * 2   // 2× for retina quality
+  const H = CROP_H * 2
+  const canvas = document.createElement('canvas')
+  canvas.width = W
+  canvas.height = H
+  const ctx = canvas.getContext('2d')!
+
+  // Background
+  ctx.fillStyle = '#c7c7c2'
+  ctx.fillRect(0, 0, W, H)
+
+  const BAR_COUNT = 58
+  const BAR_GAP = 4          // gap between bars (unscaled, canvas units)
+  const WAVEFORM_W = W * 0.86
+  const BAR_W = (WAVEFORM_W - (BAR_COUNT - 1) * BAR_GAP) / BAR_COUNT
+  const WAVEFORM_X = (W - WAVEFORM_W) / 2
+  const MAX_H = H * 0.72
+  const MIN_H = H * 0.03
+  const CENTER_Y = H * 0.50
+
+  for (let i = 0; i < BAR_COUNT; i++) {
+    const t = i / (BAR_COUNT - 1)
+
+    // Attack-sustain-decay envelope: tapers at both ends
+    const envelope = Math.sin(t * Math.PI)
+
+    // Multi-frequency waveform detail
+    const detail =
+      0.50 +
+      Math.sin(t * Math.PI * 2.0) * 0.14 +
+      Math.sin(t * Math.PI * 5.7) * 0.10 +
+      Math.sin(t * Math.PI * 13.3) * 0.07 +
+      Math.sin(t * Math.PI * 29.1) * 0.04 +
+      Math.sin(t * Math.PI * 53.7) * 0.02
+
+    const normalized = Math.max(0, Math.min(1, detail)) * envelope
+    const h = MIN_H + normalized * (MAX_H - MIN_H)
+    const x = WAVEFORM_X + i * (BAR_W + BAR_GAP)
+
+    // Primary bar — solid accent color
+    ctx.fillStyle = '#6B2A2A'
+    ctx.fillRect(Math.round(x), Math.round(CENTER_Y - h / 2), Math.round(BAR_W), Math.round(h))
+
+    // Reflection — softer, below center (matches wavesurfer's mirrored look)
+    ctx.fillStyle = 'rgba(107, 42, 42, 0.28)'
+    const reflectH = h * 0.45
+    ctx.fillRect(Math.round(x), Math.round(CENTER_Y + h / 2), Math.round(BAR_W), Math.round(reflectH))
+  }
+
+  return canvas.toDataURL('image/png')
+}
+
+// ---------------------------------------------------------------------------
+// Shared upload helper
+// ---------------------------------------------------------------------------
+
+async function uploadDataUrlToCloudinary(dataUrl: string): Promise<string> {
+  const res = await fetch(dataUrl)
+  const blob = await res.blob()
+  const file = new File([blob], 'menu-thumbnail.png', { type: 'image/png' })
+
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!)
+  const uploadRes = await fetch(
+    `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+    { method: 'POST', body: formData }
+  )
+  const data = await uploadRes.json()
+  if (!data.secure_url) throw new Error(data?.error?.message || 'Cloudinary upload failed')
+  return data.secure_url
+}
+
+async function deleteOldThumbnail(url: string): Promise<void> {
+  const publicId = extractCloudinaryPublicId(url)
+  if (!publicId) return
+  await fetch('/api/cloudinary-delete', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ public_id: publicId }),
+  })
+}
 
 // ---------------------------------------------------------------------------
 // List row
 // ---------------------------------------------------------------------------
+
+const TYPE_LABEL: Record<string, string> = {
+  article: 'Article',
+  image: 'Image',
+  audio: 'Audio',
+  video: 'Video',
+}
 
 function ThumbnailRow({
   item,
@@ -63,6 +169,11 @@ function ThumbnailRow({
   return (
     <tr className="border-b border-gray-800 hover:bg-gray-900/50">
       <td className="px-4 py-3 text-gray-200 max-w-xs truncate">{item.title}</td>
+      <td className="px-4 py-3">
+        <span className="text-xs text-gray-500 bg-gray-800 px-2 py-0.5 rounded">
+          {TYPE_LABEL[item.type] ?? item.type}
+        </span>
+      </td>
       <td className="px-4 py-3">
         {item.menu_thumbnail_url ? (
           <div className="flex items-center gap-3">
@@ -93,10 +204,192 @@ function ThumbnailRow({
 }
 
 // ---------------------------------------------------------------------------
-// Capture tool
+// Image type tool
 // ---------------------------------------------------------------------------
 
-function CaptureTool({
+function ImageThumbnailTool({
+  item,
+  onClose,
+  onSaved,
+}: {
+  item: ContentItem
+  onClose: () => void
+  onSaved: (id: string, url: string) => void
+}) {
+  const supabase = createClient()
+  const [saving, setSaving] = useState(false)
+  const [status, setStatus] = useState<string | null>(null)
+
+  async function handleSave() {
+    if (!item.image_url) return
+    setSaving(true)
+    setStatus(null)
+    try {
+      // Delete old thumbnail if present (it's a separate Cloudinary asset from the image itself)
+      if (item.menu_thumbnail_url) {
+        await deleteOldThumbnail(item.menu_thumbnail_url)
+      }
+      // Save image_url directly — it is already hosted on Cloudinary
+      const { error } = await supabase
+        .from('content')
+        .update({ menu_thumbnail_url: item.image_url })
+        .eq('id', item.id)
+      if (error) throw error
+      setStatus('Saved!')
+      onSaved(item.id, item.image_url!)
+    } catch (err: any) {
+      setStatus(`Failed: ${err.message}`)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-white">Set Thumbnail — Image</h2>
+          <p className="text-sm text-gray-400 mt-0.5 max-w-xl truncate">{item.title}</p>
+        </div>
+        <button
+          onClick={onClose}
+          className="text-gray-400 hover:text-white text-sm px-3 py-1.5 rounded border border-gray-700 hover:border-gray-500 transition-colors"
+        >
+          ← Back to list
+        </button>
+      </div>
+
+      {item.image_url ? (
+        <div className="flex gap-8 items-start">
+          <div className="flex flex-col gap-3">
+            <p className="text-xs text-gray-400">
+              The item's uploaded image will be used as the thumbnail.
+            </p>
+            <img
+              src={item.image_url}
+              alt="Item image"
+              style={{
+                width: CROP_W,
+                height: CROP_H,
+                objectFit: 'cover',
+                border: '2px solid #fc5454',
+                borderRadius: 4,
+              }}
+            />
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="bg-emerald-700 hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm px-4 py-2 rounded transition-colors"
+            >
+              {saving ? 'Saving…' : 'Use as thumbnail'}
+            </button>
+            {status && (
+              <p className={`text-sm ${status === 'Saved!' ? 'text-emerald-400' : 'text-red-400'}`}>
+                {status}
+              </p>
+            )}
+          </div>
+        </div>
+      ) : (
+        <p className="text-gray-500 text-sm">No image URL found for this item.</p>
+      )}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Audio type tool
+// ---------------------------------------------------------------------------
+
+function AudioThumbnailTool({
+  item,
+  onClose,
+  onSaved,
+}: {
+  item: ContentItem
+  onClose: () => void
+  onSaved: (id: string, url: string) => void
+}) {
+  const supabase = createClient()
+  const [previewUrl] = useState<string>(() => generateWaveformDataUrl())
+  const [uploading, setUploading] = useState(false)
+  const [status, setStatus] = useState<string | null>(null)
+
+  async function handleSave() {
+    setUploading(true)
+    setStatus(null)
+    try {
+      if (item.menu_thumbnail_url) {
+        await deleteOldThumbnail(item.menu_thumbnail_url)
+      }
+      const secureUrl = await uploadDataUrlToCloudinary(previewUrl)
+      const { error } = await supabase
+        .from('content')
+        .update({ menu_thumbnail_url: secureUrl })
+        .eq('id', item.id)
+      if (error) throw error
+      setStatus('Saved!')
+      onSaved(item.id, secureUrl)
+    } catch (err: any) {
+      setStatus(`Failed: ${err.message}`)
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-white">Set Thumbnail — Audio</h2>
+          <p className="text-sm text-gray-400 mt-0.5 max-w-xl truncate">{item.title}</p>
+        </div>
+        <button
+          onClick={onClose}
+          className="text-gray-400 hover:text-white text-sm px-3 py-1.5 rounded border border-gray-700 hover:border-gray-500 transition-colors"
+        >
+          ← Back to list
+        </button>
+      </div>
+
+      <div className="flex gap-8 items-start">
+        <div className="flex flex-col gap-3">
+          <p className="text-xs text-gray-400">
+            Generated static waveform visual ({CROP_W}×{CROP_H}px).
+          </p>
+          <img
+            src={previewUrl}
+            alt="Waveform thumbnail preview"
+            style={{
+              width: CROP_W,
+              height: CROP_H,
+              border: '2px solid #fc5454',
+              borderRadius: 4,
+            }}
+          />
+          <button
+            onClick={handleSave}
+            disabled={uploading}
+            className="bg-emerald-700 hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm px-4 py-2 rounded transition-colors"
+          >
+            {uploading ? 'Uploading…' : 'Save waveform thumbnail'}
+          </button>
+          {status && (
+            <p className={`text-sm ${status === 'Saved!' ? 'text-emerald-400' : 'text-red-400'}`}>
+              {status}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Article type capture tool (BlockNote html2canvas flow)
+// ---------------------------------------------------------------------------
+
+function ArticleCaptureTool({
   item,
   onClose,
   onSaved,
@@ -107,9 +400,6 @@ function CaptureTool({
 }) {
   const supabase = createClient()
   const scrollRef = useRef<HTMLDivElement>(null)
-  const contentRef = useRef<HTMLDivElement>(null)
-  // Hidden unzoomed capture target — html2canvas cannot handle CSS zoom on ancestors.
-  // We keep the visible zoomed picker for framing, and capture from this instead.
   const captureRef = useRef<HTMLDivElement>(null)
   const [capturing, setCapturing] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -126,16 +416,9 @@ function CaptureTool({
     setPreviewUrl(null)
 
     try {
-      // Dynamic import to avoid SSR issues
       const html2canvas = (await import('html2canvas')).default
-
-      // Wait for all fonts to finish loading before capturing,
-      // otherwise custom web fonts fall back to system fonts in the canvas.
       await document.fonts.ready
 
-      // The hidden capture div is unzoomed (full 510px width, no CSS zoom).
-      // Map the visible picker's scroll position to the unzoomed coordinate space:
-      // visible scrollTop is in zoomed pixels → divide by CONTENT_ZOOM to get unzoomed pixels.
       const visibleScrollTop = scrollRef.current?.scrollTop ?? 0
       const captureScrollY = visibleScrollTop / CONTENT_ZOOM
 
@@ -143,7 +426,6 @@ function CaptureTool({
         useCORS: true,
         allowTaint: false,
         scale: 2,
-        // Capture CROP_W / CONTENT_ZOOM unzoomed pixels wide, which equals CROP_W zoomed pixels.
         width: Math.round(CROP_W / CONTENT_ZOOM),
         height: Math.round(CROP_H / CONTENT_ZOOM),
         y: captureScrollY,
@@ -151,7 +433,6 @@ function CaptureTool({
         backgroundColor: '#c7c7c2',
       })
 
-      // Show preview
       setPreviewUrl(canvas.toDataURL('image/png'))
       setCapturing(false)
     } catch (err) {
@@ -167,52 +448,17 @@ function CaptureTool({
     setStatus(null)
 
     try {
-      // Delete the existing Cloudinary asset before uploading the new one.
-      // Extracts public_id from the stored URL so old assets (any path format) are cleaned up.
       if (item.menu_thumbnail_url) {
-        const oldPublicId = extractCloudinaryPublicId(item.menu_thumbnail_url)
-        if (oldPublicId) {
-          await fetch('/api/cloudinary-delete', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ public_id: oldPublicId }),
-          })
-          // Deletion errors are non-fatal — proceed with upload regardless.
-        }
+        await deleteOldThumbnail(item.menu_thumbnail_url)
       }
-
-      // Convert data URL to blob
-      const res = await fetch(previewUrl)
-      const blob = await res.blob()
-      const file = new File([blob], 'menu-thumbnail.png', { type: 'image/png' })
-
-      // Upload to Cloudinary — same params as other uploads in the project
-      // (unsigned preset, no folder/public_id overrides).
-      // The old asset was already deleted above, so no orphan accumulates.
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!)
-      const uploadRes = await fetch(
-        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
-        { method: 'POST', body: formData }
-      )
-      const uploadData = await uploadRes.json()
-
-      if (!uploadData.secure_url) {
-        console.error('Cloudinary response:', uploadData)
-        throw new Error(uploadData?.error?.message || 'Cloudinary upload failed')
-      }
-
-      // Save to Supabase
+      const secureUrl = await uploadDataUrlToCloudinary(previewUrl)
       const { error } = await supabase
         .from('content')
-        .update({ menu_thumbnail_url: uploadData.secure_url })
+        .update({ menu_thumbnail_url: secureUrl })
         .eq('id', item.id)
-
       if (error) throw error
-
       setStatus('Saved!')
-      onSaved(item.id, uploadData.secure_url)
+      onSaved(item.id, secureUrl)
     } catch (err: any) {
       console.error('Upload error:', err)
       setStatus(`Upload failed: ${err.message}`)
@@ -223,10 +469,9 @@ function CaptureTool({
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-white">Set Thumbnail</h2>
+          <h2 className="text-lg font-semibold text-white">Set Thumbnail — Article</h2>
           <p className="text-sm text-gray-400 mt-0.5 max-w-xl truncate">{item.title}</p>
         </div>
         <button
@@ -238,15 +483,12 @@ function CaptureTool({
       </div>
 
       <div className="flex gap-8 items-start">
-        {/* Content preview + crop area */}
         <div className="flex flex-col gap-3">
           <p className="text-xs text-gray-400">
             Scroll within the frame to position the thumbnail area ({CROP_W}×{CROP_H}px).
           </p>
 
-          {/* Crop frame container */}
           <div className="relative" style={{ width: CROP_W }}>
-            {/* Scrollable content window — user scrolls to position */}
             <div
               ref={scrollRef}
               className="overflow-y-auto overflow-x-hidden"
@@ -259,15 +501,8 @@ function CaptureTool({
                 position: 'relative',
               }}
             >
-              {/* contentRef: 340px wide — html2canvas target, coordinate origin */}
-              <div ref={contentRef} style={{ width: CROP_W, background: '#c7c7c2', color: '#1a1a1a' }}>
+              <div style={{ width: CROP_W, background: '#c7c7c2', color: '#1a1a1a' }}>
                 {hasContent ? (
-                  /*
-                   * Zoom-out wrapper: BlockNote renders at CROP_W / CONTENT_ZOOM = 510px
-                   * (1.5× the capture width), then CSS zoom shrinks it to 340px visually.
-                   * Result: 50% more document area visible in the same crop frame.
-                   * Matches the prototype's document-to-thumbnail scale ratio.
-                   */
                   <div style={{ width: Math.round(CROP_W / CONTENT_ZOOM), zoom: CONTENT_ZOOM }}>
                     <BlockNoteReadOnly content={item.content_body} />
                   </div>
@@ -282,22 +517,12 @@ function CaptureTool({
               </div>
             </div>
 
-            {/* Crop label */}
-            <div
-              className="text-xs text-red-400/80 mt-1 text-right"
-              style={{ width: CROP_W }}
-            >
+            <div className="text-xs text-red-400/80 mt-1 text-right" style={{ width: CROP_W }}>
               {CROP_W}×{CROP_H}px capture area
             </div>
           </div>
 
-          {/*
-           * Hidden unzoomed capture target.
-           * Rendered at the true 510px width with no CSS zoom so html2canvas
-           * gets clean, undistorted DOM measurements.
-           * position:fixed keeps it out of document flow; opacity:0 + pointer-events:none
-           * make it invisible and non-interactive.
-           */}
+          {/* Hidden unzoomed capture target */}
           <div
             style={{
               position: 'fixed',
@@ -314,7 +539,6 @@ function CaptureTool({
             {hasContent && <BlockNoteReadOnly content={item.content_body} />}
           </div>
 
-          {/* Capture button */}
           <button
             onClick={handleCapture}
             disabled={capturing || !hasContent}
@@ -324,7 +548,6 @@ function CaptureTool({
           </button>
         </div>
 
-        {/* Preview + upload */}
         {previewUrl && (
           <div className="flex flex-col gap-3">
             <p className="text-xs text-gray-400">Preview (shown at half scale):</p>
@@ -355,9 +578,7 @@ function CaptureTool({
               </button>
             </div>
             {status && (
-              <p
-                className={`text-sm ${status === 'Saved!' ? 'text-emerald-400' : 'text-red-400'}`}
-              >
+              <p className={`text-sm ${status === 'Saved!' ? 'text-emerald-400' : 'text-red-400'}`}>
                 {status}
               </p>
             )}
@@ -366,6 +587,29 @@ function CaptureTool({
       </div>
     </div>
   )
+}
+
+// ---------------------------------------------------------------------------
+// CaptureTool — routes to the right sub-tool by content type
+// ---------------------------------------------------------------------------
+
+function CaptureTool({
+  item,
+  onClose,
+  onSaved,
+}: {
+  item: ContentItem
+  onClose: () => void
+  onSaved: (id: string, url: string) => void
+}) {
+  if (item.type === 'image') {
+    return <ImageThumbnailTool item={item} onClose={onClose} onSaved={onSaved} />
+  }
+  if (item.type === 'audio') {
+    return <AudioThumbnailTool item={item} onClose={onClose} onSaved={onSaved} />
+  }
+  // article (and any other BlockNote-based type)
+  return <ArticleCaptureTool item={item} onClose={onClose} onSaved={onSaved} />
 }
 
 // ---------------------------------------------------------------------------
@@ -388,7 +632,7 @@ export default function ThumbnailsPage() {
     setError(null)
     const { data, error } = await supabase
       .from('content')
-      .select('id, title, menu_thumbnail_url')
+      .select('id, title, type, menu_thumbnail_url')
       .order('title')
 
     if (error) {
@@ -401,10 +645,9 @@ export default function ThumbnailsPage() {
 
   const handleSetThumbnail = useCallback(
     async (id: string) => {
-      // Load the full content_body for this item
       const { data, error } = await supabase
         .from('content')
-        .select('id, title, menu_thumbnail_url, content_body')
+        .select('id, title, type, menu_thumbnail_url, content_body, image_url, audio_url')
         .eq('id', id)
         .single()
 
@@ -426,7 +669,6 @@ export default function ThumbnailsPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
-      {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
         <Link href="/admin/menu" className="hover:text-gray-300 transition-colors">
           Menu Admin
@@ -462,6 +704,7 @@ export default function ThumbnailsPage() {
                 <thead>
                   <tr className="border-b border-gray-800 bg-gray-900">
                     <th className="px-4 py-3 text-left text-gray-400 font-medium">Title</th>
+                    <th className="px-4 py-3 text-left text-gray-400 font-medium">Type</th>
                     <th className="px-4 py-3 text-left text-gray-400 font-medium">Thumbnail</th>
                     <th className="px-4 py-3 text-left text-gray-400 font-medium">Action</th>
                   </tr>
@@ -469,7 +712,7 @@ export default function ThumbnailsPage() {
                 <tbody>
                   {items.length === 0 && (
                     <tr>
-                      <td colSpan={3} className="px-4 py-8 text-center text-gray-500">
+                      <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
                         No content items found.
                       </td>
                     </tr>
@@ -486,7 +729,6 @@ export default function ThumbnailsPage() {
             </div>
           )}
 
-          {/* Summary */}
           {!loading && !error && items.length > 0 && (
             <p className="text-xs text-gray-600 mt-3">
               {items.filter((i) => i.menu_thumbnail_url).length} of {items.length} items have

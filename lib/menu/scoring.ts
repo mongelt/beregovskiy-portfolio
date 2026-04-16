@@ -307,10 +307,15 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 /**
- * Combines structural (70%) and tag (30%) signals.
+ * Structural baseline + proportional tag bonus.
+ * Tags fill up to 30% of remaining headroom above the structural score.
+ * Untagged items score their structural value exactly. Tagged items are lifted
+ * toward 1.0 proportionally — the higher the structural score, the less headroom
+ * tags can fill (perfect structural match is unaffected).
  */
 export function combineScores(structural: number, tagSimilarity: number): number {
-  return clamp(structural * 0.70 + tagSimilarity * 0.30, 0.0, 1.0)
+  const tagBonus = tagSimilarity * (1.0 - structural) * 0.30
+  return clamp(structural + tagBonus, 0.0, 1.0)
 }
 
 /**

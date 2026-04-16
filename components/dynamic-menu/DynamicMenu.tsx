@@ -17,7 +17,7 @@
  *   └── Row 2 (flex-shrink: 0) — CollectionPlane
  */
 
-import { useMemo, useCallback } from 'react'
+import { useMemo, useCallback, useEffect, useRef } from 'react'
 import {
   useMenuState,
   deriveNavState,
@@ -129,6 +129,17 @@ export interface DynamicMenuProps {
    * In PortfolioContent this is handleMainMenuClick (sets pageState → 'expanded-empty').
    */
   onExpand?: () => void
+  /**
+   * Content ID activated from outside the menu (BlockNote buttons, resume side cards,
+   * shared URLs). When this changes the menu selects that content and triggers the reader,
+   * exactly as if the user had clicked the item inside the menu.
+   */
+  externalActiveContentId?: string | null
+  /**
+   * Collection slug activated from outside the menu (BlockNote pills, shared URLs).
+   * When this changes the menu selects that collection and expands.
+   */
+  externalActiveCollectionSlug?: string | null
 }
 
 // ---------------------------------------------------------------------------
@@ -144,6 +155,8 @@ export function DynamicMenu({
   onContentSelect,
   isCollapsed = false,
   onExpand,
+  externalActiveContentId,
+  externalActiveCollectionSlug,
 }: DynamicMenuProps) {
   // -------------------------------------------------------------------------
   // Stable ID arrays (for useMenuState validation)
@@ -157,6 +170,10 @@ export function DynamicMenu({
   // -------------------------------------------------------------------------
   // Navigation state
   // -------------------------------------------------------------------------
+
+  // Tracks which external content ID has already been activated, so the effect
+  // doesn't double-fire when content data loads after the prop is set.
+  const externalContentTriggeredRef = useRef<string | null>(null)
 
   const {
     state: menuState,
@@ -485,10 +502,13 @@ export function DynamicMenu({
     (id: string) => {
       const item = content.find(c => c.id === id)
       if (!item) return
+      // Always anchor to the item's subcategory+category so the menu opens
+      // in the correct state when expanded after content selection (State 3 anchor).
+      if (item.subcategory_id) selectSubcategory(item.subcategory_id)
       selectContent(id)
       onContentSelect(item)
     },
-    [content, selectContent, onContentSelect],
+    [content, selectSubcategory, selectContent, onContentSelect],
   )
 
   const handleSubheaderClick = useCallback(
@@ -499,27 +519,82 @@ export function DynamicMenu({
   )
 
   // -------------------------------------------------------------------------
+  // External activation (Stage 18)
+  // Triggered when content/collection is opened from outside the menu:
+  // BlockNote buttons, resume side cards, shared URLs.
+  // -------------------------------------------------------------------------
+
+  useEffect(() => {
+    if (!externalActiveContentId) return
+    // Guard: if we already activated this ID, don't re-fire when content array re-renders
+    if (externalContentTriggeredRef.current === externalActiveContentId) return
+    const item = content.find(c => c.id === externalActiveContentId)
+    // Content data may not be loaded yet — the effect will re-run when content changes
+    if (!item) return
+    externalContentTriggeredRef.current = externalActiveContentId
+    if (item.subcategory_id) selectSubcategory(item.subcategory_id)
+    selectContent(externalActiveContentId)
+    onContentSelect(item)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalActiveContentId, content])
+
+  useEffect(() => {
+    if (!externalActiveCollectionSlug) return
+    const col = collections.find(c => c.slug === externalActiveCollectionSlug)
+    if (!col) return
+    selectCollection(col.id)
+    onExpand?.()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalActiveCollectionSlug])
+
+  // -------------------------------------------------------------------------
   // Collapsed bar data (Stage 13)
   // -------------------------------------------------------------------------
 
-  /** Category shown in the collapsed breadcrumb */
+  /** Category shown in the collapsed breadcrumb.
+   *  Falls back to the active content's parent category when no category is
+   *  explicitly selected — covers the case where content was opened externally. */
   const collapsedCategoryData = useMemo(() => {
-    const id = menuState.activeCategoryId
+    let id = menuState.activeCategoryId
+    if (!id && menuState.activeContentId) {
+      const item = content.find(c => c.id === menuState.activeContentId)
+      if (item?.subcategory_id) {
+        const sub = subcategories.find(s => s.id === item.subcategory_id)
+        id = sub?.category_id ?? null
+      }
+    }
     if (!id) return null
     return scoredCategories.find(c => c.id === id) ?? null
-  }, [menuState.activeCategoryId, scoredCategories])
+  }, [menuState.activeCategoryId, menuState.activeContentId, content, subcategories, scoredCategories])
 
-  /** Subcategory shown in the collapsed breadcrumb */
+  /** Subcategory shown in the collapsed breadcrumb.
+   *  Falls back to the active content's subcategory when none is explicitly selected. */
   const collapsedSubcategoryData = useMemo((): BarSubcategoryData | null => {
-    const id = menuState.activeSubcategoryId
+    let id = menuState.activeSubcategoryId
+    if (!id && menuState.activeContentId) {
+      const item = content.find(c => c.id === menuState.activeContentId)
+      id = item?.subcategory_id ?? null
+    }
     if (!id) return null
     // scoredSubcategories is only computed when activeCategoryId is set
     const scored = scoredSubcategories.find(s => s.id === id)
-    if (scored) return { id: scored.id, name: scored.name, shortDesc: scored.shortDesc, desc: scored.desc, score: scored.score }
-    // Fallback to raw subcategory (edge case: no active category in stored state)
+    if (scored) return {
+      id: scored.id,
+      name: scored.name,
+      shortDesc: scored.shortDesc,
+      desc: scored.desc,
+      score: scored.score,
+      thumbnails: scored.thumbnails ?? [],
+    }
+    // Fallback to raw subcategory — derive thumbnails from content
     const raw = subcategories.find(s => s.id === id)
-    return raw ? { id: raw.id, name: raw.name, score: 0.8 } : null
-  }, [menuState.activeSubcategoryId, scoredSubcategories, subcategories])
+    if (!raw) return null
+    const thumbnails = contentWithCollectionIds
+      .filter(c => c.subcategory_id === id && (c.menu_thumbnail_url || c.image_url))
+      .slice(0, 5)
+      .map(c => (c.menu_thumbnail_url ?? c.image_url)!)
+    return { id: raw.id, name: raw.name, score: 0.8, thumbnails }
+  }, [menuState.activeSubcategoryId, menuState.activeContentId, content, subcategories, scoredSubcategories, contentWithCollectionIds])
 
   /** Active content item shown in the collapsed breadcrumb */
   const collapsedContentData = useMemo((): BarContentData | null => {
@@ -649,7 +724,7 @@ export function DynamicMenu({
         left: 0,
         width: '100%',
         bottom: '64px',
-        overflow: 'hidden',
+        overflow: 'visible',
         display: 'flex',
         flexDirection: 'column',
         padding: '8px',
@@ -697,9 +772,7 @@ export function DynamicMenu({
             className="dm-content-wrapper"
             style={{
               flex: 1,
-              overflowX: 'auto',
-              overflowY: 'visible',
-              scrollbarWidth: 'none',
+              overflow: 'visible',
               minHeight: 0,
             }}
           >

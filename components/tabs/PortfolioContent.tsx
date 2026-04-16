@@ -136,6 +136,10 @@ interface PortfolioContentProps {
   onMenuExpandedChange?: (isExpanded: boolean) => void
   selectedContentIdFromResume?: string | null // Content ID to auto-select when coming from Resume (mobile only)
   onContentSelectedFromResume?: () => void // Callback to clear the selectedContentId after selection
+  /** Content ID activated externally (BlockNote, shared URL, resume side card on desktop with new menu) */
+  externalActiveContentId?: string | null
+  /** Collection slug activated externally (BlockNote, shared URL) */
+  externalActiveCollectionSlug?: string | null
   // State memory props to persist across remounts
   savedMenuState?: PageState | null // Saved menu state from previous visit
   savedSelectedContentId?: string | null // Saved content ID from previous visit
@@ -155,6 +159,8 @@ export default function PortfolioContent({
   onMenuExpandedChange,
   selectedContentIdFromResume = null,
   onContentSelectedFromResume,
+  externalActiveContentId = null,
+  externalActiveCollectionSlug = null,
   savedMenuState = null,
   savedSelectedContentId = null,
   savedSelectedCategoryId = null,
@@ -211,9 +217,9 @@ export default function PortfolioContent({
     selectedSubcategoryRef.current = selectedSubcategory
   }, [selectedSubcategory])
 
-  const [useNewMenu, setUseNewMenu] = useState(false)
+  const [useNewMenu, setUseNewMenu] = useState(true)
   useEffect(() => {
-    setUseNewMenu(localStorage.getItem('dm_new_grid') === 'true')
+    setUseNewMenu(localStorage.getItem('dm_new_grid') !== 'false')
   }, [])
 
   const [titleInView, setTitleInView] = useState<boolean>(true)
@@ -1648,6 +1654,8 @@ export default function PortfolioContent({
             onContentSelect={handleContentSelect}
             isCollapsed={pageState === 'collapsed-reader'}
             onExpand={handleMainMenuClick}
+            externalActiveContentId={externalActiveContentId}
+            externalActiveCollectionSlug={externalActiveCollectionSlug}
           />
         ) : (
           <div

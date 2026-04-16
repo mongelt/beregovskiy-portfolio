@@ -25,7 +25,11 @@ export default function AudioPlayer({ audioUrl }: AudioPlayerProps) {
         if (lastUrlRef.current === audioUrl && wavesurferRef.current) {
           return
         }
-        const WaveSurfer = (await import('wavesurfer.js')).default
+
+        const [WaveSurfer, HoverPlugin] = await Promise.all([
+          import('wavesurfer.js').then((m) => m.default),
+          import('wavesurfer.js/dist/plugins/hover.esm.js').then((m) => m.default),
+        ])
 
         if (wavesurferRef.current) {
           wavesurferRef.current.destroy()
@@ -38,49 +42,48 @@ export default function AudioPlayer({ audioUrl }: AudioPlayerProps) {
 
         const wavesurfer = WaveSurfer.create({
           container: waveformRef.current!,
-          waveColor: '#60a5fa',
-          progressColor: '#3b82f6',
-          cursorColor: '#ffffff',
+          waveColor: '#6B2A2A',
+          progressColor: '#A85A5A',
+          cursorColor: '#1a1a1a',
           barWidth: 2,
-          barRadius: 3,
-          height: 100,
+          barRadius: 1,
+          height: 80,
           normalize: true,
-          backend: 'WebAudio',
-          mediaControls: false,
+          plugins: [
+            HoverPlugin.create({
+              lineColor: '#6B2A2A',
+              lineWidth: 1,
+              labelColor: '#1a1a1a',
+              labelBackground: '#E9E3E0',
+              labelSize: 11,
+            }),
+          ],
+        })
+
+        wavesurfer.on('ready', () => {
+          if (isMounted) setWaveformReady(true)
+        })
+        wavesurfer.on('play', () => {
+          if (isMounted) setIsPlaying(true)
+        })
+        wavesurfer.on('pause', () => {
+          if (isMounted) setIsPlaying(false)
+        })
+        wavesurfer.on('finish', () => {
+          if (isMounted) setIsPlaying(false)
         })
 
         await wavesurfer.load(audioUrl)
         lastUrlRef.current = audioUrl
-        
-        wavesurfer.on('play', () => {
-          if (isMounted) {
-            setIsPlaying(true)
-          }
-        })
-        
-        wavesurfer.on('pause', () => {
-          if (isMounted) {
-            setIsPlaying(false)
-          }
-        })
-        
-        wavesurfer.on('finish', () => {
-          if (isMounted) {
-            setIsPlaying(false)
-          }
-        })
-        
+
         if (isMounted) {
           wavesurferRef.current = wavesurfer
-          setWaveformReady(true)
         } else {
           wavesurfer.destroy()
         }
       } catch (error) {
         console.error('Failed to initialize waveform:', error)
-        if (isMounted) {
-          setWaveformReady(false)
-        }
+        if (isMounted) setWaveformReady(false)
       }
     }
 
@@ -99,55 +102,131 @@ export default function AudioPlayer({ audioUrl }: AudioPlayerProps) {
     }
   }, [audioUrl])
 
-  const handlePlayPause = () => {
-    if (wavesurferRef.current) {
-      wavesurferRef.current.playPause()
-    }
-  }
-
+  const handlePlayPause = () => wavesurferRef.current?.playPause()
   const handleStop = () => {
-    if (wavesurferRef.current) {
-      wavesurferRef.current.stop()
-      setIsPlaying(false)
-    }
+    wavesurferRef.current?.stop()
+    setIsPlaying(false)
   }
 
-  if (!audioUrl) {
-    return null
-  }
+  if (!audioUrl) return null
 
   return (
-    <div className="my-8 flex flex-col items-center space-y-4">
-      <div 
-        ref={waveformRef} 
-        className="w-[75%] bg-gray-900 rounded-md p-4 border border-gray-800"
+    <div
+      className="my-8"
+      style={{
+        borderRadius: 8,
+        padding: 20,
+        border: '1px solid var(--border-card, #b8b0aa)',
+        background: 'transparent',
+        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+      }}
+      onMouseEnter={(e) => {
+        const el = e.currentTarget as HTMLDivElement
+        el.style.transform = 'translateY(-2px)'
+        el.style.boxShadow = '0 4px 12px rgba(0,0,0,0.12)'
+      }}
+      onMouseLeave={(e) => {
+        const el = e.currentTarget as HTMLDivElement
+        el.style.transform = ''
+        el.style.boxShadow = ''
+      }}
+    >
+      <div
+        ref={waveformRef}
+        style={{
+          width: '100%',
+          borderRadius: 4,
+          background: 'var(--bg-main, #c7c7c2)',
+          overflow: 'hidden',
+        }}
       />
-      
+
+      {!waveformReady && (
+        <p
+          style={{
+            fontFamily: "var(--font-body, 'Public Sans', sans-serif)",
+            fontSize: '0.875rem',
+            color: 'var(--text-metadata, #5a5a5a)',
+            textAlign: 'center',
+            padding: '8px 0',
+          }}
+        >
+          Loading waveform…
+        </p>
+      )}
+
       {waveformReady && (
-        <div className="flex items-center justify-center gap-4">
+        <div
+          style={{
+            display: 'flex',
+            gap: 10,
+            justifyContent: 'center',
+            alignItems: 'center',
+            marginTop: 10,
+          }}
+        >
           <button
             onClick={handlePlayPause}
-            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors"
             aria-label={isPlaying ? 'Pause' : 'Play'}
+            style={{
+              padding: '8px 16px',
+              background: 'transparent',
+              color: 'var(--accent-light, #6B2A2A)',
+              border: '1px solid var(--accent-light, #6B2A2A)',
+              borderRadius: 4,
+              cursor: 'pointer',
+              fontFamily: "var(--font-ui, 'Space Grotesk', sans-serif)",
+              fontSize: '0.9rem',
+              fontWeight: 600,
+              transition: 'background 0.2s ease, border-color 0.2s ease, color 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              const el = e.currentTarget
+              el.style.background = 'rgba(107, 42, 42, 0.1)'
+              el.style.borderColor = 'var(--accent-emerald-300, #A85A5A)'
+              el.style.color = 'var(--accent-emerald-300, #A85A5A)'
+            }}
+            onMouseLeave={(e) => {
+              const el = e.currentTarget
+              el.style.background = 'transparent'
+              el.style.borderColor = 'var(--accent-light, #6B2A2A)'
+              el.style.color = 'var(--accent-light, #6B2A2A)'
+            }}
           >
             {isPlaying ? 'Pause' : 'Play'}
           </button>
           <button
             onClick={handleStop}
-            className="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md font-medium transition-colors"
             aria-label="Stop"
+            style={{
+              padding: '8px 16px',
+              background: 'transparent',
+              color: 'var(--accent-light, #6B2A2A)',
+              border: '1px solid var(--accent-light, #6B2A2A)',
+              borderRadius: 4,
+              cursor: 'pointer',
+              fontFamily: "var(--font-ui, 'Space Grotesk', sans-serif)",
+              fontSize: '0.9rem',
+              fontWeight: 600,
+              transition: 'background 0.2s ease, border-color 0.2s ease, color 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              const el = e.currentTarget
+              el.style.background = 'rgba(107, 42, 42, 0.1)'
+              el.style.borderColor = 'var(--accent-emerald-300, #A85A5A)'
+              el.style.color = 'var(--accent-emerald-300, #A85A5A)'
+            }}
+            onMouseLeave={(e) => {
+              const el = e.currentTarget
+              el.style.background = 'transparent'
+              el.style.borderColor = 'var(--accent-light, #6B2A2A)'
+              el.style.color = 'var(--accent-light, #6B2A2A)'
+            }}
           >
             Stop
           </button>
         </div>
       )}
-      
-      {!waveformReady && (
-        <div className="text-center text-gray-400 text-sm">
-          Loading waveform...
-        </div>
-      )}
     </div>
   )
 }
-

@@ -48,6 +48,12 @@ export default function Home() {
     categoryId: string | null
     subcategoryId: string | null
   }>({ pageState: null, contentId: null, categoryId: null, subcategoryId: null })
+  // Externally-activated content/collection for the new menu (Stage 18).
+  // When new menu is active on desktop, external triggers (BlockNote, Resume side cards,
+  // shared URLs) activate items inside the menu instead of opening legacy tabs.
+  const [externalMenuContentId, setExternalMenuContentId] = useState<string | null>(null)
+  const [externalMenuCollectionSlug, setExternalMenuCollectionSlug] = useState<string | null>(null)
+
   const profileRef = useRef<ProfileRef>(null)
   const urlAppliedRef = useRef(false)
   const lastDownloadContextRef = useRef<{
@@ -150,20 +156,32 @@ export default function Home() {
         setActiveTab('resume')
       }
 
+      const useNewMenu = localStorage.getItem('dm_new_grid') !== 'false'
+
       if (contentId) {
-        setActiveContents(prev => {
-          if (prev.find(c => c.id === contentId)) return prev
-          return [...prev, { id: contentId, title: 'Loading…' }]
-        })
-        setActiveTab(contentId)
+        if (useNewMenu && !isMobile) {
+          setExternalMenuContentId(contentId)
+          setActiveTab('portfolio')
+        } else {
+          setActiveContents(prev => {
+            if (prev.find(c => c.id === contentId)) return prev
+            return [...prev, { id: contentId, title: 'Loading…' }]
+          })
+          setActiveTab(contentId)
+        }
       }
 
       if (collectionSlug) {
-        setActiveCollections(prev => {
-          if (prev.find(c => c.slug === collectionSlug)) return prev
-          return [...prev, { slug: collectionSlug, name: collectionSlug }]
-        })
-        setActiveTab(collectionSlug)
+        if (useNewMenu && !isMobile) {
+          setExternalMenuCollectionSlug(collectionSlug)
+          setActiveTab('portfolio')
+        } else {
+          setActiveCollections(prev => {
+            if (prev.find(c => c.slug === collectionSlug)) return prev
+            return [...prev, { slug: collectionSlug, name: collectionSlug }]
+          })
+          setActiveTab(collectionSlug)
+        }
       }
     } catch (err) {
       console.error('Failed to apply URL params', err)
@@ -222,6 +240,14 @@ export default function Home() {
   }
 
   const handleOpenCollection = (slug: string, name: string) => {
+    // New menu (desktop): activate collection inside the menu instead of opening a legacy tab
+    const useNewMenu = typeof window !== 'undefined' && localStorage.getItem('dm_new_grid') !== 'false'
+    if (useNewMenu && !isMobile) {
+      setExternalMenuCollectionSlug(slug)
+      setActiveTab('portfolio')
+      return
+    }
+    // Legacy: open collection tab
     if (!activeCollections.find(c => c.slug === slug)) {
       setActiveCollections(prev => [...prev, { slug, name }])
     }
@@ -229,19 +255,24 @@ export default function Home() {
   }
 
   const handleOpenContent = (id: string, title: string) => {
-    // In mobile, when clicking content asset from Resume tab, switch to Portfolio and auto-select content
+    // Mobile from Resume tab: switch to Portfolio and auto-select content
     if (isMobile && activeTab === 'resume') {
-      // Set selectedContentId FIRST, then change tab, so PortfolioContent can see it before menu state memory effect runs
       setSelectedContentId(id)
-      // Use setTimeout to ensure selectedContentId is set before tab change triggers effects
       setTimeout(() => {
         setActiveTab('portfolio')
       }, 0)
-      // Don't add to activeContents - we want collapsed mode, not a new tab
       return
     }
-    
-    // Desktop behavior: open content in its own tab
+
+    // New menu (desktop): activate content inside the menu (opens reader + collapsed bar)
+    const useNewMenu = typeof window !== 'undefined' && localStorage.getItem('dm_new_grid') !== 'false'
+    if (useNewMenu && !isMobile) {
+      setExternalMenuContentId(id)
+      setActiveTab('portfolio')
+      return
+    }
+
+    // Legacy: open content in its own tab
     if (!activeContents.find(c => c.id === id)) {
       setActiveContents(prev => [...prev, { id, title }])
     }
@@ -462,6 +493,8 @@ export default function Home() {
             onMenuExpandedChange={setPortfolioMenuExpanded}
             selectedContentIdFromResume={selectedContentId}
             onContentSelectedFromResume={() => setSelectedContentId(null)}
+            externalActiveContentId={externalMenuContentId}
+            externalActiveCollectionSlug={externalMenuCollectionSlug}
             savedMenuState={savedPortfolioMenuState.pageState}
             savedSelectedContentId={savedPortfolioMenuState.contentId}
             savedSelectedCategoryId={savedPortfolioMenuState.categoryId}
