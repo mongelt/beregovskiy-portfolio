@@ -77,9 +77,8 @@ function renderColumnItems(
   items: ScoredContentItem[],
   activeContentId: string | null,
   onContentClick: (id: string) => void,
-  reduced: boolean,
+  trans: ReturnType<typeof dmTransition>,
 ): React.ReactNode[] {
-  const trans = dmTransition(reduced)
   const nodes: React.ReactNode[] = []
   const rendered = new Set<string>()
 
@@ -230,7 +229,7 @@ function ItemsColumn({
   activeContentId,
   onContentClick,
   colMaxHeight,
-  reduced,
+  trans,
   width = 300,
   useFlexHeight = false,
 }: {
@@ -238,7 +237,7 @@ function ItemsColumn({
   activeContentId: string | null
   onContentClick: (id: string) => void
   colMaxHeight?: string | number
-  reduced: boolean
+  trans: ReturnType<typeof dmTransition>
   width?: number
   /**
    * When true the div uses flex:1 + minHeight:0 so a parent flex container
@@ -264,7 +263,7 @@ function ItemsColumn({
       }}
     >
       <AnimatePresence initial={false}>
-        {renderColumnItems(column.items, activeContentId, onContentClick, reduced)}
+        {renderColumnItems(column.items, activeContentId, onContentClick, trans)}
       </AnimatePresence>
     </div>
   )
@@ -364,14 +363,14 @@ export function ContentPlane({
                       activeContentId={activeContentId}
                       onContentClick={onContentClick}
                       colMaxHeight={reducedMaxHeight}
-                      reduced={reduced}
+                      trans={trans}
                     />
                     <ItemsColumn
                       column={continuation}
                       activeContentId={activeContentId}
                       onContentClick={onContentClick}
                       colMaxHeight={reducedMaxHeight}
-                      reduced={reduced}
+                      trans={trans}
                     />
                   </div>
                 </motion.div>
@@ -427,7 +426,7 @@ export function ContentPlane({
                     activeContentId={activeContentId}
                     onContentClick={onContentClick}
                     colMaxHeight={colMaxHeight}
-                    reduced={reduced}
+                    trans={trans}
                     useFlexHeight={true}
                   />
                 </div>

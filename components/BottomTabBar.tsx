@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
 import { tapScale } from '@/lib/animations'
 import { useMobileState } from '@/lib/responsive'
-import { ArrowDown, ArrowUpRight } from 'lucide-react'
+import { DownloadCard } from '@/components/dynamic-menu/cards/DownloadCard'
+import { CollectionDownloadCard } from '@/components/dynamic-menu/cards/CollectionDownloadCard'
 
 type Collection = {
   slug: string
@@ -35,10 +36,16 @@ type BottomTabBarProps = {
   currentContentType?: string | null
   currentContentId?: string | null
   currentContentDownloadEnabled?: boolean | null
+  currentContentDesc?: string | null
+  currentContentYear?: number | null
+  currentContentThumbnail?: string | null
   currentCollectionName?: string | null
   currentCollectionSlug?: string | null
+  currentCollectionDesc?: string | null
+  currentCollectionThumbnails?: string[]
   loadingTabs?: string[]
-  onDownload?: (target: 'resume' | 'content' | 'collection') => Promise<void>
+  resumeAvailable?: boolean
+  onDownload?: (target: 'resume' | 'content' | 'collection', includeResume?: boolean) => Promise<void>
   isMenuExpanded?: boolean
 }
 
@@ -53,9 +60,15 @@ export default function BottomTabBar({
   currentContentType = null,
   currentContentId = null,
   currentContentDownloadEnabled = null,
+  currentContentDesc = null,
+  currentContentYear = null,
+  currentContentThumbnail = null,
   currentCollectionName = null,
   currentCollectionSlug = null,
+  currentCollectionDesc = null,
+  currentCollectionThumbnails = [],
   loadingTabs = [],
+  resumeAvailable = false,
   onDownload,
   isMenuExpanded = false
 }: BottomTabBarProps) {
@@ -125,7 +138,6 @@ export default function BottomTabBar({
     activeTab === 'portfolio' ||
     isContentTab(activeTab, contentTabs) ||
     isCollectionTab(activeTab, collections)
-  const isCollectionContext = isCollectionTab(activeTab, collections)
   const normalizedType = currentContentType ? currentContentType.toLowerCase() : null
   const allowContentDownload =
     normalizedType !== 'audio' && normalizedType !== 'video'
@@ -144,7 +156,7 @@ export default function BottomTabBar({
       onClick: () => handleDownload('content')
     })
   }
-  if (isCollectionContext && currentCollectionName) {
+  if (currentCollectionName && currentCollectionSlug) {
     downloadMenuRows.push({
       key: 'collection',
       left: downloadStatus === 'loading' ? 'Generating Download…' : `Download ${currentCollectionName}`,
@@ -157,7 +169,7 @@ export default function BottomTabBar({
   const shareMenuRows = [
     {
       key: 'portfolio',
-      label: 'Share Portfolio',
+      label: 'Copy link to Portfolio',
       visible: true,
       value: getShareLink('portfolio')
     }
@@ -167,16 +179,16 @@ export default function BottomTabBar({
     } else {
     shareMenuRows.push({
       key: 'content',
-      label: `Share ${currentContentTitle}`,
+      label: `Copy link to ${currentContentTitle}`,
       visible: true,
       value: getShareLink('content')
     })
     }
   }
-  if (isCollectionContext && currentCollectionName && currentCollectionSlug) {
+  if (currentCollectionName && currentCollectionSlug) {
     shareMenuRows.push({
       key: 'collection',
-      label: `Share ${currentCollectionName}`,
+      label: `Copy link to ${currentCollectionName}`,
       visible: true,
       value: getShareLink('collection')
     })
@@ -194,12 +206,12 @@ export default function BottomTabBar({
     return cols.some(c => c.slug === activeTab)
   }
 
-  async function handleDownload(target: 'resume' | 'content' | 'collection') {
+  async function handleDownload(target: 'resume' | 'content' | 'collection', includeResume = false) {
     if (downloadStatus === 'loading') return
     try {
       setDownloadStatus('loading')
       if (onDownload) {
-        await onDownload(target)
+        await onDownload(target, includeResume)
       } else {
         await new Promise(res => setTimeout(res, 300))
       }
@@ -251,65 +263,100 @@ export default function BottomTabBar({
             <button
               ref={downloadBtnRef}
               onClick={() => setDownloadsOpen(prev => !prev)}
-              className={
-                isMobile
-                  ? `flex flex-col items-center gap-1 font-body text-[0.88rem] font-semibold transition-all duration-200 border rounded-[5px] bg-transparent ${
-                      downloadsOpen
-                        ? 'border-[1.5px] border-text-on-dark text-text-on-dark-hover opacity-50 shadow-[0_0_0_1px_rgba(232,226,221,0.2)]'
-                        : 'border border-[#b8b0aa] text-[#b8b0aa] hover:border-[1.5px] hover:border-text-on-dark hover:text-text-on-dark-hover hover:opacity-50 hover:shadow-[0_0_0_1px_rgba(232,226,221,0.2)]'
-                    }`
-                  : `inline-flex justify-center items-center font-body text-[0.88rem] font-semibold transition-all duration-200 border rounded-[5px] bg-transparent min-w-0 ${
-                      downloadsOpen
-                        ? 'border-[1.5px] border-text-on-dark text-text-on-dark-hover opacity-50 shadow-[0_0_0_1px_rgba(232,226,221,0.2)]'
-                        : 'border border-[#b8b0aa] text-[#b8b0aa] hover:border-[1.5px] hover:border-text-on-dark hover:text-text-on-dark-hover hover:opacity-50 hover:shadow-[0_0_0_1px_rgba(232,226,221,0.2)]'
-                    }`
-              }
-              style={isMobile ? { padding: '4px 12px', width: '52px' } : { padding: '6px 12px' }}
+              className={`dl-btn flex items-center gap-[10px] rounded-[5px] cursor-pointer transition-all duration-300 border-none outline-none ${
+                isMobile ? 'h-[40px] px-[10px]' : 'h-[45px] px-[15px]'
+              } ${
+                downloadsOpen ? 'bg-[#1a1818]' : 'bg-[#0b0a0a] hover:bg-[#161414]'
+              }`}
             >
-              {isMobile ? (
-                <>
-                  <ArrowDown size={18} />
-                  <span className="text-[10px] leading-none">Download</span>
-                </>
-              ) : (
-                'Download ↓'
+              <span className="relative flex flex-col items-center justify-end" style={{ width: 40 }}>
+                <svg className="dl-file-back" width="146" height="113" viewBox="0 0 146 113" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M0 4C0 1.79086 1.79086 0 4 0H50.3802C51.8285 0 53.2056 0.627965 54.1553 1.72142L64.3303 13.4371C65.2799 14.5306 66.657 15.1585 68.1053 15.1585H141.509C143.718 15.1585 145.509 16.9494 145.509 19.1585V109C145.509 111.209 143.718 113 141.509 113H3.99999C1.79085 113 0 111.209 0 109V4Z" fill="url(#dlFileBackGrad)" />
+                  <defs>
+                    <linearGradient id="dlFileBackGrad" x1="0" y1="0" x2="72.93" y2="95.4804" gradientUnits="userSpaceOnUse">
+                      <stop stopColor="#9B4A4A" /><stop offset="1" stopColor="#6b2a2a" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <svg className="dl-file-page" width="88" height="99" viewBox="0 0 88 99" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect width="88" height="99" fill="url(#dlFilePageGrad)" />
+                  <defs>
+                    <linearGradient id="dlFilePageGrad" x1="0" y1="0" x2="81" y2="160.5" gradientUnits="userSpaceOnUse">
+                      <stop stopColor="white" /><stop offset="1" stopColor="#c0b8b5" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <svg className="dl-file-front" width="160" height="79" viewBox="0 0 160 79" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M0.29306 12.2478C0.133905 9.38186 2.41499 6.97059 5.28537 6.97059H30.419H58.1902C59.5751 6.97059 60.9288 6.55982 62.0802 5.79025L68.977 1.18034C70.1283 0.410771 71.482 0 72.8669 0H77H155.462C157.87 0 159.733 2.1129 159.43 4.50232L150.443 75.5023C150.19 77.5013 148.489 79 146.474 79H7.78403C5.66106 79 3.9079 77.3415 3.79019 75.2218L0.29306 12.2478Z" fill="url(#dlFileFrontGrad)" />
+                  <defs>
+                    <linearGradient id="dlFileFrontGrad" x1="38.7619" y1="8.71323" x2="66.9106" y2="82.8317" gradientUnits="userSpaceOnUse">
+                      <stop stopColor="#c47a7a" /><stop offset="1" stopColor="#6b2a2a" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+              </span>
+              {!isMobile && (
+                <span style={{ color: '#e9e3e0', fontSize: 14, fontWeight: 600, letterSpacing: '0.5px', fontFamily: 'var(--font-body, sans-serif)', whiteSpace: 'nowrap' }}>
+                  Downloads
+                </span>
               )}
             </button>
             {downloadsOpen && (
               <div
                 ref={downloadMenuRef}
-                className="absolute bottom-full mb-2 left-0 w-72 border border-border-gray-700 rounded-lg shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1)] p-3 space-y-2 bg-bg-menu-bar"
-                style={{ zIndex: 60 }}
+                className="absolute bottom-full mb-2 left-0 border border-border-gray-700 rounded-lg shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1)] bg-bg-menu-bar"
+                style={{ zIndex: 60, width: 326, padding: '12px 13px', display: 'flex', flexDirection: 'column', gap: 8, overflow: 'visible' }}
               >
-                {downloadMenuRows.map(row => (
-                  <div key={row.key} className="flex items-center gap-2">
-                    <button
-                      disabled={row.disabled}
-                      onClick={row.onClick}
-                      className={`flex-1 font-body text-sm font-semibold rounded-md transition-all duration-200 ${
-                        row.disabled
-                          ? 'text-text-on-dark-inactive bg-bg-gray-800 cursor-not-allowed'
-                          : 'text-text-body bg-bg-card hover:bg-bg-card-alt'
-                      }`}
-                      style={{ padding: '8px 12px' }}
-                    >
-                      {row.left}
-                    </button>
-                    {row.right && (
-                      <button
-                        disabled={row.disabled}
-                        onClick={row.onClick}
-                        className={`flex-1 px-3 py-2 font-body text-sm font-semibold rounded-md transition-all duration-200 ${
-                          row.disabled
-                            ? 'text-text-on-dark-inactive bg-bg-gray-800 cursor-not-allowed'
-                            : 'text-text-body bg-bg-card hover:bg-bg-card-alt'
-                        }`}
-                      >
-                        {row.right}
-                      </button>
-                    )}
-                  </div>
-                ))}
+                {downloadMenuRows.map(row => {
+                  if (row.key === 'resume') {
+                    return (
+                      <div key={row.key} className="flex items-center gap-2">
+                        <button
+                          disabled={row.disabled}
+                          onClick={row.onClick}
+                          className={`flex-1 font-body text-sm font-semibold rounded-md transition-all duration-200 ${
+                            row.disabled
+                              ? 'text-text-on-dark-inactive bg-bg-gray-800 cursor-not-allowed'
+                              : 'text-text-body bg-bg-card hover:bg-bg-card-alt'
+                          }`}
+                          style={{ padding: '8px 12px' }}
+                        >
+                          {row.left}
+                        </button>
+                      </div>
+                    )
+                  }
+
+                  if (row.key === 'collection') {
+                    return (
+                      <div key={row.key} style={{ paddingTop: 10 }}>
+                        <CollectionDownloadCard
+                          name={currentCollectionName ?? ''}
+                          desc={currentCollectionDesc ?? undefined}
+                          thumbnails={currentCollectionThumbnails}
+                          resumeAvailable={resumeAvailable}
+                          onDownload={(incl) => handleDownload('collection', incl)}
+                        />
+                      </div>
+                    )
+                  }
+
+                  const cardPublication = currentContentType ?? undefined
+
+                  return (
+                    <div key={row.key} style={{ paddingTop: 10 }}>
+                      <DownloadCard
+                        name={currentContentTitle ?? ''}
+                        desc={currentContentDesc ?? undefined}
+                        publication={cardPublication}
+                        year={currentContentYear ?? undefined}
+                        thumbnail={currentContentThumbnail ?? undefined}
+                        resumeAvailable={resumeAvailable}
+                        onDownload={(incl) => handleDownload('content', incl)}
+                      />
+                    </div>
+                  )
+                })}
               </div>
             )}
           </div>
@@ -320,29 +367,48 @@ export default function BottomTabBar({
             <button
               ref={shareBtnRef}
               onClick={() => setShareOpen(prev => !prev)}
-              className={
-                isMobile
-                  ? `flex flex-col items-center gap-1 font-body text-[0.88rem] font-semibold transition-all duration-200 border rounded-[5px] bg-transparent ${
-                      shareOpen
-                        ? 'border-[1.5px] border-text-on-dark text-text-on-dark-hover opacity-50 shadow-[0_0_0_1px_rgba(232,226,221,0.2)]'
-                        : 'border border-[#b8b0aa] text-[#b8b0aa] hover:border-[1.5px] hover:border-text-on-dark hover:text-text-on-dark-hover hover:opacity-50 hover:shadow-[0_0_0_1px_rgba(232,226,221,0.2)]'
-                    }`
-                  : `inline-flex justify-center items-center font-body text-[0.88rem] font-semibold transition-all duration-200 border rounded-[5px] bg-transparent min-w-0 ${
-                      shareOpen
-                        ? 'border-[1.5px] border-text-on-dark text-text-on-dark-hover opacity-50 shadow-[0_0_0_1px_rgba(232,226,221,0.2)]'
-                        : 'border border-[#b8b0aa] text-[#b8b0aa] hover:border-[1.5px] hover:border-text-on-dark hover:text-text-on-dark-hover hover:opacity-50 hover:shadow-[0_0_0_1px_rgba(232,226,221,0.2)]'
-                    }`
-              }
-              style={{ paddingTop: '4px', paddingBottom: '4px', paddingLeft: '12px', paddingRight: '12px' }}
+              className={`cl-btn flex items-center gap-[10px] rounded-[5px] cursor-pointer transition-all duration-300 border-none outline-none ${
+                isMobile ? 'h-[40px] px-[10px] flex-col gap-[2px]' : 'h-[45px] px-[15px]'
+              } ${
+                shareOpen ? 'bg-[#1a1818]' : 'bg-[#0b0a0a] hover:bg-[#161414]'
+              }`}
             >
-              {isMobile ? (
-                <>
-                  <ArrowUpRight size={18} />
-                  <span className="text-[10px] leading-none">Share</span>
-                </>
-              ) : (
-                'Share ↗'
-              )}
+              <span className="relative flex flex-col items-center justify-end" style={{ width: 40 }}>
+                <svg className="cl-back" width="80" height="105" viewBox="0 0 80 105" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="26" y="3" width="28" height="19" rx="9" fill="url(#clBoardGrad)" />
+                  <ellipse cx="40" cy="12" rx="7" ry="5" fill="#c4b8b5" opacity="0.35" />
+                  <rect x="3" y="14" width="74" height="88" rx="4" fill="url(#clBoardGrad)" />
+                  <defs>
+                    <linearGradient id="clBoardGrad" x1="0" y1="0" x2="60" y2="105" gradientUnits="userSpaceOnUse">
+                      <stop stopColor="#9B4A4A" /><stop offset="1" stopColor="#6b2a2a" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <svg className="cl-sheet" width="62" height="80" viewBox="0 0 62 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="0" y="0" width="62" height="80" rx="2" fill="url(#clSheetGrad)" />
+                  <line x1="8" y1="18" x2="54" y2="18" stroke="#c8c0bc" strokeWidth="1.5" />
+                  <line x1="8" y1="29" x2="54" y2="29" stroke="#c8c0bc" strokeWidth="1.5" />
+                  <line x1="8" y1="40" x2="54" y2="40" stroke="#c8c0bc" strokeWidth="1.5" />
+                  <line x1="8" y1="51" x2="42" y2="51" stroke="#c8c0bc" strokeWidth="1.5" />
+                  <defs>
+                    <linearGradient id="clSheetGrad" x1="0" y1="0" x2="55" y2="130" gradientUnits="userSpaceOnUse">
+                      <stop stopColor="white" /><stop offset="1" stopColor="#c8c0bc" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <svg className="cl-clamp" width="52" height="26" viewBox="0 0 52 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="0" y="0" width="52" height="26" rx="8" fill="url(#clClampGrad)" />
+                  <rect x="7" y="7" width="38" height="12" rx="5" fill="#e9e3e0" opacity="0.22" />
+                  <defs>
+                    <linearGradient id="clClampGrad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                      <stop stopColor="#c47a7a" /><stop offset="1" stopColor="#6b2a2a" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+              </span>
+              <span style={{ color: '#e9e3e0', fontSize: isMobile ? 10 : 14, fontWeight: 600, letterSpacing: '0.5px', fontFamily: 'var(--font-body, sans-serif)', whiteSpace: 'nowrap', lineHeight: 1 }}>
+                {isMobile ? 'Copy link' : 'Copy link to…'}
+              </span>
             </button>
             {shareOpen && (
               <div
@@ -383,10 +449,10 @@ export default function BottomTabBar({
               <button
                 onClick={() => onTabChange(tab.id)}
                 className={`
-                  relative font-ui text-sm font-semibold uppercase
+                  tab-hover-btn relative font-ui text-sm font-semibold uppercase
                   transition-colors duration-300
-                  ${activeTab === tab.id 
-                    ? 'text-text-on-dark' 
+                  ${activeTab === tab.id
+                    ? 'tab-hover-btn-active text-text-on-dark'
                     : 'text-text-on-dark-inactive hover:text-text-on-dark-hover hover:opacity-80'
                   }
                 `}

@@ -132,7 +132,7 @@ interface PortfolioContentProps {
   activeContents: ContentTab[]
   onCollectionClick: (collection: Collection) => void
   profileHeight: number
-  onDownloadContextChange?: (context: { contentTitle: string | null; contentId: string | null; contentType: string | null; downloadEnabled: boolean | null }) => void
+  onDownloadContextChange?: (context: { contentTitle: string | null; contentId: string | null; contentType: string | null; downloadEnabled: boolean | null; contentDesc: string | null; contentYear: number | null; contentThumbnail: string | null; collectionName: string | null; collectionSlug: string | null; collectionDesc: string | null; collectionThumbnails: string[] }) => void
   onMenuExpandedChange?: (isExpanded: boolean) => void
   selectedContentIdFromResume?: string | null // Content ID to auto-select when coming from Resume (mobile only)
   onContentSelectedFromResume?: () => void // Callback to clear the selectedContentId after selection
@@ -186,6 +186,7 @@ export default function PortfolioContent({
   const [selectedSubcategory, setSelectedSubcategory] = useState<Subcategory | null>(null)
   const [selectedContent, setSelectedContent] = useState<ContentItem | null>(null)
   const [selectedCollection, setSelectedCollection] = useState<Collection | null>(null)
+  const [selectedCollectionThumbnails, setSelectedCollectionThumbnails] = useState<string[]>([])
   
   // Step 7: States are automatically preserved when crossing breakpoints
   // - pageState (expanded-empty, expanded-reader, collapsed-reader) persists
@@ -733,18 +734,12 @@ export default function PortfolioContent({
   useEffect(() => {
     // Only load data once on initial mount
     if (dataLoadedRef.current) {
-      console.log('[DEBUG] Data loading effect: Data already loaded, skipping')
       return
     }
     
     // Check if we're restoring BEFORE loading data
     const isRestoring = isMobile && savedMenuState !== null && savedMenuState === 'collapsed-reader' && savedSelectedContentId
     
-    console.log('[DEBUG] Data loading effect: Starting, isRestoring =', isRestoring, {
-      isMobile,
-      savedMenuState,
-      savedSelectedContentId
-    })
     
     async function loadAllData() {
       try {
@@ -773,7 +768,6 @@ export default function PortfolioContent({
         
         // CRITICAL: If we're restoring, don't reset ANY state - let the restore effect handle it
         if (isRestoring) {
-          console.log('[DEBUG] Data loading effect: Restoring mode, skipping state reset')
           // Just mark data as loaded, restore effect will handle state restoration
           setLoadingCategories(false)
           setLoadingContent(false)
@@ -782,7 +776,6 @@ export default function PortfolioContent({
           return
         }
         
-        console.log('[DEBUG] Data loading effect: Normal mode, resetting state to default')
         
         // In mobile, always start with no selections to show categories by default
         // In desktop, auto-select first items
@@ -956,9 +949,16 @@ export default function PortfolioContent({
       contentTitle,
       contentId: selectedContent?.id || null,
       contentType: selectedContent?.type || null,
-      downloadEnabled: typeof selectedContent?.download_enabled === 'boolean' ? selectedContent.download_enabled : null
+      downloadEnabled: typeof selectedContent?.download_enabled === 'boolean' ? selectedContent.download_enabled : null,
+      contentDesc: selectedContent?.desc || null,
+      contentYear: selectedContent?.publication_year || null,
+      contentThumbnail: selectedContent?.menu_thumbnail_url || null,
+      collectionName: selectedCollection?.name || null,
+      collectionSlug: selectedCollection?.slug || null,
+      collectionDesc: selectedCollection?.short_desc || selectedCollection?.desc || null,
+      collectionThumbnails: selectedCollectionThumbnails,
     })
-  }, [selectedContent, onDownloadContextChange])
+  }, [selectedContent, selectedCollection, selectedCollectionThumbnails, onDownloadContextChange])
 
   const prevActiveTabRef = useRef<string>(activeTab)
   
@@ -1079,7 +1079,6 @@ export default function PortfolioContent({
       // User is manually expanding the menu - clear saved state so it doesn't interfere
       // This allows the user to navigate freely after coming back from another tab
       if (onSaveMenuState && isMobile) {
-        console.log('[DEBUG] Clearing saved state - user manually expanded menu')
         onSaveMenuState({
           pageState: null,
           contentId: null,
@@ -1129,13 +1128,15 @@ export default function PortfolioContent({
     setPageState('expanded-empty')
   }, [onCollectionClick])
 
-  const handleCollectionSelect = useCallback((collection: Collection) => {
+  const handleCollectionSelect = useCallback((collection: Collection, thumbnails: string[] = []) => {
     setSelectedCollection(collection)
+    setSelectedCollectionThumbnails(thumbnails)
     setSelectedContent(null) // cannot coexist with active content
   }, [])
 
   const handleCollectionDismiss = useCallback(() => {
     setSelectedCollection(null)
+    setSelectedCollectionThumbnails([])
   }, [])
 
   const isLoading = loadingCategories || loadingContent || loadingCollections
@@ -1175,11 +1176,6 @@ export default function PortfolioContent({
 
   // Remember and restore menu state on tab switch (mobile only)
   useEffect(() => {
-    console.log('[DEBUG] Menu state memory effect: Effect triggered', {
-      activeTab,
-      prevActiveTabRef: prevActiveTabRef.current,
-      isMobile
-    })
     
     if (!isMobile) {
       prevActiveTabRef.current = activeTab
@@ -1190,23 +1186,9 @@ export default function PortfolioContent({
     const isPortfolioTab = activeTab === 'portfolio' || isCollectionTab(activeTab, activeCollections)
     const wasPortfolioTab = prevTab === 'portfolio' || isCollectionTab(prevTab, activeCollections)
     
-    console.log('[DEBUG] Menu state memory effect: Tab transition check', {
-      prevTab,
-      activeTab,
-      wasPortfolioTab,
-      isPortfolioTab,
-      shouldSave: wasPortfolioTab && !isPortfolioTab
-    })
     
     // Remember state when leaving Portfolio tab
     if (wasPortfolioTab && !isPortfolioTab) {
-      console.log('[DEBUG] Saving Portfolio state before leaving:', {
-        pageState,
-        contentId: selectedContent?.id || null,
-        categoryId: selectedCategory?.id || null,
-        subcategoryId: selectedSubcategory?.id || null,
-        contentTitle: selectedContent?.title || null
-      })
       lastMenuStateRef.current = pageState
       // Also remember selected content, category, and subcategory to restore them when returning
       lastSelectedContentRef.current = selectedContent
@@ -1221,9 +1203,7 @@ export default function PortfolioContent({
           categoryId: selectedCategory?.id || null,
           subcategoryId: selectedSubcategory?.id || null
         })
-        console.log('[DEBUG] Called onSaveMenuState callback')
       } else {
-        console.log('[DEBUG] WARNING: onSaveMenuState callback is missing!')
       }
     }
     
@@ -1231,22 +1211,10 @@ export default function PortfolioContent({
     // We have saved state if either refs have it (same mount) or props have it (cross-mount)
     const hasSavedState = lastMenuStateRef.current !== null || savedMenuState !== null
     
-    console.log('[DEBUG] Menu state memory effect:', {
-      wasPortfolioTab,
-      isPortfolioTab,
-      hasSavedState,
-      lastMenuStateRef: lastMenuStateRef.current,
-      savedMenuState,
-      savedSelectedContentId,
-      currentSelectedContent: selectedContent?.id || null,
-      currentPageState: pageState,
-      isRestoring: isRestoringFromTabSwitchRef.current
-    })
     
     // CRITICAL: If we have saved state from props (cross-mount), let the separate restore effect handle it
     // Don't interfere here - the separate effect will restore the content
     if (savedMenuState !== null && savedMenuState === 'collapsed-reader' && savedSelectedContentId && !selectedContent) {
-      console.log('[DEBUG] Menu state memory effect: Deferring to separate restore effect')
       // We have saved state to restore, but let the separate restore effect handle it
       // Just update the ref and return to prevent this effect from resetting
       prevActiveTabRef.current = activeTab
@@ -1257,10 +1225,8 @@ export default function PortfolioContent({
     const shouldRestore = !wasPortfolioTab && isPortfolioTab && hasSavedState
     
     if (shouldRestore) {
-      console.log('[DEBUG] Menu state memory effect: Should restore (same mount)')
       // If we have selectedContentIdFromResume, skip reset - auto-selection will handle it
       if (selectedContentIdFromResume || isAutoSelectingFromResumeRef.current) {
-        console.log('[DEBUG] Menu state memory effect: Skipping - auto-selection in progress')
         prevActiveTabRef.current = activeTab
         return
       }
@@ -1268,7 +1234,6 @@ export default function PortfolioContent({
       // CRITICAL: If we just completed auto-selection, preserve the state
       // This prevents the menu state memory effect from resetting after auto-selection completes
       if (justAutoSelectedFromResumeRef.current) {
-        console.log('[DEBUG] Menu state memory effect: Skipping - just completed auto-selection')
         // Just completed auto-selection - don't reset, preserve the collapsed state with content
         prevActiveTabRef.current = activeTab
         return
@@ -1276,7 +1241,6 @@ export default function PortfolioContent({
       
       // Check if we're already restoring (from the separate restore effect)
       if (isRestoringFromTabSwitchRef.current) {
-        console.log('[DEBUG] Menu state memory effect: Skipping - restoration in progress')
         prevActiveTabRef.current = activeTab
         return
       }
@@ -1400,7 +1364,6 @@ export default function PortfolioContent({
       
       // Don't save if we're restoring - this would overwrite the saved state we're trying to restore
       if (isRestoringFromTabSwitchRef.current) {
-        console.log('[DEBUG] Cleanup: Skipping save - restoration in progress')
         return
       }
       
@@ -1411,28 +1374,16 @@ export default function PortfolioContent({
       // This prevents overwriting a good saved state when the component remounts in default state
       // Check if we have saved state by checking if savedMenuState prop exists (from parent)
       if (currentPageState === 'expanded-empty' && !currentContent && savedMenuStateRef.current !== null) {
-        console.log('[DEBUG] Cleanup: Skipping save - default state with saved state to restore', {
-          savedMenuState: savedMenuStateRef.current,
-          savedSelectedContentId: savedSelectedContentIdRef.current
-        })
         return
       }
       
       // Don't save if we're in default state with no content - this would overwrite a good saved state
       // Only save if we have actual state to preserve (content selected or menu was expanded)
       if (currentPageState === 'expanded-empty' && !currentContent) {
-        console.log('[DEBUG] Cleanup: Skipping save - default state with no content')
         return
       }
       
       // Save current state from refs (always up-to-date)
-      console.log('[DEBUG] Cleanup: Saving Portfolio state on unmount:', {
-        pageState: currentPageState,
-        contentId: currentContent?.id || null,
-        categoryId: selectedCategoryRef.current?.id || null,
-        subcategoryId: selectedSubcategoryRef.current?.id || null,
-        contentTitle: currentContent?.title || null
-      })
       onSaveMenuStateRef.current({
         pageState: currentPageState,
         contentId: currentContent?.id || null,
@@ -1446,45 +1397,28 @@ export default function PortfolioContent({
   // This runs independently of the menu state memory effect to handle cross-mount restoration
   // IMPORTANT: This must run as early as possible to prevent other effects from resetting state
   useEffect(() => {
-    console.log('[DEBUG] Restore effect running:', {
-      isMobile,
-      activeTab,
-      savedMenuState,
-      savedSelectedContentId,
-      selectedContent: selectedContent?.id || null,
-      pageState,
-      loadingContent,
-      contentLength: content.length
-    })
     
     if (!isMobile) {
-      console.log('[DEBUG] Restore effect: Not mobile, skipping')
       return
     }
     if (activeTab !== 'portfolio') {
-      console.log('[DEBUG] Restore effect: Not portfolio tab, skipping')
       return
     }
     if (!savedMenuState || savedMenuState !== 'collapsed-reader') {
-      console.log('[DEBUG] Restore effect: No saved state or not collapsed-reader, skipping')
       return
     }
     if (!savedSelectedContentId) {
-      console.log('[DEBUG] Restore effect: No saved content ID, skipping')
       return
     }
     if (selectedContent && pageState === 'collapsed-reader') {
-      console.log('[DEBUG] Restore effect: Already restored, skipping')
       return // Already restored
     }
     
-    console.log('[DEBUG] Restore effect: Setting restoration flag')
     // Set flag immediately to prevent other effects from interfering
     isRestoringFromTabSwitchRef.current = true
     
     // Wait for content to load before restoring
     if (loadingContent || content.length === 0) {
-      console.log('[DEBUG] Restore effect: Waiting for content to load...')
       // Content not loaded yet, will restore on next render when content loads
       // But keep the flag set so other effects don't interfere
       return
@@ -1493,16 +1427,10 @@ export default function PortfolioContent({
     // Find the content to restore
     const contentToRestore = content.find(c => c.id === savedSelectedContentId)
     if (!contentToRestore) {
-      console.log('[DEBUG] Restore effect: Content not found in array:', savedSelectedContentId)
       isRestoringFromTabSwitchRef.current = false
       return
     }
     
-    console.log('[DEBUG] Restore effect: Found content, restoring state:', {
-      contentTitle: contentToRestore.title,
-      savedSelectedCategoryId,
-      savedSelectedSubcategoryId
-    })
     
     // Restore category and subcategory
     let categoryToRestore: Category | null = null
@@ -1516,11 +1444,6 @@ export default function PortfolioContent({
       subcategoryToRestore = subcategories.find(s => s.id === savedSelectedSubcategoryId) || null
     }
     
-    console.log('[DEBUG] Restore effect: Restoring selections:', {
-      category: categoryToRestore?.name || null,
-      subcategory: subcategoryToRestore?.name || null,
-      content: contentToRestore.title
-    })
     
     // Restore selections - set all at once
     if (categoryToRestore) setSelectedCategory(categoryToRestore)
@@ -1528,7 +1451,6 @@ export default function PortfolioContent({
     setSelectedContent(contentToRestore)
     setPageState('collapsed-reader')
     
-    console.log('[DEBUG] Restore effect: State restored, loading content details')
     
     // Load content details if needed
     void ensureContentDetails(contentToRestore)
@@ -1536,7 +1458,6 @@ export default function PortfolioContent({
     // Keep flag set for a longer delay to ensure all effects have run
     setTimeout(() => {
       isRestoringFromTabSwitchRef.current = false
-      console.log('[DEBUG] Restore effect: Restoration flag cleared')
     }, 1000)
   }, [isMobile, activeTab, savedMenuState, savedSelectedContentId, savedSelectedCategoryId, savedSelectedSubcategoryId, selectedContent, pageState, loadingContent, content, categories, subcategories, ensureContentDetails])
 
@@ -1656,6 +1577,8 @@ export default function PortfolioContent({
             onExpand={handleMainMenuClick}
             externalActiveContentId={externalActiveContentId}
             externalActiveCollectionSlug={externalActiveCollectionSlug}
+            onCollectionSelect={handleCollectionSelect}
+            onCollectionDismiss={handleCollectionDismiss}
           />
         ) : (
           <div

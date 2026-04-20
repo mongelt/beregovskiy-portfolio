@@ -1840,3 +1840,47 @@ code.inline-code {
     padding-right: 1px !important;
   }
 }
+
+/* ============================================
+   BOTTOM NAV — BUTTON ICON ANIMATIONS (Stage 2)
+   ============================================ */
+
+/* Download folder */
+.dl-btn .dl-file-back  { z-index: 1; width: 80%; height: auto; }
+.dl-btn .dl-file-page  { width: 50%; height: auto; position: absolute; z-index: 2; transition: all 0.3s ease-out; }
+.dl-btn .dl-file-front { width: 85%; height: auto; position: absolute; z-index: 3; opacity: 0.95; transform-origin: bottom; transition: all 0.3s ease-out; }
+.dl-btn:hover .dl-file-page  { transform: translateY(-5px); }
+.dl-btn:hover .dl-file-front { transform: rotateX(30deg); }
+.dl-btn:active { transform: scale(0.95); }
+
+/* Copy link clipboard */
+.cl-btn .cl-back  { z-index: 1; width: 72%; height: auto; }
+.cl-btn .cl-sheet { width: 52%; height: auto; position: absolute; z-index: 2; top: 7px; transform-origin: top center; transition: all 0.3s ease-out; }
+.cl-btn .cl-clamp { width: 44%; height: auto; position: absolute; z-index: 3; top: 0; opacity: 0.95; transition: all 0.3s ease-out; }
+.cl-btn:hover .cl-sheet { transform: rotate(22deg) translateX(4px); }
+.cl-btn:active { transform: scale(0.95); }
+
+/* ============================================
+   BOTTOM NAV — TAB HOVER UNDERLINE (Stage 3)
+   Expands from center outward on hover.
+   Suppressed on the active tab (motion.div handles that underline).
+   ============================================ */
+.tab-hover-btn::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: #6B2A2A;
+  transition: width 400ms cubic-bezier(0.25, 0.8, 0.25, 1),
+              left   400ms cubic-bezier(0.25, 0.8, 0.25, 1);
+  pointer-events: none;
+}
+.tab-hover-btn:hover::after {
+  left: 0;
+  width: 100%;
+}
+.tab-hover-btn-active::after {
+  display: none;
+}

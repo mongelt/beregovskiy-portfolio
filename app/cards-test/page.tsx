@@ -30,6 +30,7 @@ import { ContentPlane } from '@/components/dynamic-menu/ContentPlane'
 import { ContentColumn, ScoredContentItem } from '@/lib/menu/columnLayout'
 import { CollectionPlane } from '@/components/dynamic-menu/CollectionPlane'
 import { ScoredCollection } from '@/lib/menu/collectionLayout'
+import { DownloadCard } from '@/components/dynamic-menu/cards/DownloadCard'
 
 // ---------------------------------------------------------------------------
 // Score spectrum data
@@ -1056,6 +1057,52 @@ export default function CardsTestPage() {
         Left zone = featured, right zone = non-featured (no visible divider).
       </p>
       <CollectionPlaneDemo />
+
+      <hr style={divider} />
+
+      {/* ── Download Card ──────────────────────────────────────────── */}
+      <div style={sectionTitle}>DownloadCard — Phase 11 Stage 1</div>
+      <p style={{ fontSize: 11, color: '#555', marginBottom: 20, lineHeight: 1.7, maxWidth: 560 }}>
+        At-rest state mirrors ThumbCard focus at score 1.00 on-hover: #c7c7c2 bg, thumbnail permanently lifted,
+        description always visible. Hover to expand 20px downward and reveal the &quot;Include Resume&quot; zone.
+        Two click zones: main body logs a download action; &quot;Include Resume&quot; logs a separate toggle action.
+      </p>
+      <div style={row}>
+
+        <div style={col}>
+          <div style={label}>No thumbnail — hover to test expand + Include Resume zone</div>
+          <DownloadCard
+            name="AI Agents in Integration Pipelines"
+            desc="Agentic workflows and architecture in modern B2B data pipelines — implementation patterns and case studies."
+            publication="White paper"
+            year={2024}
+            onDownload={(incl) => console.log('[DownloadCard] Download: AI Agents in Integration Pipelines, includeResume:', incl)}
+          />
+        </div>
+
+        <div style={col}>
+          <div style={label}>Short title + short desc</div>
+          <DownloadCard
+            name="GEO for Journalists"
+            desc="Optimization strategies for journalists navigating AI-driven search and content discovery."
+            publication="Guide"
+            year={2024}
+            onDownload={(incl) => console.log('[DownloadCard] Download: GEO for Journalists, includeResume:', incl)}
+          />
+        </div>
+
+        <div style={col}>
+          <div style={label}>Long title — truncates at 2 lines</div>
+          <DownloadCard
+            name="Comprehensive EU Accession Policy Analysis and Strategic Integration Overview for Southeast Europe"
+            desc="Policy analysis and strategic overview for southeastern European EU integration tactics — a full assessment of the reform landscape."
+            publication="Report"
+            year={2023}
+            onDownload={(incl) => console.log('[DownloadCard] Download: EU Accession Policy Analysis, includeResume:', incl)}
+          />
+        </div>
+
+      </div>
     </div>
   )
 }

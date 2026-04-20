@@ -8,6 +8,7 @@ import PortfolioContent from '@/components/tabs/PortfolioContent'
 import MobileBanner from '@/components/MobileBanner'
 import { createClient } from '@/lib/supabase/client'
 import { generateArticlePDF, generateCollectionPDF } from '@/lib/pdf-generator'
+import { PDFDocument } from 'pdf-lib'
 import { useMobileState } from '@/lib/responsive'
 
 type Collection = {
@@ -38,6 +39,14 @@ export default function Home() {
   const [portfolioContentId, setPortfolioContentId] = useState<string | null>(null)
   const [portfolioContentType, setPortfolioContentType] = useState<string | null>(null)
   const [portfolioContentDownloadEnabled, setPortfolioContentDownloadEnabled] = useState<boolean | null>(null)
+  const [portfolioContentDesc, setPortfolioContentDesc] = useState<string | null>(null)
+  const [portfolioContentYear, setPortfolioContentYear] = useState<number | null>(null)
+  const [portfolioContentThumbnail, setPortfolioContentThumbnail] = useState<string | null>(null)
+  const [portfolioCollectionName, setPortfolioCollectionName] = useState<string | null>(null)
+  const [portfolioCollectionSlug, setPortfolioCollectionSlug] = useState<string | null>(null)
+  const [portfolioCollectionDesc, setPortfolioCollectionDesc] = useState<string | null>(null)
+  const [portfolioCollectionThumbnails, setPortfolioCollectionThumbnails] = useState<string[]>([])
+  const [resumeAvailable, setResumeAvailable] = useState<boolean>(false)
   const [resumeNowMarkerVisible, setResumeNowMarkerVisible] = useState<boolean>(true)
   const [resumeHasExpandedSideEntry, setResumeHasExpandedSideEntry] = useState<boolean>(false)
   const [portfolioMenuExpanded, setPortfolioMenuExpanded] = useState<boolean>(true)
@@ -61,18 +70,39 @@ export default function Home() {
     contentId: string | null
     contentType: string | null
     downloadEnabled: boolean | null
+    contentDesc: string | null
+    contentYear: number | null
+    contentThumbnail: string | null
+    collectionName: string | null
+    collectionSlug: string | null
+    collectionDesc: string | null
+    collectionThumbnails: string[]
   } | null>(null)
 
   const handleDownloadContextChange = useCallback(({
     contentTitle,
     contentId,
     contentType,
-    downloadEnabled
+    downloadEnabled,
+    contentDesc,
+    contentYear,
+    contentThumbnail,
+    collectionName,
+    collectionSlug,
+    collectionDesc,
+    collectionThumbnails,
   }: {
     contentTitle: string | null
     contentId: string | null
     contentType: string | null
     downloadEnabled: boolean | null
+    contentDesc: string | null
+    contentYear: number | null
+    contentThumbnail: string | null
+    collectionName: string | null
+    collectionSlug: string | null
+    collectionDesc: string | null
+    collectionThumbnails: string[]
   }) => {
     const prev = lastDownloadContextRef.current
     if (
@@ -80,16 +110,31 @@ export default function Home() {
       prev.contentTitle === contentTitle &&
       prev.contentId === contentId &&
       prev.contentType === contentType &&
-      prev.downloadEnabled === downloadEnabled
+      prev.downloadEnabled === downloadEnabled &&
+      prev.contentDesc === contentDesc &&
+      prev.contentYear === contentYear &&
+      prev.contentThumbnail === contentThumbnail &&
+      prev.collectionName === collectionName &&
+      prev.collectionSlug === collectionSlug &&
+      prev.collectionDesc === collectionDesc &&
+      prev.collectionThumbnails.length === collectionThumbnails.length &&
+      prev.collectionThumbnails.every((t, i) => t === collectionThumbnails[i])
     ) {
       return
     }
-    lastDownloadContextRef.current = { contentTitle, contentId, contentType, downloadEnabled }
+    lastDownloadContextRef.current = { contentTitle, contentId, contentType, downloadEnabled, contentDesc, contentYear, contentThumbnail, collectionName, collectionSlug, collectionDesc, collectionThumbnails }
 
     setPortfolioContentTitle(contentTitle)
     setPortfolioContentId(contentId)
     setPortfolioContentType(contentType)
     setPortfolioContentDownloadEnabled(downloadEnabled)
+    setPortfolioContentDesc(contentDesc)
+    setPortfolioContentYear(contentYear)
+    setPortfolioContentThumbnail(contentThumbnail)
+    setPortfolioCollectionName(collectionName)
+    setPortfolioCollectionSlug(collectionSlug)
+    setPortfolioCollectionDesc(collectionDesc)
+    setPortfolioCollectionThumbnails(collectionThumbnails)
 
     if (contentId) {
       setActiveContents(prevTabs =>
@@ -123,6 +168,10 @@ export default function Home() {
 
   useEffect(() => {
     setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    getLinkedPdfId('resume', null).then(id => setResumeAvailable(!!id))
   }, [])
 
   useEffect(() => {
@@ -308,7 +357,35 @@ export default function Home() {
     }
   }, [])
 
-  async function handleDownload(target: 'resume' | 'content' | 'collection') {
+  async function fetchResumePdfBlob(): Promise<Blob | null> {
+    const resumePdfId = await getLinkedPdfId('resume', null)
+    if (!resumePdfId) return null
+    const { data } = await supabase.from('custom_pdfs').select('file_url').eq('id', resumePdfId).single()
+    if (!data?.file_url) return null
+    try {
+      const res = await fetch(data.file_url)
+      if (!res.ok) return null
+      return res.blob()
+    } catch {
+      return null
+    }
+  }
+
+  async function mergePdfs(mainBlob: Blob, resumeBlob: Blob): Promise<Blob> {
+    const [mainBytes, resumeBytes] = await Promise.all([
+      mainBlob.arrayBuffer(),
+      resumeBlob.arrayBuffer(),
+    ])
+    // Resume goes first, content follows
+    const resumeDoc = await PDFDocument.load(resumeBytes)
+    const mainDoc = await PDFDocument.load(mainBytes)
+    const copiedPages = await resumeDoc.copyPages(mainDoc, mainDoc.getPageIndices())
+    copiedPages.forEach(page => resumeDoc.addPage(page))
+    const mergedBytes = await resumeDoc.save()
+    return new Blob([mergedBytes.buffer as ArrayBuffer], { type: 'application/pdf' })
+  }
+
+  async function handleDownload(target: 'resume' | 'content' | 'collection', includeResume = false) {
     const downloadBlob = (blob: Blob, name: string) => {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -358,6 +435,18 @@ export default function Home() {
           alert('Custom PDF is not set.')
           return
         }
+        if (includeResume) {
+          const { data: customPdf } = await supabase.from('custom_pdfs').select('file_url, file_name').eq('id', linkedPdfId).single()
+          if (customPdf?.file_url) {
+            const [mainRes, resumeBlob] = await Promise.all([fetch(customPdf.file_url), fetchResumePdfBlob()])
+            if (mainRes.ok && resumeBlob) {
+              const merged = await mergePdfs(await mainRes.blob(), resumeBlob)
+              const safeName = (data.title || 'content').replace(/[^a-z0-9]/gi, '_')
+              downloadBlob(merged, `AndreyBeregovskiy_${safeName}_with_resume.pdf`)
+              return
+            }
+          }
+        }
         const didDownload = await downloadCustomPdfById(linkedPdfId)
         if (!didDownload) {
           throw new Error('Custom PDF not found')
@@ -368,8 +457,15 @@ export default function Home() {
       if (data.type === 'article') {
         const blob = await generateArticlePDF(contentId)
         const safeName = (data.title || 'content').replace(/[^a-z0-9]/gi, '_')
-        const filename = `AndreyBeregovskiy_${safeName}.pdf`
-        downloadBlob(blob, filename)
+        if (includeResume) {
+          const resumeBlob = await fetchResumePdfBlob()
+          if (resumeBlob) {
+            const merged = await mergePdfs(blob, resumeBlob)
+            downloadBlob(merged, `AndreyBeregovskiy_${safeName}_with_resume.pdf`)
+            return
+          }
+        }
+        downloadBlob(blob, `AndreyBeregovskiy_${safeName}.pdf`)
         return
       }
 
@@ -401,25 +497,48 @@ export default function Home() {
     }
 
     if (target === 'collection') {
-      if (!activeCollection?.slug) {
+      const collSlug = activeCollection?.slug || portfolioCollectionSlug
+      const collDisplayName = activeCollection?.name || portfolioCollectionName
+      if (!collSlug) {
         throw new Error('No collection selected')
       }
       const { data: collectionData, error: collectionError } = await supabase
         .from('collections')
         .select('id, name')
-        .eq('slug', activeCollection.slug)
+        .eq('slug', collSlug)
         .single()
       if (collectionError || !collectionData) {
         throw new Error('Collection not found')
       }
       const linkedPdfId = await getLinkedPdfId('collection', collectionData.id)
       if (linkedPdfId) {
+        if (includeResume) {
+          const { data: customPdf } = await supabase.from('custom_pdfs').select('file_url').eq('id', linkedPdfId).single()
+          if (customPdf?.file_url) {
+            const [mainRes, resumeBlob] = await Promise.all([fetch(customPdf.file_url), fetchResumePdfBlob()])
+            if (mainRes.ok && resumeBlob) {
+              const collectionName = collectionData.name || collDisplayName || 'Collection'
+              const safeName = collectionName.replace(/[^a-z0-9]/gi, '_') || 'Collection'
+              const merged = await mergePdfs(await mainRes.blob(), resumeBlob)
+              downloadBlob(merged, `AndreyBeregovskiy_${safeName}_with_resume.pdf`)
+              return
+            }
+          }
+        }
         const didDownload = await downloadCustomPdfById(linkedPdfId)
         if (didDownload) return
       }
-      const collectionName = collectionData.name || activeCollection.name || 'Collection'
+      const collectionName = collectionData.name || collDisplayName || 'Collection'
       const safeName = collectionName.replace(/[^a-z0-9]/gi, '_') || 'Collection'
-      const blob = await generateCollectionPDF(activeCollection.slug)
+      const blob = await generateCollectionPDF(collSlug)
+      if (includeResume) {
+        const resumeBlob = await fetchResumePdfBlob()
+        if (resumeBlob) {
+          const merged = await mergePdfs(blob, resumeBlob)
+          downloadBlob(merged, `AndreyBeregovskiy_${safeName}_with_resume.pdf`)
+          return
+        }
+      }
       downloadBlob(blob, `AndreyBeregovskiy_${safeName}.pdf`)
       return
     }
@@ -542,8 +661,14 @@ export default function Home() {
         currentContentType={portfolioContentType}
         currentContentId={currentContentId}
         currentContentDownloadEnabled={portfolioContentDownloadEnabled}
-        currentCollectionName={activeCollection?.name || null}
-        currentCollectionSlug={activeCollection?.slug || null}
+        currentContentDesc={portfolioContentDesc}
+        currentContentYear={portfolioContentYear}
+        currentContentThumbnail={portfolioContentThumbnail}
+        currentCollectionName={activeCollection?.name || portfolioCollectionName || null}
+        currentCollectionSlug={activeCollection?.slug || portfolioCollectionSlug || null}
+        currentCollectionDesc={portfolioCollectionDesc}
+        currentCollectionThumbnails={portfolioCollectionThumbnails}
+        resumeAvailable={resumeAvailable}
         onDownload={handleDownload}
         isMenuExpanded={portfolioMenuExpanded}
       />

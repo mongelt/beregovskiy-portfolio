@@ -47,7 +47,15 @@
       "Bash(tasklist /FI \"PID eq 29752\")",
       "Bash(tasklist)",
       "Bash(npm install:*)",
-      "Bash(grep -v \"^$\")"
+      "Bash(grep -v \"^$\")",
+      "Bash(node -e ':*)",
+      "Bash(python -m http.server 8765)",
+      "mcp__plugin_playwright_playwright__browser_close",
+      "Bash(taskkill /F /IM chrome.exe)",
+      "Bash(taskkill /F /IM msedge.exe)",
+      "WebFetch(domain:magicui.design)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:github.com)"
     ]
   }
 }

@@ -69,3 +69,11 @@ Admin pages live under `app/admin/*` and use Supabase Auth for access control.
 3. Follow `DATABASE_SETUP.md` and `CUSTOM_PDFS_SETUP.md` if needed.
 4. Run dev server: `npm run dev`
 5. Open http://localhost:3000
+
+## Credits
+1. Main menu: Framer Motion
+2. Download button original by vinodjangid07 / UIVerse
+3. Profile Tab Hover Effects: Magic Card https://magicui.design/docs/components/magic-card and Dot Pattern https://magicui.design/docs/components/dot-pattern 
+4. Bottom nav hover effect original by WhiteNervosa / UIVerse https://uiverse.io/WhiteNervosa/popular-ladybug-27
+5. Loader original by Nawsome / UIVerse https://uiverse.io/Nawsome/kind-mole-87
+Website uses official logos of Johns Hopkins University, Axway, Inc., The LCB

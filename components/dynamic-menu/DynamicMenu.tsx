@@ -20,7 +20,6 @@
 import { useMemo, useCallback, useEffect, useRef } from 'react'
 import {
   useMenuState,
-  deriveNavState,
 } from '@/lib/menu/useMenuState'
 import {
   CollapsedMenuBar,
@@ -140,6 +139,10 @@ export interface DynamicMenuProps {
    * When this changes the menu selects that collection and expands.
    */
   externalActiveCollectionSlug?: string | null
+  /** Called when any collection becomes active (user click or external trigger). */
+  onCollectionSelect?: (collection: DmCollection, thumbnails: string[]) => void
+  /** Called when the active collection is dismissed. */
+  onCollectionDismiss?: () => void
 }
 
 // ---------------------------------------------------------------------------
@@ -157,6 +160,8 @@ export function DynamicMenu({
   onExpand,
   externalActiveContentId,
   externalActiveCollectionSlug,
+  onCollectionSelect,
+  onCollectionDismiss,
 }: DynamicMenuProps) {
   // -------------------------------------------------------------------------
   // Stable ID arrays (for useMenuState validation)
@@ -191,6 +196,25 @@ export function DynamicMenu({
     allContentIds,
     allSubcategories: subcategories,
   })
+
+  const triggerSelectCollection = useCallback((collectionId: string) => {
+    selectCollection(collectionId)
+    if (onCollectionSelect) {
+      const col = collections.find(c => c.id === collectionId)
+      if (col) {
+        const thumbnails = content
+          .filter(c => c.collection_slugs?.includes(col.slug) && (c.menu_thumbnail_url || c.image_url))
+          .slice(0, 5)
+          .map(c => (c.menu_thumbnail_url ?? c.image_url)!)
+        onCollectionSelect(col, thumbnails)
+      }
+    }
+  }, [selectCollection, collections, content, onCollectionSelect])
+
+  const triggerDismissCollection = useCallback(() => {
+    dismissCollection()
+    onCollectionDismiss?.()
+  }, [dismissCollection, onCollectionDismiss])
 
   // -------------------------------------------------------------------------
   // Build scoring entities
@@ -513,9 +537,9 @@ export function DynamicMenu({
 
   const handleSubheaderClick = useCallback(
     (collectionId: string) => {
-      selectCollection(collectionId)
+      triggerSelectCollection(collectionId)
     },
-    [selectCollection],
+    [triggerSelectCollection],
   )
 
   // -------------------------------------------------------------------------
@@ -542,10 +566,10 @@ export function DynamicMenu({
     if (!externalActiveCollectionSlug) return
     const col = collections.find(c => c.slug === externalActiveCollectionSlug)
     if (!col) return
-    selectCollection(col.id)
+    triggerSelectCollection(col.id)
     onExpand?.()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [externalActiveCollectionSlug])
+  }, [externalActiveCollectionSlug, collections])
 
   // -------------------------------------------------------------------------
   // Collapsed bar data (Stage 13)
@@ -661,9 +685,9 @@ export function DynamicMenu({
   }, [menuState.activeSubcategoryId, selectSubcategory, clearContent, onExpand])
 
   const handleCollapsedCollectionClick = useCallback(() => {
-    if (collapsedCollectionData) selectCollection(collapsedCollectionData.id)
+    if (collapsedCollectionData) triggerSelectCollection(collapsedCollectionData.id)
     onExpand?.()
-  }, [collapsedCollectionData, selectCollection, onExpand])
+  }, [collapsedCollectionData, triggerSelectCollection, onExpand])
 
   // -------------------------------------------------------------------------
   // Derived layout flags
@@ -794,8 +818,8 @@ export function DynamicMenu({
         leftZone={leftZone}
         rightZone={rightZone}
         activeCollectionId={menuState.activeCollectionId}
-        onCollectionClick={selectCollection}
-        onCollectionDismiss={dismissCollection}
+        onCollectionClick={triggerSelectCollection}
+        onCollectionDismiss={triggerDismissCollection}
       />
     </div>
   )
