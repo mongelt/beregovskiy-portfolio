@@ -70,13 +70,15 @@ export default function ResumeTab({
   onOpenContent,
   profileHeight = 0,
   onNowMarkerInViewChange,
-  onSideEntryExpandedChange
+  onSideEntryExpandedChange,
+  focusEntryId = null,
 }: {
   onOpenCollection?: (slug: string, name: string) => void
   onOpenContent?: (id: string, title: string) => void
   profileHeight?: number
   onNowMarkerInViewChange?: (inView: boolean) => void
   onSideEntryExpandedChange?: (hasExpanded: boolean) => void
+  focusEntryId?: string | null
 } = {}) {
   const { isMobile } = useMobileState()
   
@@ -180,6 +182,30 @@ const TIMELINE_TOP_OFFSET = 35
     if (!sideEntries.length) return false
     return sideEntries.some(entry => expandedEntries.has(entry.id))
   }, [sideEntries, expandedEntries])
+
+  const lastAppliedFocusRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (!focusEntryId) return
+    if (focusEntryId === lastAppliedFocusRef.current) return
+    if (loading || !transformedEntries.length) return
+
+    lastAppliedFocusRef.current = focusEntryId
+    setExpandedEntries(prev => {
+      const next = new Set(prev)
+      next.add(focusEntryId)
+      return next
+    })
+
+    setTimeout(() => {
+      const el = document.querySelector(`[data-resume-entry-id="${focusEntryId}"]`)
+      if (el) {
+        const rect = el.getBoundingClientRect()
+        const offset = 80
+        window.scrollTo({ top: rect.top + window.scrollY - offset, behavior: 'smooth' })
+      }
+    }, 400)
+  }, [focusEntryId, loading, transformedEntries.length])
 
   useEffect(() => {
     if (!onSideEntryExpandedChange) return
@@ -1812,6 +1838,7 @@ function EntryCard({
     return (
       <div
         ref={measureRef}
+        data-resume-entry-id={entry.id}
         className={`${baseClasses} w-full text-left relative`}
       >
         <div className={`resume-entry-date text-sm mb-3 ${dateRange.includes('Present') ? 'has-present' : ''}`}>
@@ -1905,8 +1932,9 @@ function EntryCard({
   // Desktop layouts below
   if (position === 'left') {
     return (
-      <div 
+      <div
         ref={measureRef}
+        data-resume-entry-id={entry.id}
         className={`${baseClasses} w-[560px] absolute`}
         style={{
           right: 'calc(50% + 70px)',
@@ -2020,8 +2048,9 @@ function EntryCard({
   
   if (position === 'right') {
     return (
-      <div 
+      <div
         ref={measureRef}
+        data-resume-entry-id={entry.id}
         className={`${baseClasses} w-[560px] absolute`}
         style={{
           left: 'calc(50% + 70px)',

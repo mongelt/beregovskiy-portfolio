@@ -31,6 +31,7 @@ import { ContentColumn, ScoredContentItem } from '@/lib/menu/columnLayout'
 import { CollectionPlane } from '@/components/dynamic-menu/CollectionPlane'
 import { ScoredCollection } from '@/lib/menu/collectionLayout'
 import { DownloadCard } from '@/components/dynamic-menu/cards/DownloadCard'
+import { PlaneResumeCard, type ProfileResumeCard } from '@/components/ProfilePlanes'
 
 // ---------------------------------------------------------------------------
 // Score spectrum data
@@ -1099,6 +1100,111 @@ export default function CardsTestPage() {
             publication="Report"
             year={2023}
             onDownload={(incl) => console.log('[DownloadCard] Download: EU Accession Policy Analysis, includeResume:', incl)}
+          />
+        </div>
+
+      </div>
+
+      <hr style={divider} />
+
+      {/* ── Profile Plane — Resume Cards ───────────────────────────── */}
+      <div style={sectionTitle}>Profile Plane — Resume Cards (Phase 12)</div>
+      <p style={{ fontSize: 11, color: '#555', marginBottom: 20, lineHeight: 1.7, maxWidth: 560 }}>
+        Cards rendered on the resume overlay plane. Date on one line (10px, uppercase, white-space:nowrap — sized to fit longest
+        &ldquo;September 2020 — September 2022&rdquo;). Company/title prominent (serif 1rem). Subtitle below. Optional
+        plane_description (2 lines max via -webkit-line-clamp). No description fallback — field must be set in admin.
+      </p>
+      <div style={row}>
+
+        <div style={col}>
+          <div style={label}>With plane_description — 2 lines</div>
+          <PlaneResumeCard
+            card={{ id: 'r1', title: 'Axway', subtitle: 'Senior Content Strategist', dateStart: '2022-09-01', dateEnd: null, shortDescription: null, planeDescription: 'Leading content and go-to-market strategy for a global integration platform serving 11,000+ customers.' }}
+            index={0}
+            planeHovered={false}
+          />
+        </div>
+
+        <div style={col}>
+          <div style={label}>No description — title + subtitle only</div>
+          <PlaneResumeCard
+            card={{ id: 'r2', title: 'Reuters', subtitle: 'Staff Reporter', dateStart: '2020-09-01', dateEnd: '2022-08-01', shortDescription: null, planeDescription: null }}
+            index={1}
+            planeHovered={false}
+          />
+        </div>
+
+        <div style={col}>
+          <div style={label}>planeHovered=true — parallax + shadow active</div>
+          <PlaneResumeCard
+            card={{ id: 'r3', title: 'Johns Hopkins University', subtitle: 'Graduate Researcher', dateStart: '2018-09-01', dateEnd: '2023-05-01', shortDescription: null, planeDescription: 'M.A. research on digital media ecosystems and political communication in post-socialist states.' }}
+            index={0}
+            planeHovered={true}
+          />
+        </div>
+
+        <div style={col}>
+          <div style={label}>Longest date range — fits one line at 10px</div>
+          <PlaneResumeCard
+            card={{ id: 'r4', title: 'Company Name Here', subtitle: 'Job Title', dateStart: '2020-09-01', dateEnd: '2022-09-01', shortDescription: null, planeDescription: null }}
+            index={0}
+            planeHovered={false}
+          />
+        </div>
+
+      </div>
+
+      <hr style={divider} />
+
+      {/* ── PeriPair — Focus 1.00 Design Reference (Next Phase) ───── */}
+      <div style={sectionTitle}>PeriPair — Focus 1.00 Design Reference · Next Phase</div>
+      <p style={{ fontSize: 11, color: '#555', marginBottom: 20, lineHeight: 1.7, maxWidth: 560 }}>
+        Reference for the next phase: PeriPair layout=&ldquo;content&rdquo; at score 1.00 (focus). These are the same PeriPair
+        cards used in the content plane — the next phase will use them in the resume plane overlay to pair related resume entries.
+        At score 1.00 the card uses light (#c7c7c2) background and dark (#1a1a1a) title, matching the resume plane color scheme.
+      </p>
+      <div style={row}>
+
+        <div style={col}>
+          <div style={label}>PeriPair content — score 1.00 focus design reference</div>
+          <PeriPair
+            left={{
+              name: 'Axway — Senior Content Strategist',
+              shortTitle: 'Axway',
+              shortDesc: 'Content & GTM Strategy',
+              desc: 'Leading content and go-to-market strategy for a global integration platform serving 11,000+ customers.',
+            }}
+            right={{
+              name: 'Reuters — Staff Reporter',
+              shortTitle: 'Reuters',
+              shortDesc: 'Investigative Reporting',
+              desc: 'Staff reporter covering Eastern European politics, EU integration, and regional security affairs.',
+            }}
+            onLeftClick={() => {}}
+            onRightClick={() => {}}
+          />
+        </div>
+
+        <div style={col}>
+          <div style={label}>PeriPair nav — layout=&ldquo;nav&rdquo; variant for reference</div>
+          <PeriPair
+            layout="nav"
+            left={{
+              name: 'Axway — Senior Content Strategist',
+              shortTitle: 'Axway',
+              shortDesc: 'Content & GTM',
+              desc: 'Global integration platform content strategy.',
+              thumbnails: [],
+            }}
+            right={{
+              name: 'Reuters — Staff Reporter',
+              shortTitle: 'Reuters',
+              shortDesc: 'EU & Eastern Europe',
+              desc: 'Political reporting from Eastern Europe.',
+              thumbnails: [],
+            }}
+            onLeftClick={() => {}}
+            onRightClick={() => {}}
           />
         </div>
 

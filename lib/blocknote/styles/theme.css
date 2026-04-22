@@ -334,6 +334,15 @@
   padding-right: 0 !important;
 }
 
+/* ── Profile bio renderer — 14px body font (overrides BlockNote's 16px default) ── */
+
+.blocknote-profile-bio .bn-block-outer,
+.blocknote-profile-bio [data-content-type="paragraph"] .bn-inline-content,
+.blocknote-profile-bio [data-content-type="bulletListItem"] .bn-inline-content,
+.blocknote-profile-bio [data-content-type="numberedListItem"] .bn-inline-content {
+  font-size: 14px !important;
+}
+
 /* ── Mobile: reduce BlockNote editor padding in content reader and resume cards ── */
 
 @media (max-width: 767px) {

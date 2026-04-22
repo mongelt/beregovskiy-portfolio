@@ -47,6 +47,7 @@ export default function Home() {
   const [portfolioCollectionDesc, setPortfolioCollectionDesc] = useState<string | null>(null)
   const [portfolioCollectionThumbnails, setPortfolioCollectionThumbnails] = useState<string[]>([])
   const [resumeAvailable, setResumeAvailable] = useState<boolean>(false)
+  const [resumeFocusEntryId, setResumeFocusEntryId] = useState<string | null>(null)
   const [resumeNowMarkerVisible, setResumeNowMarkerVisible] = useState<boolean>(true)
   const [resumeHasExpandedSideEntry, setResumeHasExpandedSideEntry] = useState<boolean>(false)
   const [portfolioMenuExpanded, setPortfolioMenuExpanded] = useState<boolean>(true)
@@ -596,6 +597,7 @@ export default function Home() {
             profileHeight={profileHeight}
             onNowMarkerInViewChange={setResumeNowMarkerVisible}
             onSideEntryExpandedChange={setResumeHasExpandedSideEntry}
+            focusEntryId={resumeFocusEntryId}
           />
         )
       
@@ -638,6 +640,8 @@ export default function Home() {
         onHeightChange={setProfileHeight}
         onOpenCollection={handleOpenCollection}
         condensedMode={shouldCondenseProfile}
+        onSwitchToPortfolio={() => handleTabChange('portfolio')}
+        onSwitchToResume={(entryId?: string) => { setResumeFocusEntryId(entryId ?? null); handleTabChange('resume') }}
       />
 
       {isPortfolioOrCollection ? (

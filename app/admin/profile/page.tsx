@@ -22,6 +22,20 @@ type CollectionOption = {
   name: string
 }
 
+type NavCardOption = {
+  type: 'category' | 'subcategory' | 'collection'
+  id: string
+  name: string
+}
+
+type ResumeEntryOption = {
+  id: string
+  title: string
+  subtitle: string | null
+  date_start: string | null
+  date_end: string | null
+}
+
 export default function ProfileManagement() {
   const supabase = createClient()
   const [loading, setLoading] = useState(true)
@@ -48,6 +62,14 @@ export default function ProfileManagement() {
   const [collections, setCollections] = useState<CollectionOption[]>([])
   const [languages, setLanguages] = useState('')
   const [education, setEducation] = useState('')
+  const [navCardOptions, setNavCardOptions] = useState<NavCardOption[]>([])
+  const [resumeEntryOptions, setResumeEntryOptions] = useState<ResumeEntryOption[]>([])
+  const [portfolioCard1, setPortfolioCard1] = useState('')
+  const [portfolioCard2, setPortfolioCard2] = useState('')
+  const [portfolioCard3, setPortfolioCard3] = useState('')
+  const [resumeCard1, setResumeCard1] = useState('')
+  const [resumeCard2, setResumeCard2] = useState('')
+  const [jhuEntryId, setJhuEntryId] = useState('')
   const fullBioEditorRef = useRef<any>(null)
 
   useEffect(() => {
@@ -93,13 +115,22 @@ export default function ProfileManagement() {
       setLanguages(profileData.languages?.join(', ') || '')
       setEducation(profileData.education || '')
 
-      const [{ data: skillsData }, { data: collectionsData }] = await Promise.all([
+      const [
+        { data: skillsData },
+        { data: collectionsData },
+        { data: categoriesData },
+        { data: subcategoriesData },
+        { data: resumeEntriesData },
+      ] = await Promise.all([
         supabase
           .from('profile_skills')
           .select('id, skill_name, collection_id, order_index')
           .eq('profile_id', profileData.id)
           .order('order_index', { ascending: true }),
-        supabase.from('collections').select('id, name').order('name')
+        supabase.from('collections').select('id, name').order('name'),
+        supabase.from('categories').select('id, name').order('order_index'),
+        supabase.from('subcategories').select('id, name').order('order_index'),
+        supabase.from('resume_entries').select('id, title, subtitle, date_start, date_end').order('date_start', { ascending: false }),
       ])
 
       if (skillsData) {
@@ -118,6 +149,33 @@ export default function ProfileManagement() {
       } else {
         setCollections([])
       }
+
+      const navOptions: NavCardOption[] = [
+        ...(categoriesData || []).map((r: any) => ({ type: 'category' as const, id: r.id, name: r.name })),
+        ...(subcategoriesData || []).map((r: any) => ({ type: 'subcategory' as const, id: r.id, name: r.name })),
+        ...(collectionsData || []).map((r: any) => ({ type: 'collection' as const, id: r.id, name: r.name })),
+      ]
+      setNavCardOptions(navOptions)
+
+      setResumeEntryOptions(
+        (resumeEntriesData || []).map((r: any) => ({
+          id: r.id,
+          title: r.title,
+          subtitle: r.subtitle ?? null,
+          date_start: r.date_start ?? null,
+          date_end: r.date_end ?? null,
+        }))
+      )
+
+      const pCards: Array<{ type: string; id: string }> = profileData.portfolio_plane_cards || []
+      setPortfolioCard1(pCards[0] ? `${pCards[0].type}:${pCards[0].id}` : '')
+      setPortfolioCard2(pCards[1] ? `${pCards[1].type}:${pCards[1].id}` : '')
+      setPortfolioCard3(pCards[2] ? `${pCards[2].type}:${pCards[2].id}` : '')
+
+      const rCards: string[] = profileData.resume_plane_cards || []
+      setResumeCard1(rCards[0] || '')
+      setResumeCard2(rCards[1] || '')
+      setJhuEntryId(profileData.jhu_entry_id || '')
     } catch (err) {
       alert('Error loading profile data')
     } finally {
@@ -170,6 +228,25 @@ export default function ProfileManagement() {
       }
     }
 
+    if (!portfolioCard1) {
+      alert('Portfolio Card 1 is required.')
+      return
+    }
+    if (!resumeCard1) {
+      alert('Resume Card 1 is required.')
+      return
+    }
+
+    const parseNavCard = (val: string) => {
+      if (!val) return null
+      const colonIdx = val.indexOf(':')
+      return { type: val.substring(0, colonIdx), id: val.substring(colonIdx + 1) }
+    }
+    const portfolioPlaneCards = [portfolioCard1, portfolioCard2, portfolioCard3]
+      .map(parseNavCard)
+      .filter(Boolean)
+    const resumePlaneCards = [resumeCard1, resumeCard2].filter(Boolean)
+
     // Extract image sizes from BlockNote image blocks in full_bio
     // BlockNote only stores previewWidth - let browser calculate height to preserve aspect ratio
     let fullBioImageSizes: Record<string, { width?: number; height?: number }> | null = null
@@ -211,6 +288,9 @@ export default function ProfileManagement() {
       show_social_media: showSocialMedia,
       languages: languages.split(',').map(l => l.trim()).filter(Boolean),
       education: education,
+      portfolio_plane_cards: portfolioPlaneCards.length > 0 ? portfolioPlaneCards : null,
+      resume_plane_cards: resumePlaneCards.length > 0 ? resumePlaneCards : null,
+      jhu_entry_id: jhuEntryId || null,
     }
 
     const { error: profileError } = await supabase
@@ -571,6 +651,100 @@ export default function ProfileManagement() {
               onChange={(e) => setEducation(e.target.value)}
               placeholder="e.g., BA in Journalism, University of Example"
             />
+          </div>
+
+          <div className="border-t border-gray-800 pt-6">
+            <h2 className="text-xl font-semibold text-white mb-1">Profile Navigation Planes</h2>
+            <p className="text-sm text-gray-400 mb-6">Cards shown in the Portfolio and Resume sections of the expanded profile tab.</p>
+
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Portfolio Plane Cards</label>
+                <p className="text-xs text-gray-500 mb-3">Card 1 is required. Each card can be a category, subcategory, or collection.</p>
+                {(['1', '2', '3'] as const).map((slot) => {
+                  const value = slot === '1' ? portfolioCard1 : slot === '2' ? portfolioCard2 : portfolioCard3
+                  const setValue = slot === '1' ? setPortfolioCard1 : slot === '2' ? setPortfolioCard2 : setPortfolioCard3
+                  return (
+                    <div key={slot} className="mb-3">
+                      <label className="block text-xs font-medium text-gray-400 mb-1">
+                        Card {slot}{slot === '1' ? ' *' : ' (optional)'}
+                      </label>
+                      <select
+                        value={value}
+                        onChange={(e) => setValue(e.target.value)}
+                        className="w-full rounded-md border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+                      >
+                        <option value="">— Select a card —</option>
+                        <optgroup label="Categories">
+                          {navCardOptions.filter(o => o.type === 'category').map(o => (
+                            <option key={o.id} value={`category:${o.id}`}>{o.name}</option>
+                          ))}
+                        </optgroup>
+                        <optgroup label="Subcategories">
+                          {navCardOptions.filter(o => o.type === 'subcategory').map(o => (
+                            <option key={o.id} value={`subcategory:${o.id}`}>{o.name}</option>
+                          ))}
+                        </optgroup>
+                        <optgroup label="Collections">
+                          {navCardOptions.filter(o => o.type === 'collection').map(o => (
+                            <option key={o.id} value={`collection:${o.id}`}>{o.name}</option>
+                          ))}
+                        </optgroup>
+                      </select>
+                    </div>
+                  )
+                })}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">JHU Logo — Links to Resume Entry</label>
+                <p className="text-xs text-gray-500 mb-3">When set, clicking the JHU logo on the resume plane opens this entry in the Resume tab.</p>
+                <select
+                  value={jhuEntryId}
+                  onChange={(e) => setJhuEntryId(e.target.value)}
+                  className="w-full rounded-md border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+                >
+                  <option value="">— No link (logo not clickable) —</option>
+                  {resumeEntryOptions.map(entry => {
+                    const startYear = entry.date_start ? new Date(entry.date_start).getFullYear() : ''
+                    const endYear = entry.date_end ? new Date(entry.date_end).getFullYear() : 'Present'
+                    const dateRange = startYear ? `${startYear}–${endYear}` : ''
+                    const label = [entry.title, entry.subtitle, dateRange].filter(Boolean).join(' · ')
+                    return <option key={entry.id} value={entry.id}>{label}</option>
+                  })}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Resume Plane Cards</label>
+                <p className="text-xs text-gray-500 mb-3">Card 1 is required. Select resume entries to display.</p>
+                {(['1', '2'] as const).map((slot) => {
+                  const value = slot === '1' ? resumeCard1 : resumeCard2
+                  const setValue = slot === '1' ? setResumeCard1 : setResumeCard2
+                  return (
+                    <div key={slot} className="mb-3">
+                      <label className="block text-xs font-medium text-gray-400 mb-1">
+                        Card {slot}{slot === '1' ? ' *' : ' (optional)'}
+                      </label>
+                      <select
+                        value={value}
+                        onChange={(e) => setValue(e.target.value)}
+                        className="w-full rounded-md border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+                      >
+                        <option value="">— Select a resume entry —</option>
+                        {resumeEntryOptions.map(entry => {
+                          const startYear = entry.date_start ? new Date(entry.date_start).getFullYear() : ''
+                          const endYear = entry.date_end ? new Date(entry.date_end).getFullYear() : 'Present'
+                          const dateRange = startYear ? `${startYear}–${endYear}` : ''
+                          const label = [entry.title, entry.subtitle, dateRange].filter(Boolean).join(' · ')
+                          return <option key={entry.id} value={entry.id}>{label}</option>
+                        })}
+                      </select>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
           </div>
         </div>
 

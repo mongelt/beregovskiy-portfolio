@@ -26,6 +26,7 @@ type ResumeEntry = {
   date_end: string | null
   description: any
   short_description: string | null
+  plane_description: string | null
   collection_id: string | null
   is_featured: boolean
   resume_assets?: ResumeAsset[]
@@ -76,6 +77,7 @@ export default function ResumeManagement() {
   const [dateStart, setDateStart] = useState('')
   const [dateEnd, setDateEnd] = useState('')
   const [shortDescription, setShortDescription] = useState('')
+  const [planeDescription, setPlaneDescription] = useState('')
   const [descriptionData, setDescriptionData] = useState<PartialBlock[] | undefined>()
   const descriptionEditorRef = useRef<any>(null)
   const [selectedCollection, setSelectedCollection] = useState('')
@@ -165,6 +167,7 @@ export default function ResumeManagement() {
         date_start: dateStart || null,
         date_end: dateEnd || null,
         short_description: shortDescription || null,
+        plane_description: planeDescription || null,
         description: descriptionData || null,
         description_image_sizes: descriptionImageSizes,
         collection_id: selectedCollection || null,
@@ -231,6 +234,7 @@ export default function ResumeManagement() {
         date_start: dateStart || null,
         date_end: dateEnd || null,
         short_description: shortDescription || null,
+        plane_description: planeDescription || null,
         description: descriptionData || null,
         description_image_sizes: descriptionImageSizes,
         collection_id: selectedCollection || null,
@@ -280,6 +284,7 @@ export default function ResumeManagement() {
     setDateStart('')
     setDateEnd('')
     setShortDescription('')
+    setPlaneDescription('')
     setDescriptionData(undefined)
     setSelectedCollection('')
     setAssets([])
@@ -298,6 +303,7 @@ export default function ResumeManagement() {
     setDateStart(entry.date_start || '')
     setDateEnd(entry.date_end || '')
     setShortDescription(entry.short_description || '')
+    setPlaneDescription(entry.plane_description || '')
     setDescriptionData(entry.description)
     setSelectedCollection(entry.collection_id || '')
     setIsFeatured(entry.is_featured)
@@ -539,6 +545,22 @@ export default function ResumeManagement() {
             />
             <p className="text-xs text-gray-500 mt-1">
               This appears in the collapsed view. Keep it concise.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Plane Description (optional)
+            </label>
+            <textarea
+              value={planeDescription}
+              onChange={(e) => setPlaneDescription(e.target.value)}
+              placeholder="2-line description for the portfolio overlay card (max ~120 chars)"
+              maxLength={100}
+              className="w-full h-16 rounded-md border border-gray-700 bg-gray-950 px-3 py-2 text-white resize-none"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Appears on the resume overlay card. Leave empty to show no description. Max 120 characters.
             </p>
           </div>
 

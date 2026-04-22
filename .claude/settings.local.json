@@ -55,7 +55,10 @@
       "Bash(taskkill /F /IM msedge.exe)",
       "WebFetch(domain:magicui.design)",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "mcp__claude_ai_Supabase__apply_migration",
+      "mcp__claude_ai_Supabase__execute_sql",
+      "mcp__claude_ai_Supabase__list_projects"
     ]
   }
 }

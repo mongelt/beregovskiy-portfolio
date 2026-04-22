@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect, useRef, forwardRef, useImperativeHandle, useMemo } from 'react'
+import { useState, useEffect, useRef, forwardRef, useImperativeHandle, useMemo, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import BlockNoteRenderer from '@/components/BlockNoteRendererDynamic'
 import { motion, AnimatePresence } from 'framer-motion'
-import { MapPin, ChevronDown, ChevronUp } from 'lucide-react'
 import { useMobileState } from '@/lib/responsive'
 import { BOTTOM_NAV_HEIGHT_PX } from '@/lib/constants'
+import { ProfilePlanes, type ProfileNavCard, type ProfileResumeCard } from '@/components/ProfilePlanes'
 
 type ProfileData = {
   full_name: string | null
@@ -28,7 +28,10 @@ type ProfileData = {
   skills: string[] | null
   languages: string[] | null
   education: string | null
+  jhu_entry_id: string | null
   collapsed_profile_height: number | null
+  portfolio_plane_cards: Array<{ type: string; id: string }> | null
+  resume_plane_cards: string[] | null
 }
 
 type ProfileSkill = {
@@ -42,6 +45,8 @@ interface ProfileProps {
   onHeightChange?: (height: number) => void
   onOpenCollection?: (slug: string, name: string) => void
   condensedMode?: boolean
+  onSwitchToPortfolio?: () => void
+  onSwitchToResume?: (entryId?: string) => void
 }
 
 export interface ProfileRef {
@@ -146,11 +151,16 @@ function ShortBioRenderer({ data }: { data: any }) {
 const Profile = forwardRef<ProfileRef, ProfileProps>(({
   onHeightChange,
   onOpenCollection,
-  condensedMode = false
+  condensedMode = false,
+  onSwitchToPortfolio,
+  onSwitchToResume,
 }, ref) => {
   const [isExpanded, setIsExpanded] = useState(true) // CRITICAL: Redesign - expanded by default
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [skills, setSkills] = useState<ProfileSkill[]>([])
+  const [headerHovered, setHeaderHovered] = useState(false)
+  const [portfolioCardData, setPortfolioCardData] = useState<ProfileNavCard[]>([])
+  const [resumeCardData, setResumeCardData] = useState<ProfileResumeCard[]>([])
   const supabase = createClient()
   const headerRef = useRef<HTMLElement | null>(null)
   const resizeDebounceTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -164,7 +174,7 @@ const Profile = forwardRef<ProfileRef, ProfileProps>(({
   }))
 
   useEffect(() => {
-    loadProfile()
+    loadProfile().then(fetchPlaneCardData)
   }, [])
 
   useEffect(() => {
@@ -229,13 +239,13 @@ const Profile = forwardRef<ProfileRef, ProfileProps>(({
   }, [onHeightChange, profile, isExpanded, condensedMode]) // Added condensedMode to dependencies for immediate reaction
 
 
-  async function loadProfile() {
+  async function loadProfile(): Promise<ProfileData | null> {
     const { data } = await supabase
       .from('profile')
       .select('*')
       .limit(1)
       .single()
-    
+
     if (data) {
       setProfile(data)
       const { data: skillRows } = await supabase
@@ -255,22 +265,83 @@ const Profile = forwardRef<ProfileRef, ProfileProps>(({
       } else {
         setSkills([])
       }
+      return data
     }
+    return null
+  }
+
+  async function fetchPlaneCardData(profileData: ProfileData | null) {
+    if (!profileData) return
+
+    // Fetch portfolio nav cards
+    const pCards: ProfileNavCard[] = []
+    if (profileData.portfolio_plane_cards?.length) {
+      for (const card of profileData.portfolio_plane_cards) {
+        if (card.type === 'category') {
+          const { data } = await supabase.from('categories').select('id, name, short_desc, desc').eq('id', card.id).single()
+          if (data) {
+            const { data: imgs } = await supabase.from('content').select('menu_thumbnail_url, image_url').eq('category_id', card.id).order('order_index', { ascending: true }).limit(5)
+            pCards.push({ id: data.id, name: data.name, shortDesc: (data as any).short_desc ?? null, desc: (data as any).desc ?? null, thumbnails: imgs?.map((c: any) => c.menu_thumbnail_url ?? c.image_url).filter(Boolean) ?? [] })
+          }
+        } else if (card.type === 'subcategory') {
+          const { data } = await supabase.from('subcategories').select('id, name, short_desc, desc').eq('id', card.id).single()
+          if (data) {
+            const { data: imgs } = await supabase.from('content').select('menu_thumbnail_url, image_url').eq('subcategory_id', card.id).order('order_index', { ascending: true }).limit(5)
+            pCards.push({ id: data.id, name: data.name, shortDesc: (data as any).short_desc ?? null, desc: (data as any).desc ?? null, thumbnails: imgs?.map((c: any) => c.menu_thumbnail_url ?? c.image_url).filter(Boolean) ?? [] })
+          }
+        } else if (card.type === 'collection') {
+          const { data } = await supabase.from('collections').select('id, name, short_desc, desc').eq('id', card.id).single()
+          if (data) {
+            const { data: junctionData } = await supabase.from('content_collections').select('content_id').eq('collection_id', card.id).limit(5)
+            let thumbnails: string[] = []
+            if (junctionData?.length) {
+              const ids = junctionData.map((j: any) => j.content_id)
+              const { data: imgs } = await supabase.from('content').select('menu_thumbnail_url, image_url').in('id', ids).limit(5)
+              thumbnails = imgs?.map((c: any) => c.menu_thumbnail_url ?? c.image_url).filter(Boolean) ?? []
+            }
+            pCards.push({ id: data.id, name: data.name, shortDesc: (data as any).short_desc ?? null, desc: (data as any).desc ?? null, thumbnails })
+          }
+        }
+      }
+    }
+    setPortfolioCardData(pCards)
+
+    // Fetch resume cards
+    const rCards: ProfileResumeCard[] = []
+    if (profileData.resume_plane_cards?.length) {
+      const { data } = await supabase
+        .from('resume_entries')
+        .select('id, title, subtitle, short_description, plane_description, date_start, date_end')
+        .in('id', profileData.resume_plane_cards)
+      if (data) {
+        for (const id of profileData.resume_plane_cards) {
+          const entry = data.find((d: any) => d.id === id)
+          if (entry) rCards.push({ id: entry.id, title: entry.title, subtitle: entry.subtitle ?? null, dateStart: entry.date_start ?? null, dateEnd: entry.date_end ?? null, shortDescription: entry.short_description ?? null, planeDescription: (entry as any).plane_description ?? null })
+        }
+      }
+    }
+    setResumeCardData(rCards)
   }
 
   if (!profile) return null
   const isCondensed = condensedMode && !isExpanded
 
+  const isClickable = !isExpanded || isCondensed
+  const showGradientStrip = isClickable && !isMobile
+  const hoverGradientHeight = 40
+  const hoverExpansion = hoverGradientHeight / 2
+
   return (<>
     <header
       ref={headerRef}
-      className={`border-b-2 border-accent-light transition-all duration-300 sticky top-0 z-40 font-body text-text-on-dark-secondary bg-bg-profile backdrop-saturate-[180%] backdrop-blur-[20px] shadow-[0_2px_12px_rgba(0,0,0,0.08)] relative ${!isExpanded && !isCondensed && !isMobile ? 'collapsed' : ''} ${isExpanded && !isMobile ? 'flex flex-col' : ''}`}
+      className={`border-b-2 border-accent-light transition-all duration-300 sticky top-0 z-40 font-body text-text-on-dark-secondary bg-bg-profile backdrop-saturate-[180%] backdrop-blur-[20px] shadow-[0_2px_12px_rgba(0,0,0,0.08)] relative ${!isExpanded && !isCondensed && !isMobile ? 'collapsed' : ''} ${isClickable ? 'select-none' : ''} ${showGradientStrip ? 'cursor-pointer' : ''}`}
+      onClick={isClickable ? () => setIsExpanded(true) : undefined}
+      onMouseEnter={() => { if (showGradientStrip) setHeaderHovered(true) }}
+      onMouseLeave={() => setHeaderHovered(false)}
       style={{
-        backgroundColor: '#121212', // Explicit background color to ensure it's not overridden
+        backgroundColor: '#121212',
         ...(!isExpanded && !isCondensed && profile?.collapsed_profile_height && !isMobile
-          ? { height: `${profile.collapsed_profile_height}px`, overflow: 'hidden' }
-          : isExpanded && !isMobile
-          ? { maxHeight: `calc(100vh - ${BOTTOM_NAV_HEIGHT_PX}px)`, minHeight: `calc(100vh - ${BOTTOM_NAV_HEIGHT_PX}px)` }
+          ? { height: `${profile.collapsed_profile_height}px`, overflow: 'visible' }
           : {})
       }}
     >
@@ -308,53 +379,19 @@ const Profile = forwardRef<ProfileRef, ProfileProps>(({
             )}
           </div>
           
-          {/* Expand button */}
-          <div className="flex justify-center mt-4">
-            <motion.button
-              onClick={() => setIsExpanded(true)}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="flex items-center gap-2 font-ui text-sm font-medium text-accent-dark hover:text-accent-light uppercase tracking-[0.05em] transition-colors"
-            >
-              <span>EXPAND</span>
-              <ChevronDown size={16} />
-            </motion.button>
-          </div>
         </div>
       ) : isCondensed ? (
         isMobile ? (
           <div className="px-[15px] py-3">
-            <h1 className="font-display text-[2rem] font-bold uppercase text-text-on-dark tracking-[-0.012em] leading-none whitespace-nowrap overflow-hidden text-ellipsis mb-2">
+            <h1 className="font-display text-[2rem] font-bold uppercase text-text-on-dark tracking-[-0.012em] leading-none whitespace-nowrap overflow-hidden text-ellipsis select-none cursor-pointer" onClick={() => setIsExpanded(true)}>
               {profile.full_name?.toUpperCase() || 'YOUR NAME'}
             </h1>
-            <div className="flex justify-center">
-              <motion.button
-                onClick={() => setIsExpanded(true)}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="flex items-center gap-2 font-ui text-sm font-medium text-accent-dark hover:text-accent-light uppercase tracking-[0.05em] transition-colors"
-              >
-                <span>EXPAND</span>
-                <ChevronDown size={16} />
-              </motion.button>
-            </div>
           </div>
         ) : (
           <div className="px-8 py-4">
-            <div className="flex items-center justify-between">
-              <h1 className="font-display text-[2rem] font-bold uppercase text-text-on-dark tracking-[-0.012em] mb-1">
-                {profile.full_name?.toUpperCase() || 'YOUR NAME'}
-              </h1>
-              <motion.button
-                onClick={() => setIsExpanded(true)}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="flex items-center gap-2 font-ui text-sm font-medium text-accent-dark hover:text-accent-light uppercase tracking-[0.05em] transition-colors"
-              >
-                <span>EXPAND</span>
-                <ChevronDown size={16} />
-              </motion.button>
-            </div>
+            <h1 className="font-display text-[2rem] font-bold uppercase text-text-on-dark tracking-[-0.012em] mb-1 select-none">
+              {profile.full_name?.toUpperCase() || 'YOUR NAME'}
+            </h1>
           </div>
         )
       ) : !isMobile ? (
@@ -363,13 +400,13 @@ const Profile = forwardRef<ProfileRef, ProfileProps>(({
           <div className="py-6 px-8" style={!isExpanded && profile?.collapsed_profile_height ? { height: `${profile.collapsed_profile_height}px`, overflow: 'hidden' } : undefined}>
             <div className="flex items-start">
               <div className="w-[50%]">
-                <h1 className="font-display text-[2rem] font-bold uppercase text-text-on-dark tracking-[-0.012em] mb-1">
+                <h1 className="font-display text-[2rem] font-bold uppercase text-text-on-dark tracking-[-0.012em] mb-1 select-none">
                   {profile.full_name?.toUpperCase() || 'YOUR NAME'}
                 </h1>
-                
+
                 {profile.location && (
                   <div className="flex items-center gap-1 font-body text-sm text-text-on-dark-secondary mb-3">
-                    <MapPin size={14} />
+                    <img src="/dc-outline.png" alt="location" style={{ width: 14, height: 14, objectFit: 'contain' }} />
                     <p>{profile.location}</p>
                   </div>
                 )}
@@ -400,172 +437,33 @@ const Profile = forwardRef<ProfileRef, ProfileProps>(({
             </div>
           </div>
 
-          {/* Collapsed expand button */}
-          {!isExpanded && (
-            <div className="absolute left-0 right-0 bottom-[15px] flex justify-center">
-              <motion.button
-                onClick={() => setIsExpanded(true)}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="flex items-center gap-2 font-ui text-sm font-medium text-accent-dark hover:text-accent-light uppercase tracking-[0.05em] transition-colors"
-              >
-                <span>EXPAND</span>
-                <ChevronDown size={16} />
-              </motion.button>
-            </div>
-          )}
         </>
       ) : null}
 
-      {/* Desktop-only AnimatePresence — height animation is safe inside header */}
-      {!isMobile && (
-        <AnimatePresence>
-          {isExpanded && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3, ease: 'easeInOut' }}
-              className="bg-bg-profile overflow-hidden flex flex-col flex-1"
-              style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
-            >
-              {/* Profile Expanded Content - matches mockup .profile-expanded-content */}
-              <div className="flex-1 overflow-hidden">
-                <div className="py-4 px-8 border-t border-border-gray-800 mt-4">
-                  {/* Profile Expanded Grid - matches mockup .profile-expanded-grid (2fr 1fr) */}
-                  <div className="grid grid-cols-[2fr_1fr] gap-6">
-                    {/* Left column - About section */}
-                    <div>
-                      <div className="blocknote-profile-bio font-body text-sm text-text-on-dark-secondary leading-relaxed" style={{ lineHeight: '1.625', '--text-body': 'var(--text-on-dark-secondary)', '--text-headings': 'var(--text-on-dark)', '--text-secondary': 'var(--text-on-dark-secondary)', '--text-metadata': 'var(--text-on-dark-inactive)' } as React.CSSProperties}>
-                        {profile.full_bio ? (
-                          isBlockNoteFormat(profile.full_bio) ? (
-                            <BlockNoteRenderer data={profile.full_bio} imageSizes={profile.full_bio_image_sizes} />
-                          ) : (
-                            <p>{profile.full_bio}</p>
-                          )
-                        ) : profile.short_bio ? (
-                          isBlockNoteFormat(profile.short_bio) ? (
-                            <BlockNoteRenderer data={profile.short_bio} />
-                          ) : (
-                            <p>{profile.short_bio}</p>
-                          )
-                        ) : (
-                          <p>No bio available</p>
-                        )}
-                      </div>
-                    </div>
 
-                    {/* Right column - Education, Skills, Languages */}
-                    <div>
-                      {profile.education && (
-                        <div className="mb-6">
-                          <h3 className="font-ui text-sm font-semibold text-text-on-dark-inactive uppercase tracking-[0.06em] mb-2">Education</h3>
-                          <p className="font-body text-text-on-dark-secondary">{profile.education}</p>
-                        </div>
-                      )}
-
-                      {skills.length > 0 && (
-                        <div className="mb-6">
-                          <h3 className="font-ui text-sm font-semibold text-text-on-dark-inactive uppercase tracking-[0.06em] mb-2">Skills</h3>
-                          <div className="flex flex-wrap gap-2">
-                            {skills.map((skill) => {
-                              const isLinked = !!skill.collectionSlug && !!skill.collectionName && !!onOpenCollection
-                              return (
-                                <button
-                                  key={skill.id}
-                                  onClick={() => {
-                                    if (isLinked && skill.collectionSlug && skill.collectionName && onOpenCollection) {
-                                      onOpenCollection(skill.collectionSlug, skill.collectionName)
-                                    }
-                                  }}
-                                  className={`
-                                    py-1 px-3 rounded-full text-sm transition-colors text-white
-                                    ${isLinked
-                                      ? 'bg-accent-emerald-700 hover:bg-accent-emerald-300'
-                                      : 'bg-bg-unlinked-skills-pill cursor-default'}
-                                  `}
-                                  disabled={!isLinked}
-                                >
-                                  {skill.skillName}
-                                </button>
-                              )
-                            })}
-                          </div>
-                        </div>
-                      )}
-
-                      {profile.languages && profile.languages.length > 0 && (
-                        <div>
-                          <h3 className="font-ui text-sm font-semibold text-text-on-dark-inactive uppercase tracking-[0.06em] mb-2">Languages</h3>
-                          <div className="flex flex-wrap gap-2">
-                            {profile.languages.map((language, i) => (
-                              <span
-                                key={i}
-                                className="py-1 px-3 text-white rounded-full text-sm bg-bg-unlinked-skills-pill"
-                              >
-                                {language}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Contact Row - matches mockup .profile-contact-row */}
-              {(profile.show_phone && profile.phone) ||
-               (profile.show_email && profile.email) ||
-               (profile.show_social_media && profile.linkedin) ? (
-                <div className="border-t border-border-gray-800 bg-bg-profile px-8 py-4 flex flex-wrap gap-4 items-center">
-                  {profile.show_phone && profile.phone && (
-                    <div className="flex items-center gap-2 font-body text-sm text-text-on-dark-secondary">
-                      <span>📞</span>
-                      <span>{profile.phone}</span>
-                    </div>
-                  )}
-                  {profile.show_email && profile.email && (
-                    <div className="flex items-center gap-2 font-body text-sm text-text-on-dark-secondary">
-                      <span>✉️</span>
-                      <a href={`mailto:${profile.email}`} className="text-text-on-dark-secondary hover:text-accent-light transition-colors" style={{ textDecoration: 'none' }}>
-                        {profile.email}
-                      </a>
-                    </div>
-                  )}
-                  {profile.show_social_media && profile.linkedin && (
-                    <div className="flex items-center gap-2 font-body text-sm text-text-on-dark-secondary">
-                      <span>💼</span>
-                      <a
-                        href={profile.linkedin}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-text-on-dark-secondary hover:text-accent-light transition-colors"
-                        style={{ textDecoration: 'none' }}
-                      >
-                        LinkedIn
-                      </a>
-                    </div>
-                  )}
-                </div>
-              ) : null}
-
-              {/* Expand Button Wrapper - matches mockup .profile-expand-button-wrapper */}
-              <div className="px-8 py-4 flex justify-center">
-                <motion.button
-                  onClick={() => setIsExpanded(false)}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="flex items-center gap-2 font-ui text-sm font-medium text-accent-dark hover:text-accent-light uppercase tracking-[0.05em] transition-colors bg-transparent border-none cursor-pointer p-0"
-                >
-                  <span>COLLAPSE</span>
-                  <ChevronUp size={16} />
-                </motion.button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      )}
+      {/* Hover expansion overlay — bg fill + gradient, positioned below tab border, no layout impact */}
+      {showGradientStrip && (<>
+        <div
+          className="absolute left-0 right-0 pointer-events-none transition-opacity duration-300"
+          style={{
+            bottom: -hoverExpansion,
+            height: hoverExpansion,
+            backgroundColor: '#121212',
+            opacity: headerHovered ? 1 : 0,
+            zIndex: 38,
+          }}
+        />
+        <div
+          className="absolute left-0 right-0 pointer-events-none transition-opacity duration-300"
+          style={{
+            bottom: -hoverExpansion,
+            height: hoverGradientHeight,
+            background: 'linear-gradient(to bottom, transparent, #6B2A2A)',
+            opacity: headerHovered ? 1 : 0,
+            zIndex: 39,
+          }}
+        />
+      </>)}
     </header>
 
     {/* Mobile expanded overlay — sibling to header, outside backdrop-filter containing block */}
@@ -725,6 +623,112 @@ const Profile = forwardRef<ProfileRef, ProfileProps>(({
                 )}
               </div>
             ) : null}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    )}
+
+    {/* Desktop expanded overlay — fixed, covers full viewport including bottom nav */}
+    {!isMobile && (
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 55,
+              backgroundColor: '#121212',
+              display: 'flex',
+              flexDirection: 'column',
+              borderBottom: '2px solid #6B2A2A',
+            }}
+          >
+            {/* Profile upper zone: header + full bio */}
+            <div style={{ height: 'calc(45vh - 20px)', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+
+              {/* Profile header: name / location / job titles (left) + short bio (right) */}
+              <div className="py-6 px-8 flex items-start flex-shrink-0">
+                <div className="w-[50%]">
+                  <h1 className="font-display text-[2rem] font-bold uppercase text-text-on-dark tracking-[-0.012em] mb-1 select-none">
+                    {profile.full_name?.toUpperCase() || 'YOUR NAME'}
+                  </h1>
+                  {profile.location && (
+                    <div className="flex items-center gap-1 font-body text-sm text-text-on-dark-secondary mb-3">
+                      <img src="/dc-outline.png" alt="location" style={{ width: 14, height: 14, objectFit: 'contain' }} />
+                      <p>{profile.location}</p>
+                    </div>
+                  )}
+                  <div className="space-y-0.5 font-body text-sm text-text-on-dark-secondary">
+                    {profile.job_title_1 && <p>{profile.job_title_1}</p>}
+                    {profile.job_title_2 && <p>{profile.job_title_2}</p>}
+                    {profile.job_title_3 && <p>{profile.job_title_3}</p>}
+                    {profile.job_title_4 && <p>{profile.job_title_4}</p>}
+                  </div>
+                </div>
+                <div className="w-[40%] font-body text-sm text-text-on-dark-secondary" style={{ lineHeight: '1.625' }}>
+                  {profile.short_bio ? (
+                    isBlockNoteFormat(profile.short_bio) || isEditorJSFormat(profile.short_bio) ? (
+                      <ShortBioRenderer data={profile.short_bio} />
+                    ) : (
+                      <p>{profile.short_bio}</p>
+                    )
+                  ) : (
+                    <p>No bio available</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Full bio BlockNote — full width, fills remaining upper zone height */}
+              <div
+                className="flex-1 min-h-0 overflow-y-hidden px-8 py-4"
+                style={{ borderTop: '2px solid #2e2a28' }}
+              >
+                <div
+                  className="blocknote-profile-bio font-body text-text-on-dark-secondary"
+                  style={{
+                    fontSize: '14px',
+                    lineHeight: '1.625',
+                    '--text-body': 'var(--text-on-dark-secondary)',
+                    '--text-headings': 'var(--text-on-dark)',
+                    '--text-secondary': 'var(--text-on-dark-secondary)',
+                    '--text-metadata': 'var(--text-on-dark-inactive)',
+                  } as React.CSSProperties}
+                >
+                  {profile.full_bio ? (
+                    isBlockNoteFormat(profile.full_bio) ? (
+                      <BlockNoteRenderer data={profile.full_bio} imageSizes={profile.full_bio_image_sizes} />
+                    ) : (
+                      <p>{profile.full_bio}</p>
+                    )
+                  ) : profile.short_bio ? (
+                    isBlockNoteFormat(profile.short_bio) ? (
+                      <BlockNoteRenderer data={profile.short_bio} />
+                    ) : (
+                      <p>{profile.short_bio}</p>
+                    )
+                  ) : (
+                    <p>No bio available</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Planes */}
+            <ProfilePlanes
+              portfolioCards={portfolioCardData}
+              resumeCards={resumeCardData}
+              education={profile.education}
+              jhuEntryId={profile.jhu_entry_id ?? null}
+              onSwitchToPortfolio={() => { setIsExpanded(false); onSwitchToPortfolio?.() }}
+              onSwitchToResume={(entryId?: string) => { setIsExpanded(false); onSwitchToResume?.(entryId) }}
+            />
           </motion.div>
         )}
       </AnimatePresence>
