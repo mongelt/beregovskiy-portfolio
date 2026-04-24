@@ -21,6 +21,7 @@ type Subcategory = {
   order_index: number
   short_title?: string | null
   short_desc?: string | null
+  peri_desc?: string | null
   desc?: string | null
   collection_column_override?: string | null
 }
@@ -52,10 +53,12 @@ export default function CategoriesManagement() {
   // Subcategory menu display fields
   const [newSubcategoryShortTitle, setNewSubcategoryShortTitle] = useState('')
   const [newSubcategoryShortDesc, setNewSubcategoryShortDesc] = useState('')
+  const [newSubcategoryPeriDesc, setNewSubcategoryPeriDesc] = useState('')
   const [newSubcategoryDesc, setNewSubcategoryDesc] = useState('')
   const [newSubcategoryCollectionOverride, setNewSubcategoryCollectionOverride] = useState('auto')
   const [editSubcategoryShortTitle, setEditSubcategoryShortTitle] = useState('')
   const [editSubcategoryShortDesc, setEditSubcategoryShortDesc] = useState('')
+  const [editSubcategoryPeriDesc, setEditSubcategoryPeriDesc] = useState('')
   const [editSubcategoryDesc, setEditSubcategoryDesc] = useState('')
   const [editSubcategoryCollectionOverride, setEditSubcategoryCollectionOverride] = useState('auto')
 
@@ -112,6 +115,7 @@ export default function CategoriesManagement() {
         order_index: categorySubcategories.length,
         short_title: newSubcategoryShortTitle || null,
         short_desc: newSubcategoryShortDesc || null,
+        peri_desc: newSubcategoryPeriDesc || null,
         desc: newSubcategoryDesc || null,
         collection_column_override: newSubcategoryCollectionOverride,
       })
@@ -122,6 +126,7 @@ export default function CategoriesManagement() {
       setNewSubcategoryName('')
       setNewSubcategoryShortTitle('')
       setNewSubcategoryShortDesc('')
+      setNewSubcategoryPeriDesc('')
       setNewSubcategoryDesc('')
       setNewSubcategoryCollectionOverride('auto')
       loadData()
@@ -192,6 +197,7 @@ export default function CategoriesManagement() {
         name: editSubcategoryName,
         short_title: editSubcategoryShortTitle || null,
         short_desc: editSubcategoryShortDesc || null,
+        peri_desc: editSubcategoryPeriDesc || null,
         desc: editSubcategoryDesc || null,
         collection_column_override: editSubcategoryCollectionOverride,
       })
@@ -204,6 +210,7 @@ export default function CategoriesManagement() {
       setEditSubcategoryName('')
       setEditSubcategoryShortTitle('')
       setEditSubcategoryShortDesc('')
+      setEditSubcategoryPeriDesc('')
       setEditSubcategoryDesc('')
       setEditSubcategoryCollectionOverride('auto')
       loadData()
@@ -223,6 +230,7 @@ export default function CategoriesManagement() {
     setEditSubcategoryName(subcategory.name)
     setEditSubcategoryShortTitle(subcategory.short_title || '')
     setEditSubcategoryShortDesc(subcategory.short_desc || '')
+    setEditSubcategoryPeriDesc(subcategory.peri_desc || '')
     setEditSubcategoryDesc(subcategory.desc || '')
     setEditSubcategoryCollectionOverride(subcategory.collection_column_override || 'auto')
   }
@@ -444,6 +452,10 @@ export default function CategoriesManagement() {
                     <label className="block text-xs text-gray-400 mb-1">Short Desc <span className="text-gray-500">{newSubcategoryShortDesc.length}/30</span></label>
                     <Input value={newSubcategoryShortDesc} onChange={(e) => setNewSubcategoryShortDesc(e.target.value)} placeholder="Short description" maxLength={30} disabled={!selectedCategoryForSub} />
                   </div>
+                  <div className="flex-1">
+                    <label className="block text-xs text-gray-400 mb-1">Peri Desc <span className="text-gray-500">{newSubcategoryPeriDesc.length}/22</span></label>
+                    <Input value={newSubcategoryPeriDesc} onChange={(e) => setNewSubcategoryPeriDesc(e.target.value)} placeholder="Peri description" maxLength={22} disabled={!selectedCategoryForSub} />
+                  </div>
                 </div>
                 <div>
                   <label className="block text-xs text-gray-400 mb-1">Description</label>
@@ -490,6 +502,10 @@ export default function CategoriesManagement() {
                                 <div className="flex-1">
                                   <label className="block text-xs text-gray-400 mb-1">Short Desc <span className="text-gray-500">{editSubcategoryShortDesc.length}/30</span></label>
                                   <Input value={editSubcategoryShortDesc} onChange={(e) => setEditSubcategoryShortDesc(e.target.value)} placeholder="Short description" maxLength={30} />
+                                </div>
+                                <div className="flex-1">
+                                  <label className="block text-xs text-gray-400 mb-1">Peri Desc <span className="text-gray-500">{editSubcategoryPeriDesc.length}/22</span></label>
+                                  <Input value={editSubcategoryPeriDesc} onChange={(e) => setEditSubcategoryPeriDesc(e.target.value)} placeholder="Peri description" maxLength={22} />
                                 </div>
                               </div>
                               <textarea value={editSubcategoryDesc} onChange={(e) => setEditSubcategoryDesc(e.target.value)} placeholder="Description" rows={2} className="w-full rounded-md border border-gray-700 bg-gray-950 px-3 py-2 text-white text-sm resize-y" />

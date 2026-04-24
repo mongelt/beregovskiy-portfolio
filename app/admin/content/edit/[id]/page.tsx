@@ -91,6 +91,7 @@ export default function EditContent() {
   const [featured, setFeatured] = useState(false)
   const [menuShortTitle, setMenuShortTitle] = useState('')
   const [menuShortDesc, setMenuShortDesc] = useState('')
+  const [menuPeriDesc, setMenuPeriDesc] = useState('')
   const [menuDesc, setMenuDesc] = useState('')
 
   useEffect(() => {
@@ -154,6 +155,7 @@ export default function EditContent() {
     setSelectedLinkStyle(data.link_style || '')
     setMenuShortTitle(data.short_title || '')
     setMenuShortDesc(data.short_desc || '')
+    setMenuPeriDesc(data.peri_desc || '')
     setMenuDesc(data.desc || '')
 
     const { data: collectionData } = await supabase
@@ -353,6 +355,7 @@ export default function EditContent() {
           link_style: selectedLinkStyle || null,
           short_title: menuShortTitle || null,
           short_desc: menuShortDesc || null,
+          peri_desc: menuPeriDesc || null,
           desc: menuDesc || null,
         })
         .eq('id', contentId)
@@ -913,6 +916,18 @@ export default function EditContent() {
               onChange={(e) => setMenuShortDesc(e.target.value)}
               placeholder="Short description for menu card"
               maxLength={30}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Peri Description <span className="text-gray-500 text-xs">{menuPeriDesc.length}/22</span>
+            </label>
+            <Input
+              value={menuPeriDesc}
+              onChange={(e) => setMenuPeriDesc(e.target.value)}
+              placeholder="Description shown on peri cards at rest"
+              maxLength={22}
             />
           </div>
 

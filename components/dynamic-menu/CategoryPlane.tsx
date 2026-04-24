@@ -89,6 +89,7 @@ function renderSubcategoryItems(
           name: sub.name,
           shortTitle: sub.shortTitle,
           shortDesc: sub.shortDesc,
+          periDesc: sub.periDesc,
           desc: sub.desc,
           thumbnails: sub.thumbnails,
         }
@@ -96,6 +97,7 @@ function renderSubcategoryItems(
           name: right.name,
           shortTitle: right.shortTitle,
           shortDesc: right.shortDesc,
+          periDesc: right.periDesc,
           desc: right.desc,
           thumbnails: right.thumbnails,
         }
@@ -122,6 +124,7 @@ function renderSubcategoryItems(
             name={sub.name}
             shortTitle={sub.shortTitle}
             shortDesc={sub.shortDesc}
+            periDesc={sub.periDesc}
             desc={sub.desc}
             thumbnails={sub.thumbnails}
             layout="nav"

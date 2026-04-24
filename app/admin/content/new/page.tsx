@@ -88,6 +88,7 @@ export default function NewContent() {
   const [featured, setFeatured] = useState(false)
   const [menuShortTitle, setMenuShortTitle] = useState('')
   const [menuShortDesc, setMenuShortDesc] = useState('')
+  const [menuPeriDesc, setMenuPeriDesc] = useState('')
   const [menuDesc, setMenuDesc] = useState('')
 
   useEffect(() => {
@@ -297,6 +298,7 @@ export default function NewContent() {
           link_style: selectedLinkStyle || null,
           short_title: menuShortTitle || null,
           short_desc: menuShortDesc || null,
+          peri_desc: menuPeriDesc || null,
           desc: menuDesc || null,
         })
         .select()
@@ -843,6 +845,18 @@ export default function NewContent() {
               onChange={(e) => setMenuShortDesc(e.target.value)}
               placeholder="Short description for menu card"
               maxLength={30}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Peri Description <span className="text-gray-500 text-xs">{menuPeriDesc.length}/22</span>
+            </label>
+            <Input
+              value={menuPeriDesc}
+              onChange={(e) => setMenuPeriDesc(e.target.value)}
+              placeholder="Description shown on peri cards at rest"
+              maxLength={22}
             />
           </div>
 

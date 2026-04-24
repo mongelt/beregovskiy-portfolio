@@ -16,6 +16,7 @@ export interface SubcategoryForLayout {
   name: string
   shortTitle?: string
   shortDesc?: string
+  periDesc?: string
   desc?: string
   /** Collection IDs derived from this subcategory's content items */
   collectionIds: string[]

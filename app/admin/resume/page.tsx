@@ -52,6 +52,7 @@ type ResumeAsset = {
   link_title?: string | null
   custom_caption?: string | null
   icon_key?: string | null
+  thumbnail_url?: string | null
   order_index: number
 }
 type AssetIcon = {
@@ -186,6 +187,7 @@ export default function ResumeManagement() {
         link_title: asset.link_title,
         custom_caption: asset.custom_caption || null,
         icon_key: asset.icon_key || null,
+        thumbnail_url: asset.thumbnail_url || null,
         order_index: index
       }))
       
@@ -258,6 +260,7 @@ export default function ResumeManagement() {
           link_title: asset.link_title,
           custom_caption: asset.custom_caption || null,
           icon_key: asset.icon_key || null,
+          thumbnail_url: asset.thumbnail_url || null,
           order_index: index
         }))
         
@@ -317,6 +320,7 @@ export default function ResumeManagement() {
         link_title: a.link_title,
         custom_caption: a.custom_caption || '',
         icon_key: a.icon_key || '',
+        thumbnail_url: (a as any).thumbnail_url || '',
         order_index: a.order_index ?? 0
       })))
     } else {
@@ -333,6 +337,7 @@ export default function ResumeManagement() {
         link_title: a.link_title,
         custom_caption: (a as any).custom_caption || '',
         icon_key: (a as any).icon_key || '',
+        thumbnail_url: (a as any).thumbnail_url || '',
         order_index: (a as any).order_index ?? 0
       })))
     }
@@ -367,6 +372,7 @@ export default function ResumeManagement() {
       link_title: '',
       custom_caption: '',
       icon_key: '',
+      thumbnail_url: '',
       order_index: assets.length
     }])
   }
@@ -379,6 +385,25 @@ export default function ResumeManagement() {
     const newAssets = [...assets]
     newAssets[index] = { ...newAssets[index], [field]: value }
     setAssets(newAssets)
+  }
+
+  async function uploadAssetThumbnail(index: number, file: File) {
+    updateAsset(index, 'thumbnail_url', '__uploading__')
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!)
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+        { method: 'POST', body: formData }
+      )
+      const data = await res.json()
+      if (!data.secure_url) throw new Error(data?.error?.message || 'Upload failed')
+      updateAsset(index, 'thumbnail_url', data.secure_url)
+    } catch (e: any) {
+      alert('Thumbnail upload failed: ' + e.message)
+      updateAsset(index, 'thumbnail_url', '')
+    }
   }
 
   function getPositionLabel() {
@@ -652,6 +677,43 @@ export default function ResumeManagement() {
                       </>
                     )}
                   </div>
+
+                  {asset.asset_type === 'link' && (
+                    <div className="flex items-center gap-3">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <span className="text-xs text-gray-400">Thumbnail</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0]
+                            if (file) uploadAssetThumbnail(index, file)
+                            e.target.value = ''
+                          }}
+                          id={`asset-thumb-${index}`}
+                        />
+                        <label
+                          htmlFor={`asset-thumb-${index}`}
+                          className="cursor-pointer text-xs px-2 py-1 rounded bg-gray-700 text-gray-300 hover:bg-gray-600"
+                        >
+                          {asset.thumbnail_url === '__uploading__' ? 'Uploading…' : asset.thumbnail_url ? 'Replace' : 'Upload image'}
+                        </label>
+                      </label>
+                      {asset.thumbnail_url && asset.thumbnail_url !== '__uploading__' && (
+                        <>
+                          <img src={asset.thumbnail_url} alt="" className="h-8 w-12 object-cover rounded border border-gray-600" />
+                          <button
+                            type="button"
+                            onClick={() => updateAsset(index, 'thumbnail_url', '')}
+                            className="text-xs text-red-400 hover:text-red-300"
+                          >
+                            Remove
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-2 gap-2">
                     <Input

@@ -58,7 +58,10 @@
       "WebFetch(domain:github.com)",
       "mcp__claude_ai_Supabase__apply_migration",
       "mcp__claude_ai_Supabase__execute_sql",
-      "mcp__claude_ai_Supabase__list_projects"
+      "mcp__claude_ai_Supabase__list_projects",
+      "WebFetch(domain:uiverse.io)",
+      "mcp__plugin_playwright_playwright__browser_network_requests",
+      "Bash(node -e ' *)"
     ]
   }
 }

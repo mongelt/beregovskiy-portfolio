@@ -104,6 +104,7 @@ function renderColumnItems(
                 name: item.name,
                 shortTitle: item.shortTitle,
                 shortDesc: item.shortDesc,
+                periDesc: item.periDesc,
                 desc: item.desc,
                 publication: item.publication,
                 year: item.year,
@@ -113,6 +114,7 @@ function renderColumnItems(
                 name: right.name,
                 shortTitle: right.shortTitle,
                 shortDesc: right.shortDesc,
+                periDesc: right.periDesc,
                 desc: right.desc,
                 publication: right.publication,
                 year: right.year,
@@ -145,6 +147,7 @@ function renderColumnItems(
             name={item.name}
             shortTitle={item.shortTitle}
             shortDesc={item.shortDesc}
+            periDesc={item.periDesc}
             desc={item.desc}
             publication={item.publication}
             year={item.year}

@@ -23,6 +23,7 @@ export interface PeriCardData {
   name: string
   shortTitle?: string
   shortDesc?: string
+  periDesc?: string
   desc?: string
   publication?: string
   year?: number
@@ -132,7 +133,7 @@ function PairCard({ data, isHovered, isCondensed, isLeft, layout, onClick, onHov
                 textOverflow: 'ellipsis',
                 transition: reduced ? 'none' : `max-height ${DUR}, margin-top ${DUR}`,
               }}>
-                {data.shortDesc}
+                {data.periDesc ?? data.shortDesc}
               </div>
               <div style={{
                 fontSize: 12,
@@ -186,7 +187,7 @@ function PairCard({ data, isHovered, isCondensed, isLeft, layout, onClick, onHov
                   justifyContent: 'center',
                 }}>
                   {data.thumbnail ? (
-                    <img src={data.thumbnail} alt="" style={{ width: '100%', height: '100%', objectFit: 'fill', display: 'block' }} />
+                    <img src={data.thumbnail} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                   ) : (
                     <span style={{ fontSize: 9, color: '#8a8480', textAlign: 'center', padding: 8 }}>No img</span>
                   )}
@@ -260,7 +261,7 @@ function PairCard({ data, isHovered, isCondensed, isLeft, layout, onClick, onHov
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                   }}>
-                    {data.shortDesc && data.shortDesc.length > 30 ? data.shortDesc.slice(0, 29) + '…' : data.shortDesc}
+                    {(() => { const d = data.periDesc ?? data.shortDesc; return d && d.length > 22 ? d.slice(0, 21) + '…' : d })()}
                   </div>
                 )}
               </div>

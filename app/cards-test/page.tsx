@@ -15,7 +15,9 @@
  * Interactive plane demos (CategoryPlane, ContentPlane, CollectionPlane)
  */
 
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
+import { motion } from 'framer-motion'
+import { useReducedMotion, dmTransition } from '@/lib/animations'
 import { interpolateMenuScore, borderColorFromScore } from '@/lib/menu/scoreSpectrum'
 import { ThumbnailStack } from '@/components/dynamic-menu/cards/ThumbnailStack'
 import { NavCard } from '@/components/dynamic-menu/cards/NavCard'
@@ -406,6 +408,124 @@ function CollectionPlaneDemo() {
         Right zone (non-featured): Int&apos;l Dev, Creative &nbsp;·&nbsp;
         Hover any card to expand. × button appears only on active card.
       </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// PeriTriad — three PeriPair-style cards with coordinated hover
+// ---------------------------------------------------------------------------
+
+type TriadCard = {
+  name: string
+  shortTitle?: string
+  shortDesc?: string
+  desc?: string
+}
+
+// Test page placeholder — live environment sources icons from the resume_asset_icons
+// table in admin (icon_key field on resume_assets → joined icon_url).
+const ASSET_ICON_URL = 'https://www.iconpacks.net/icons/1/free-document-icon-901-thumb.png'
+
+function PeriTriad({ cards }: { cards: TriadCard[] }) {
+  const [hovered, setHovered] = useState<number | null>(null)
+  // Debounce hover-leave to prevent the rightmost card from flickering when
+  // the layout shift during animation briefly moves the card out from under the cursor.
+  const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const reduced = useReducedMotion()
+  const DUR = '0.28s cubic-bezier(0.4,0,0.2,1)'
+
+  const handleEnter = (i: number) => {
+    if (leaveTimer.current) clearTimeout(leaveTimer.current)
+    setHovered(i)
+  }
+  const handleLeave = () => {
+    leaveTimer.current = setTimeout(() => setHovered(null), 150)
+  }
+
+  return (
+    <div style={{ display: 'flex', gap: 4, alignItems: 'flex-start' }}>
+      {cards.map((card, i) => {
+        const isHovered = hovered === i
+        const isCondensed = hovered !== null && hovered !== i
+
+        return (
+          <motion.div
+            key={i}
+            animate={{ width: isCondensed ? 10 : isHovered ? 290 : 150 }}
+            transition={dmTransition(reduced)}
+            onMouseEnter={() => handleEnter(i)}
+            onMouseLeave={handleLeave}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              borderRadius: 3,
+              border: isHovered ? '0.5px solid #1c1818' : '0.5px solid rgba(26,26,26,0.35)',
+              background: isCondensed ? '#9a9994' : '#c7c7c2',
+              flexShrink: 0,
+              overflow: isCondensed ? 'hidden' : 'visible',
+              cursor: 'pointer',
+            }}
+          >
+            <div style={{ opacity: isCondensed ? 0 : 1, transition: 'opacity 0.2s', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', height: 72, width: '100%' }}>
+                {isHovered && (
+                  <div style={{
+                    width: 104, height: '100%', flexShrink: 0,
+                    background: '#b8b4b0', marginLeft: 6, borderRadius: 2,
+                    overflow: 'hidden', position: 'relative', top: -10,
+                    boxShadow: '2px 4px 8px rgba(0,0,0,0.14)',
+                    transform: 'perspective(280px) rotateY(10deg)',
+                    transformOrigin: 'left center',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <span style={{ fontSize: 9, color: '#8a8480', textAlign: 'center', padding: 8 }}>No img</span>
+                  </div>
+                )}
+                {!isHovered && (
+                  <img
+                    src={ASSET_ICON_URL}
+                    alt=""
+                    style={{ width: 20, height: 20, margin: '10px 0 0 8px', flexShrink: 0, objectFit: 'contain' }}
+                  />
+                )}
+                <div style={{
+                  flex: 1, padding: '1px 8px 6px', display: 'flex', flexDirection: 'column',
+                  justifyContent: 'flex-start', textAlign: 'right', minWidth: 0, overflow: 'hidden',
+                }}>
+                  {!isHovered && (
+                    <div style={{ fontSize: 12, fontWeight: 500, color: '#1a1a1a', marginTop: 5, lineHeight: 1.5, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                      {card.shortTitle || card.name}
+                    </div>
+                  )}
+                  {isHovered && (
+                    <div style={{ fontSize: 13, fontWeight: 500, color: '#1a1a1a', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', maxWidth: '24ch', marginLeft: 'auto' } as React.CSSProperties}>
+                      {card.name}
+                    </div>
+                  )}
+                  {!isHovered && (
+                    // Peri description — sourced from peri_description field in admin.
+                    // Force-clamped at 22 chars (matching nav/thumb peri card behaviour). TODO: implement clamp.
+                    <div style={{ fontSize: 12, color: '#303030', marginTop: 23, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {card.shortDesc}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div style={{
+                textAlign: 'right', padding: isHovered ? '2px 12px 8px' : '0 12px',
+                fontSize: 12, lineHeight: 1.45, textIndent: 98, color: '#363030',
+                maxHeight: isHovered ? 64 : 0, overflow: 'hidden',
+                marginTop: isHovered ? -15 : 0,
+                transition: `max-height ${DUR}, margin-top ${DUR}`,
+                display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical',
+              } as React.CSSProperties}>
+                {card.desc}
+              </div>
+            </div>
+          </motion.div>
+        )
+      })}
     </div>
   )
 }
@@ -1156,55 +1276,42 @@ export default function CardsTestPage() {
 
       <hr style={divider} />
 
-      {/* ── PeriPair — Focus 1.00 Design Reference (Next Phase) ───── */}
-      <div style={sectionTitle}>PeriPair — Focus 1.00 Design Reference · Next Phase</div>
+      {/* ── Asset Cards ───── */}
+      <div style={sectionTitle}>PeriPair Asset Cards</div>
       <p style={{ fontSize: 11, color: '#555', marginBottom: 20, lineHeight: 1.7, maxWidth: 560 }}>
-        Reference for the next phase: PeriPair layout=&ldquo;content&rdquo; at score 1.00 (focus). These are the same PeriPair
-        cards used in the content plane — the next phase will use them in the resume plane overlay to pair related resume entries.
-        At score 1.00 the card uses light (#c7c7c2) background and dark (#1a1a1a) title, matching the resume plane color scheme.
+        PeriPair layout=&ldquo;content&rdquo; at score 1.00 (focus), extended to a triad. Hover one card → the other two
+        condense to a 10px sliver. Shared hover state is coordinated across all three cards via <code>PeriTriad</code>.
+        150px at rest → 290px on hover; thumbnail placeholder lifts with 3D perspective.{' '}
+        <strong style={{ color: '#888' }}>Icons</strong> on collapsed cards are sourced from the <code>resume_asset_icons</code> table
+        in admin (joined via <code>icon_key</code> on each asset); the URL used here is a test placeholder.{' '}
+        <strong style={{ color: '#888' }}>Peri descriptions</strong> come from the <code>peri_description</code> field in admin
+        and will be force-clamped at 22 chars to match nav/thumb peri card behaviour (TODO: implement clamp in live component).
       </p>
       <div style={row}>
 
         <div style={col}>
-          <div style={label}>PeriPair content — score 1.00 focus design reference</div>
-          <PeriPair
-            left={{
-              name: 'Axway — Senior Content Strategist',
-              shortTitle: 'Axway',
-              shortDesc: 'Content & GTM Strategy',
-              desc: 'Leading content and go-to-market strategy for a global integration platform serving 11,000+ customers.',
-            }}
-            right={{
-              name: 'Reuters — Staff Reporter',
-              shortTitle: 'Reuters',
-              shortDesc: 'Investigative Reporting',
-              desc: 'Staff reporter covering Eastern European politics, EU integration, and regional security affairs.',
-            }}
-            onLeftClick={() => {}}
-            onRightClick={() => {}}
-          />
-        </div>
-
-        <div style={col}>
-          <div style={label}>PeriPair nav — layout=&ldquo;nav&rdquo; variant for reference</div>
-          <PeriPair
-            layout="nav"
-            left={{
-              name: 'Axway — Senior Content Strategist',
-              shortTitle: 'Axway',
-              shortDesc: 'Content & GTM',
-              desc: 'Global integration platform content strategy.',
-              thumbnails: [],
-            }}
-            right={{
-              name: 'Reuters — Staff Reporter',
-              shortTitle: 'Reuters',
-              shortDesc: 'EU & Eastern Europe',
-              desc: 'Political reporting from Eastern Europe.',
-              thumbnails: [],
-            }}
-            onLeftClick={() => {}}
-            onRightClick={() => {}}
+          <div style={label}>Triad — hover one card to condense the other two</div>
+          <PeriTriad
+            cards={[
+              {
+                name: 'Axway — Senior Content Strategist',
+                shortTitle: 'Axway',
+                shortDesc: 'Content & GTM Strategy',
+                desc: 'Leading content and go-to-market strategy for a global integration platform serving 11,000+ customers.',
+              },
+              {
+                name: 'Reuters — Staff Reporter',
+                shortTitle: 'Reuters',
+                shortDesc: 'Investigative Reporting',
+                desc: 'Staff reporter covering Eastern European politics, EU integration, and regional security affairs.',
+              },
+              {
+                name: 'Johns Hopkins SAIS — Graduate Researcher',
+                shortTitle: 'Johns Hopkins',
+                shortDesc: 'Digital Media Research',
+                desc: 'M.A. research on digital media ecosystems and political communication in post-socialist states.',
+              },
+            ]}
           />
         </div>
 

@@ -17,6 +17,7 @@ export interface ContentItemForLayout {
   /** short_title — shown in 150px compact cards */
   shortTitle?: string
   shortDesc?: string
+  periDesc?: string
   desc?: string
   /** menu_thumbnail_url */
   thumbnail?: string

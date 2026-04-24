@@ -24,7 +24,7 @@ import { useReducedMotion } from '@/lib/animations'
  *  Non-Cloudinary URLs are returned unchanged. */
 function cloudinaryCrop(url: string, w: number, h: number): string {
   if (!url || !url.includes('/image/upload/')) return url
-  return url.replace('/image/upload/', `/image/upload/c_fill,w_${w},h_${h}/`)
+  return url.replace('/image/upload/', `/image/upload/c_fill,w_${w},h_${h},q_auto,f_auto/`)
 }
 
 export interface ThumbCardProps {

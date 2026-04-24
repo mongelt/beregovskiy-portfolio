@@ -73,6 +73,7 @@ export interface DmSubcategory {
   order_index: number
   short_title?: string | null
   short_desc?: string | null
+  peri_desc?: string | null
   desc?: string | null
 }
 
@@ -91,6 +92,7 @@ export interface DmContent {
   collection_slugs?: string[]
   short_title?: string | null
   short_desc?: string | null
+  peri_desc?: string | null
   desc?: string | null
 }
 
@@ -414,6 +416,7 @@ export function DynamicMenu({
       name: sub.name,
       shortTitle: sub.short_title ?? undefined,
       shortDesc: sub.short_desc ?? undefined,
+      periDesc: sub.peri_desc ?? undefined,
       desc: sub.desc ?? undefined,
       collectionIds: Array.from(subcategoryCollectionIds.get(sub.id) ?? []),
       thumbnails: contentWithCollectionIds
@@ -443,6 +446,7 @@ export function DynamicMenu({
       name: item.sidebar_title || item.title,
       shortTitle: item.short_title ?? undefined,
       shortDesc: item.short_desc ?? undefined,
+      periDesc: item.peri_desc ?? undefined,
       desc: item.desc ?? undefined,
       thumbnail: item.menu_thumbnail_url ?? item.image_url,
       publication: item.publication_name,

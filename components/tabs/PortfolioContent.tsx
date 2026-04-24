@@ -34,6 +34,7 @@ interface Subcategory {
   order_index: number
   short_title?: string | null
   short_desc?: string | null
+  peri_desc?: string | null
   desc?: string | null
 }
 
@@ -73,6 +74,7 @@ interface ContentItemRaw {
   link_style: string | null
   short_title?: string | null
   short_desc?: string | null
+  peri_desc?: string | null
   desc?: string | null
   menu_thumbnail_url?: string | null
   categories?: { id: string; name: string }[] | null
@@ -116,6 +118,7 @@ interface ContentItem {
   collection_names?: string[]
   short_title?: string | null
   short_desc?: string | null
+  peri_desc?: string | null
   desc?: string | null
   menu_thumbnail_url?: string | null
 }
@@ -349,7 +352,7 @@ export default function PortfolioContent({
   async function loadSubcategories(): Promise<Subcategory[]> {
     const { data, error } = await supabase
       .from('subcategories')
-      .select('id, name, order_index, category_id, short_title, short_desc, desc')
+      .select('id, name, order_index, category_id, short_title, short_desc, peri_desc, desc')
       .order('order_index', { ascending: true })
     
     if (error) throw new Error(`Failed to load subcategories: ${error.message}`)
@@ -381,6 +384,7 @@ export default function PortfolioContent({
         link_style,
         short_title,
         short_desc,
+        peri_desc,
         desc,
         menu_thumbnail_url,
         categories(id, name),
@@ -551,6 +555,7 @@ export default function PortfolioContent({
       collection_names: collectionNames,
       short_title: raw.short_title ?? null,
       short_desc: raw.short_desc ?? null,
+      peri_desc: raw.peri_desc ?? null,
       desc: raw.desc ?? null,
       menu_thumbnail_url: raw.menu_thumbnail_url ?? null,
     }

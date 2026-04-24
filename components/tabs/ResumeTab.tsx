@@ -2,14 +2,216 @@
 
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import type { RefObject } from 'react'
+import { motion } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import BlockNoteRenderer from '@/components/BlockNoteRendererDynamic'
 import { useMobileState } from '@/lib/responsive'
+import { useReducedMotion, dmTransition } from '@/lib/animations'
+import Loader from '@/components/Loader'
 
-const TIMELINE_TOP_OFFSET = 35
+const TIMELINE_TOP_OFFSET = 0
 
 // TEMPORARY: Set to false to disable side lines rendering
 const SHOW_SIDE_LINES = false
+
+// ---------------------------------------------------------------------------
+// Resume asset cards — PeriTriad-style, score-1.00 colours
+// ---------------------------------------------------------------------------
+
+/** Requests a 2× retina crop from Cloudinary. Non-Cloudinary URLs pass through unchanged. */
+function cloudinaryCrop(url: string, w: number, h: number): string {
+  if (!url || !url.includes('/image/upload/')) return url
+  return url.replace('/image/upload/', `/image/upload/c_fill,w_${w},h_${h},q_auto,f_auto/`)
+}
+
+type ResumeAssetItem = {
+  id: string
+  caption: string
+  shortTitle?: string | null
+  thumbnail?: string | null
+  periDesc?: string | null
+  shortDesc?: string | null
+  iconUrl?: string | null
+  assetType: 'content' | 'link'
+  onClick: () => void
+}
+
+const ASSET_CARD_DUR = '0.28s cubic-bezier(0.4,0,0.2,1)'
+
+function AssetCard({
+  data,
+  isHovered,
+  isCondensed,
+  onEnter,
+  onLeave,
+}: {
+  data: ResumeAssetItem
+  isHovered: boolean
+  isCondensed: boolean
+  onEnter: () => void
+  onLeave: () => void
+}) {
+  const reduced = useReducedMotion()
+  const targetWidth = isCondensed ? 10 : isHovered ? 290 : 150
+
+  return (
+    <motion.div
+      animate={{ width: targetWidth }}
+      transition={dmTransition(reduced)}
+      onClick={data.onClick}
+      onMouseEnter={onEnter}
+      onMouseLeave={onLeave}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        borderRadius: 3,
+        border: isHovered ? '0.5px solid #1c1818' : '0.5px solid rgba(26,26,26,0.35)',
+        background: isCondensed ? '#9a9994' : '#c7c7c2',
+        flexShrink: 0,
+        overflow: isCondensed ? 'hidden' : 'visible',
+        cursor: 'pointer',
+      }}
+    >
+      <div style={{ opacity: isCondensed ? 0 : 1, transition: 'opacity 0.2s', display: 'flex', flexDirection: 'column' }}>
+        {/* Top row */}
+        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', height: 72, width: '100%' }}>
+          {isHovered && (
+            <div style={{
+              width: 104,
+              height: '100%',
+              flexShrink: 0,
+              background: '#b8b4b0',
+              marginLeft: 6,
+              borderRadius: 2,
+              overflow: 'hidden',
+              position: 'relative',
+              top: -10,
+              boxShadow: '2px 4px 8px rgba(0,0,0,0.14)',
+              transform: 'perspective(280px) rotateY(10deg)',
+              transformOrigin: 'left center',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              {data.thumbnail ? (
+                <img src={cloudinaryCrop(data.thumbnail, 208, 144)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+              ) : (
+                <span style={{ fontSize: 9, color: '#8a8480', textAlign: 'center', padding: 8 }}>No img</span>
+              )}
+            </div>
+          )}
+          {!isHovered && data.iconUrl && (
+            <img
+              src={data.iconUrl}
+              alt=""
+              style={{ width: 20, height: 20, margin: '10px 0 0 8px', flexShrink: 0, objectFit: 'contain' }}
+            />
+          )}
+          {/* Body */}
+          <div style={{
+            flex: 1,
+            padding: '1px 8px 6px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'flex-start',
+            textAlign: 'right',
+            minWidth: 0,
+            overflow: 'hidden',
+          }}>
+            {!isHovered && (
+              <div style={{
+                fontSize: 12,
+                fontWeight: 500,
+                color: '#1a1a1a',
+                marginTop: 5,
+                lineHeight: 1.5,
+                overflow: 'hidden',
+                whiteSpace: 'nowrap',
+                textOverflow: 'ellipsis',
+              }}>
+                {data.shortTitle || data.caption}
+              </div>
+            )}
+            {isHovered && (
+              <div style={{
+                fontSize: 13,
+                fontWeight: 500,
+                color: '#1a1a1a',
+                lineHeight: 1.5,
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+                maxWidth: '24ch',
+                marginLeft: 'auto',
+              } as React.CSSProperties}>
+                {data.caption}
+              </div>
+            )}
+            {!isHovered && data.periDesc && (
+              <div style={{
+                fontSize: 12,
+                color: '#303030',
+                marginTop: 16,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}>
+                {data.periDesc.length > 22 ? data.periDesc.slice(0, 21) + '…' : data.periDesc}
+              </div>
+            )}
+          </div>
+        </div>
+        {/* Short desc expansion on hover */}
+        <div style={{
+          textAlign: 'right',
+          padding: isHovered ? '2px 12px 8px' : '0 12px',
+          fontSize: 12,
+          lineHeight: 1.45,
+          textIndent: 98,
+          color: '#363030',
+          maxHeight: isHovered ? 64 : 0,
+          overflow: 'hidden',
+          marginTop: isHovered ? -15 : 0,
+          transition: reduced ? 'none' : `max-height ${ASSET_CARD_DUR}, margin-top ${ASSET_CARD_DUR}`,
+          display: '-webkit-box',
+          WebkitLineClamp: 3,
+          WebkitBoxOrient: 'vertical',
+        } as React.CSSProperties}>
+          {data.shortDesc}
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
+function ResumeAssetGroup({ assets }: { assets: ResumeAssetItem[] }) {
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
+  const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const handleEnter = (i: number) => {
+    if (leaveTimer.current) clearTimeout(leaveTimer.current)
+    setHoveredIdx(i)
+  }
+  const handleLeave = () => {
+    leaveTimer.current = setTimeout(() => setHoveredIdx(null), 150)
+  }
+
+  return (
+    <div style={{ display: 'flex', gap: 4, alignItems: 'flex-start' }}>
+      {assets.map((asset, i) => (
+        <AssetCard
+          key={asset.id}
+          data={asset}
+          isHovered={hoveredIdx === i}
+          isCondensed={hoveredIdx !== null && hoveredIdx !== i}
+          onEnter={() => handleEnter(i)}
+          onLeave={handleLeave}
+        />
+      ))}
+    </div>
+  )
+}
 
 // Helper function to check if data is in BlockNote format (array of PartialBlock)
 function isBlockNoteFormat(data: any): boolean {
@@ -51,6 +253,7 @@ type ResumeEntryRaw = {
     order_index: number
     custom_caption: string | null
     icon_key: string | null
+    thumbnail_url: string | null
     resume_asset_icons: {
       id: string
       name: string
@@ -61,6 +264,10 @@ type ResumeEntryRaw = {
       id: string
       title: string
       type: string
+      short_title?: string | null
+      menu_thumbnail_url?: string | null
+      peri_desc?: string | null
+      short_desc?: string | null
     } | null
   }>
 }
@@ -99,7 +306,7 @@ export default function ResumeTab({
   const [expandedEntries, setExpandedEntries] = useState<Set<string>>(new Set())
   const nowMarkerRef = useRef<HTMLDivElement | null>(null)
   
-const TIMELINE_TOP_OFFSET = 35
+const TIMELINE_TOP_OFFSET = 0
 
   const [operationalMonths, setOperationalMonths] = useState<Date[]>([])
   const [activatedMarkers, setActivatedMarkers] = useState<Set<string>>(new Set())
@@ -266,7 +473,8 @@ const TIMELINE_TOP_OFFSET = 35
                 order_index,
                 custom_caption,
                 icon_key,
-                content(id, title, type)
+                thumbnail_url,
+                content(id, title, type, short_title, menu_thumbnail_url, peri_desc, short_desc)
               )
             `)
             .eq('is_featured', true)
@@ -1106,8 +1314,8 @@ const TIMELINE_TOP_OFFSET = 35
       }}
     >
       {loading && (
-        <div className="text-white text-center py-8">
-          <div className="text-lg">Loading resume entries...</div>
+        <div className="flex items-center justify-center py-12">
+          <Loader />
         </div>
       )}
       
@@ -1839,7 +2047,7 @@ function EntryCard({
       <div
         ref={measureRef}
         data-resume-entry-id={entry.id}
-        className={`${baseClasses} w-full text-left relative`}
+        className={`${baseClasses} w-full text-left relative${isExpanded ? ' is-expanded' : ''}`}
       >
         <div className={`resume-entry-date text-sm mb-3 ${dateRange.includes('Present') ? 'has-present' : ''}`}>
           {dateRange}
@@ -1867,52 +2075,33 @@ function EntryCard({
           </div>
         )}
 
-        {entry.resume_assets && entry.resume_assets.length > 0 && (
-          <div className="flex justify-start gap-3 mb-3">
-            {entry.resume_assets.map(asset => {
-              const caption = asset.custom_caption || asset.content?.title || asset.link_title || 'Asset'
-              const iconUrl = asset.resume_asset_icons?.icon_url
-              const handleAssetClick = () => {
-                if (asset.asset_type === 'content' && asset.content_id) {
-                  onOpenContent?.(asset.content_id, asset.content?.title || 'Content')
-                } else if (asset.asset_type === 'link' && asset.link_url) {
-                  const href = normalizeLink(asset.link_url)
-                  if (href) {
-                    window.open(href, '_blank', 'noopener,noreferrer')
-                  }
-                }
+        {entry.resume_assets && entry.resume_assets.length > 0 && (() => {
+          const items: ResumeAssetItem[] = entry.resume_assets.map(asset => ({
+            id: asset.id,
+            caption: asset.custom_caption || asset.content?.title || asset.link_title || 'Asset',
+            shortTitle: asset.content?.short_title ?? null,
+            thumbnail: asset.content?.menu_thumbnail_url ?? asset.thumbnail_url ?? null,
+            periDesc: asset.content?.peri_desc ?? null,
+            shortDesc: asset.content?.short_desc ?? null,
+            iconUrl: asset.resume_asset_icons?.icon_url,
+            assetType: asset.asset_type,
+            onClick: () => {
+              if (asset.asset_type === 'content' && asset.content_id) {
+                onOpenContent?.(asset.content_id, asset.content?.title || 'Content')
+              } else if (asset.asset_type === 'link' && asset.link_url) {
+                const href = normalizeLink(asset.link_url)
+                if (href) window.open(href, '_blank', 'noopener,noreferrer')
               }
-              return (
-                <div
-                  key={asset.id}
-                  className="resume-entry-asset cursor-pointer relative"
-                  style={{ width: '100px', height: '140px' }}
-                  onClick={handleAssetClick}
-                >
-                  <div className="flex flex-col h-full">
-                    <div className="flex items-start">
-                      {iconUrl ? (
-                        <img
-                          src={iconUrl}
-                          alt={asset.resume_asset_icons?.name || 'icon'}
-                          className="resume-entry-asset-icon absolute"
-                        />
-                      ) : (
-                        <div
-                          className="bg-gray-700 rounded-sm absolute"
-                          style={{ width: '20px', height: '20px', top: '8px', left: '8px' }}
-                        />
-                      )}
-                    </div>
-                    <div className="resume-entry-asset-caption absolute overflow-hidden">
-                      {caption}
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        )}
+            },
+          }))
+          const triads: ResumeAssetItem[][] = []
+          for (let i = 0; i < items.length; i += 3) triads.push(items.slice(i, i + 3))
+          return (
+            <div className="flex flex-col gap-1 mb-3">
+              {triads.map((triad, i) => <ResumeAssetGroup key={i} assets={triad} />)}
+            </div>
+          )
+        })()}
 
         <div className="resume-entry-actions">
           <div></div>
@@ -1935,7 +2124,7 @@ function EntryCard({
       <div
         ref={measureRef}
         data-resume-entry-id={entry.id}
-        className={`${baseClasses} w-[560px] absolute`}
+        className={`${baseClasses} w-[560px] absolute${isExpanded ? ' is-expanded' : ''}`}
         style={{
           right: 'calc(50% + 70px)',
           top: `${topPosition}px`,
@@ -1968,53 +2157,34 @@ function EntryCard({
           </div>
         )}
         
-        {entry.resume_assets && entry.resume_assets.length > 0 && (
-          <div className="flex justify-end gap-3 mb-3">
-            {entry.resume_assets.map(asset => {
-              const caption = asset.custom_caption || asset.content?.title || asset.link_title || 'Asset'
-              const iconUrl = asset.resume_asset_icons?.icon_url
-              const handleAssetClick = () => {
-                if (asset.asset_type === 'content' && asset.content_id) {
-                  onOpenContent?.(asset.content_id, asset.content?.title || 'Content')
-                } else if (asset.asset_type === 'link' && asset.link_url) {
-                  const href = normalizeLink(asset.link_url)
-                  if (href) {
-                    window.open(href, '_blank', 'noopener,noreferrer')
-                  }
-                }
+        {entry.resume_assets && entry.resume_assets.length > 0 && (() => {
+          const items: ResumeAssetItem[] = entry.resume_assets.map(asset => ({
+            id: asset.id,
+            caption: asset.custom_caption || asset.content?.title || asset.link_title || 'Asset',
+            shortTitle: asset.content?.short_title ?? null,
+            thumbnail: asset.content?.menu_thumbnail_url ?? asset.thumbnail_url ?? null,
+            periDesc: asset.content?.peri_desc ?? null,
+            shortDesc: asset.content?.short_desc ?? null,
+            iconUrl: asset.resume_asset_icons?.icon_url,
+            assetType: asset.asset_type,
+            onClick: () => {
+              if (asset.asset_type === 'content' && asset.content_id) {
+                onOpenContent?.(asset.content_id, asset.content?.title || 'Content')
+              } else if (asset.asset_type === 'link' && asset.link_url) {
+                const href = normalizeLink(asset.link_url)
+                if (href) window.open(href, '_blank', 'noopener,noreferrer')
               }
-              return (
-                <div
-                  key={asset.id}
-                  className="resume-entry-asset cursor-pointer relative"
-                  style={{ width: '100px', height: '140px' }}
-                  onClick={handleAssetClick}
-                >
-                  <div className="flex flex-col h-full">
-                    <div className="flex items-start">
-                      {iconUrl ? (
-                        <img
-                          src={iconUrl}
-                          alt={asset.resume_asset_icons?.name || 'icon'}
-                          className="resume-entry-asset-icon absolute"
-                        />
-                      ) : (
-                        <div
-                          className="bg-gray-700 rounded-sm absolute"
-                          style={{ width: '20px', height: '20px', top: '8px', left: '8px' }}
-                        />
-                      )}
-                    </div>
-                    <div className="resume-entry-asset-caption absolute overflow-hidden">
-                      {caption}
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        )}
-        
+            },
+          }))
+          const triads: ResumeAssetItem[][] = []
+          for (let i = 0; i < items.length; i += 3) triads.push(items.slice(i, i + 3))
+          return (
+            <div className="flex flex-col gap-1 mb-3 items-end">
+              {triads.map((triad, i) => <ResumeAssetGroup key={i} assets={triad} />)}
+            </div>
+          )
+        })()}
+
         <div className="resume-entry-actions">
           {shouldShowSamplesButton(entry) ? (
             <div
@@ -2051,7 +2221,7 @@ function EntryCard({
       <div
         ref={measureRef}
         data-resume-entry-id={entry.id}
-        className={`${baseClasses} w-[560px] absolute`}
+        className={`${baseClasses} w-[560px] absolute${isExpanded ? ' is-expanded' : ''}`}
         style={{
           left: 'calc(50% + 70px)',
           top: `${topPosition}px`,
@@ -2084,53 +2254,34 @@ function EntryCard({
           </div>
         )}
         
-        {entry.resume_assets && entry.resume_assets.length > 0 && (
-          <div className="flex justify-start gap-3 mb-3">
-            {entry.resume_assets.map(asset => {
-              const caption = asset.custom_caption || asset.content?.title || asset.link_title || 'Asset'
-              const iconUrl = asset.resume_asset_icons?.icon_url
-              const handleAssetClick = () => {
-                if (asset.asset_type === 'content' && asset.content_id) {
-                  onOpenContent?.(asset.content_id, asset.content?.title || 'Content')
-                } else if (asset.asset_type === 'link' && asset.link_url) {
-                  const href = normalizeLink(asset.link_url)
-                  if (href) {
-                    window.open(href, '_blank', 'noopener,noreferrer')
-                  }
-                }
+        {entry.resume_assets && entry.resume_assets.length > 0 && (() => {
+          const items: ResumeAssetItem[] = entry.resume_assets.map(asset => ({
+            id: asset.id,
+            caption: asset.custom_caption || asset.content?.title || asset.link_title || 'Asset',
+            shortTitle: asset.content?.short_title ?? null,
+            thumbnail: asset.content?.menu_thumbnail_url ?? asset.thumbnail_url ?? null,
+            periDesc: asset.content?.peri_desc ?? null,
+            shortDesc: asset.content?.short_desc ?? null,
+            iconUrl: asset.resume_asset_icons?.icon_url,
+            assetType: asset.asset_type,
+            onClick: () => {
+              if (asset.asset_type === 'content' && asset.content_id) {
+                onOpenContent?.(asset.content_id, asset.content?.title || 'Content')
+              } else if (asset.asset_type === 'link' && asset.link_url) {
+                const href = normalizeLink(asset.link_url)
+                if (href) window.open(href, '_blank', 'noopener,noreferrer')
               }
-              return (
-                <div
-                  key={asset.id}
-                  className="resume-entry-asset cursor-pointer relative"
-                  style={{ width: '100px', height: '140px' }}
-                  onClick={handleAssetClick}
-                >
-                  <div className="flex flex-col h-full">
-                    <div className="flex items-start">
-                      {iconUrl ? (
-                        <img
-                          src={iconUrl}
-                          alt={asset.resume_asset_icons?.name || 'icon'}
-                          className="resume-entry-asset-icon absolute"
-                        />
-                      ) : (
-                        <div
-                          className="bg-gray-700 rounded-sm absolute"
-                          style={{ width: '20px', height: '20px', top: '8px', left: '8px' }}
-                        />
-                      )}
-                    </div>
-                    <div className="resume-entry-asset-caption absolute overflow-hidden">
-                      {caption}
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        )}
-        
+            },
+          }))
+          const triads: ResumeAssetItem[][] = []
+          for (let i = 0; i < items.length; i += 3) triads.push(items.slice(i, i + 3))
+          return (
+            <div className="flex flex-col gap-1 mb-3">
+              {triads.map((triad, i) => <ResumeAssetGroup key={i} assets={triad} />)}
+            </div>
+          )
+        })()}
+
         <div className="resume-entry-actions">
           {shouldShowExpandButton(entry) && (
             <div 
@@ -2490,11 +2641,26 @@ function Timeline({
   
   return (
     <div className="relative w-full">
-      <div ref={nowMarkerRef} className="absolute left-1/2 -translate-x-1/2 top-0">
-        <span className="timeline-now-marker">Now</span>
-      </div>
-      
-      <div className="absolute left-1/2 -translate-x-1/2" style={{ top: '35px' }}>
+      <div ref={nowMarkerRef} className="absolute left-1/2 -translate-x-1/2 top-0" aria-hidden="true" />
+
+      {/* Decorative gradient cap — visually extends the timeline line upward into the top gap. Pure visual, no logic. */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          top: '-32px',
+          width: '4px',
+          height: '32px',
+          background: 'linear-gradient(to bottom, transparent 0%, rgba(122, 48, 32, 0.75) 100%)',
+          filter: 'blur(0.5px)',
+          pointerEvents: 'none',
+          zIndex: 1,
+        }}
+      />
+
+      <div className="absolute left-1/2 -translate-x-1/2" style={{ top: '0' }}>
         {sideLineData.map((lineData) => (
           <SideLine 
             key={lineData.entryId}
@@ -2508,7 +2674,7 @@ function Timeline({
       </div>
       
       {/* All background pills in one container - same stacking context */}
-      <div className="absolute left-1/2 -translate-x-1/2" style={{ top: '35px', zIndex: 2 }}>
+      <div className="absolute left-1/2 -translate-x-1/2" style={{ top: '0', zIndex: 2 }}>
         {markersToRender.map((month) => {
           const monthKey = formatMonthKey(month)
           const yPosition = markerPositions.get(monthKey) ?? 0
@@ -2562,7 +2728,7 @@ function Timeline({
       </div>
       
       {/* All text in another container - same stacking context, above pills */}
-      <div className="absolute left-1/2 -translate-x-1/2" style={{ top: '35px', zIndex: 3 }}>
+      <div className="absolute left-1/2 -translate-x-1/2" style={{ top: '0', zIndex: 3 }}>
         {markersToRender.map((month) => {
           const monthKey = formatMonthKey(month)
           const yPosition = markerPositions.get(monthKey) ?? 0
@@ -2614,7 +2780,7 @@ function Timeline({
       <div 
         className="absolute left-1/2 -translate-x-1/2 w-1 timeline-line"
         style={{
-          top: '35px', // Starts below Now marker
+          top: '0',
           height: `${timelineHeight + 300}px`, // Step 5.1 Fix 8: Includes 300px continuation after timeline end per line 66
           transition: 'height 300ms ease-out, background 300ms ease-out', // Step 5.1 Fix 10: Smooth timeline expansion
           zIndex: 1 // Explicitly set z-index to ensure it's below marker pills
@@ -2624,7 +2790,7 @@ function Timeline({
       
       <div 
         className="absolute left-1/2 -translate-x-1/2 text-center"
-        style={{ top: `${35 + timelineHeight + 300}px` }} // Step 5.1 Fix 8: At end of 300px continuation per line 66
+        style={{ top: `${timelineHeight + 300}px` }}
       >
         <span className="timeline-birth-marker">
           Born in Moscow, Russia - July 1st, 1994

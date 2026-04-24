@@ -23,6 +23,7 @@ export interface PeriSoloProps {
   name: string
   shortTitle?: string
   shortDesc?: string
+  periDesc?: string
   desc?: string
   publication?: string
   year?: number
@@ -35,7 +36,7 @@ export interface PeriSoloProps {
 }
 
 export function PeriSolo({
-  name, shortTitle, shortDesc, desc, publication, year,
+  name, shortTitle, shortDesc, periDesc, desc, publication, year,
   thumbnail, thumbnails, layout = 'content', onClick,
 }: PeriSoloProps) {
   const [hovered, setHovered] = useState(false)
@@ -116,7 +117,7 @@ export function PeriSolo({
               textOverflow: 'ellipsis',
               transition: reduced ? 'none' : `max-height ${DUR}, margin-top ${DUR}`,
             }}>
-              {shortDesc}
+              {periDesc ?? shortDesc}
             </div>
             <div style={{
               fontSize: 12,
@@ -175,7 +176,7 @@ export function PeriSolo({
                 justifyContent: 'center',
               }}>
                 {thumbnail ? (
-                  <img src={thumbnail} alt="" style={{ width: '100%', height: '100%', objectFit: 'fill', display: 'block' }} />
+                  <img src={thumbnail} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                 ) : (
                   <span style={{ fontSize: 9, color: '#8a8480', textAlign: 'center', padding: 8, lineHeight: 1.4 }}>
                     No thumbnail
@@ -251,7 +252,7 @@ export function PeriSolo({
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                 }}>
-                  {shortDesc && shortDesc.length > 30 ? shortDesc.slice(0, 29) + '…' : shortDesc}
+                  {(() => { const d = periDesc ?? shortDesc; return d && d.length > 22 ? d.slice(0, 21) + '…' : d })()}
                 </div>
               )}
             </div>
