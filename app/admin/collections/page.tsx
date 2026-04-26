@@ -101,23 +101,6 @@ export default function CollectionsManagement() {
   async function deleteCollection(id: string) {
     if (!confirm('Delete collection? Content will not be deleted, just removed from this collection.')) return
     
-    // Check if collection is used in profile skills
-    const { data: profileSkills, error: profileCheckError } = await supabase
-      .from('profile_skills')
-      .select('id')
-      .eq('collection_id', id)
-      .limit(1)
-    
-    if (profileCheckError) {
-      alert('Error checking collection usage: ' + profileCheckError.message)
-      return
-    }
-    
-    if (profileSkills && profileSkills.length > 0) {
-      alert("Collection can't be deleted because it is used in the profile")
-      return
-    }
-    
     // Check if collection is used in resume entries
     const { data: resumeEntries, error: resumeCheckError } = await supabase
       .from('resume_entries')

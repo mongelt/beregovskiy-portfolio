@@ -368,7 +368,7 @@ export default function BottomTabBar({
               ref={shareBtnRef}
               onClick={() => setShareOpen(prev => !prev)}
               className={`cl-btn flex items-center gap-[10px] rounded-[5px] cursor-pointer transition-all duration-300 border-none outline-none ${
-                isMobile ? 'h-[40px] px-[10px] flex-col gap-[2px]' : 'h-[45px] px-[15px]'
+                isMobile ? 'h-[40px] px-[10px]' : 'h-[45px] px-[15px]'
               } ${
                 shareOpen ? 'bg-[#1a1818]' : 'bg-[#0b0a0a] hover:bg-[#161414]'
               }`}
@@ -406,9 +406,11 @@ export default function BottomTabBar({
                   </defs>
                 </svg>
               </span>
-              <span style={{ color: '#e9e3e0', fontSize: isMobile ? 10 : 14, fontWeight: 600, letterSpacing: '0.5px', fontFamily: 'var(--font-body, sans-serif)', whiteSpace: 'nowrap', lineHeight: 1 }}>
-                {isMobile ? 'Copy link' : 'Copy link to…'}
-              </span>
+              {!isMobile && (
+                <span style={{ color: '#e9e3e0', fontSize: 14, fontWeight: 600, letterSpacing: '0.5px', fontFamily: 'var(--font-body, sans-serif)', whiteSpace: 'nowrap', lineHeight: 1 }}>
+                  Copy link
+                </span>
+              )}
             </button>
             {shareOpen && (
               <div

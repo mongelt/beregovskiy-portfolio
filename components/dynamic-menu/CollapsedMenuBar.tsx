@@ -3,7 +3,7 @@
 /**
  * Stage 13 — Collapsed Menu Bar (updated Stage 18)
  *
- * Thin fixed bar shown when pageState='collapsed-reader' and useNewMenu=true.
+ * Thin fixed bar shown when pageState='collapsed-reader'.
  *
  * Always shows collapsed cards — no text breadcrumbs:
  *   [NavCard cat] | [NavCard subcat] | [NavCard content]       [CollectionCard]

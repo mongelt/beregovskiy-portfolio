@@ -24,8 +24,6 @@ type ContentTab = {
 const isCollectionTab = (tab: string, collections: Collection[]) =>
   collections.some(c => c.slug === tab)
 
-const STORAGE_KEY = 'bottomNavState'
-
 export default function Home() {
   const supabase = createClient()
   const { isMobile } = useMobileState()
@@ -63,6 +61,10 @@ export default function Home() {
   // shared URLs) activate items inside the menu instead of opening legacy tabs.
   const [externalMenuContentId, setExternalMenuContentId] = useState<string | null>(null)
   const [externalMenuCollectionSlug, setExternalMenuCollectionSlug] = useState<string | null>(null)
+  // Portfolio nav scenario triggers (desktop only).
+  const [portfolioToggleTrigger, setPortfolioToggleTrigger] = useState(0)
+  const [portfolioExpandTrigger, setPortfolioExpandTrigger] = useState(0)
+  const [externalMenuCardSelect, setExternalMenuCardSelect] = useState<{ id: string; type: 'category' | 'subcategory' | 'collection' } | null>(null)
 
   const profileRef = useRef<ProfileRef>(null)
   const urlAppliedRef = useRef(false)
@@ -177,23 +179,6 @@ export default function Home() {
 
   useEffect(() => {
     if (!mounted || typeof window === 'undefined') return
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY)
-      if (!raw) return
-      const parsed = JSON.parse(raw)
-      const savedCollections: Collection[] = Array.isArray(parsed?.activeCollections) ? parsed.activeCollections : []
-      const savedContents: ContentTab[] = Array.isArray(parsed?.activeContents) ? parsed.activeContents : []
-      const savedActiveTab: string | null = typeof parsed?.activeTab === 'string' ? parsed.activeTab : null
-      if (savedCollections.length) setActiveCollections(savedCollections)
-      if (savedContents.length) setActiveContents(savedContents)
-      if (savedActiveTab) setActiveTab(savedActiveTab)
-    } catch (err) {
-      console.error('Failed to restore tab state from localStorage', err)
-    }
-  }, [mounted])
-
-  useEffect(() => {
-    if (!mounted || typeof window === 'undefined') return
     if (urlAppliedRef.current) return
     urlAppliedRef.current = true
     try {
@@ -206,10 +191,8 @@ export default function Home() {
         setActiveTab('resume')
       }
 
-      const useNewMenu = localStorage.getItem('dm_new_grid') !== 'false'
-
       if (contentId) {
-        if (useNewMenu && !isMobile) {
+        if (!isMobile) {
           setExternalMenuContentId(contentId)
           setActiveTab('portfolio')
         } else {
@@ -222,7 +205,7 @@ export default function Home() {
       }
 
       if (collectionSlug) {
-        if (useNewMenu && !isMobile) {
+        if (!isMobile) {
           setExternalMenuCollectionSlug(collectionSlug)
           setActiveTab('portfolio')
         } else {
@@ -237,20 +220,6 @@ export default function Home() {
       console.error('Failed to apply URL params', err)
     }
   }, [mounted])
-
-  useEffect(() => {
-    if (!mounted || typeof window === 'undefined') return
-    try {
-      const payload = {
-        activeCollections,
-        activeContents,
-        activeTab
-      }
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
-    } catch (err) {
-      console.error('Failed to save tab state to localStorage', err)
-    }
-  }, [activeCollections, activeContents, activeTab, mounted])
 
   // Step 0: Toggle body.menu-expanded class when menu expands
   useEffect(() => {
@@ -273,6 +242,16 @@ export default function Home() {
     }
     setActiveTab(tab)
     setSelectedContentId(null)
+    // Scenario 1: already on portfolio tab → trigger toggle instead of full re-navigation
+    if (tab === 'portfolio' && activeTab === 'portfolio' && !isMobile) {
+      setPortfolioToggleTrigger(n => n + 1)
+    }
+  }
+
+  // Scenario 2: profile portfolio plane click — always expands, never collapses.
+  const handleSwitchToPortfolio = () => {
+    setActiveTab('portfolio')
+    if (!isMobile) setPortfolioExpandTrigger(n => n + 1)
   }
 
   const handleCollectionClose = (slug: string) => {
@@ -290,14 +269,12 @@ export default function Home() {
   }
 
   const handleOpenCollection = (slug: string, name: string) => {
-    // New menu (desktop): activate collection inside the menu instead of opening a legacy tab
-    const useNewMenu = typeof window !== 'undefined' && localStorage.getItem('dm_new_grid') !== 'false'
-    if (useNewMenu && !isMobile) {
+    if (!isMobile) {
       setExternalMenuCollectionSlug(slug)
       setActiveTab('portfolio')
       return
     }
-    // Legacy: open collection tab
+    // Mobile: open collection tab
     if (!activeCollections.find(c => c.slug === slug)) {
       setActiveCollections(prev => [...prev, { slug, name }])
     }
@@ -314,15 +291,14 @@ export default function Home() {
       return
     }
 
-    // New menu (desktop): activate content inside the menu (opens reader + collapsed bar)
-    const useNewMenu = typeof window !== 'undefined' && localStorage.getItem('dm_new_grid') !== 'false'
-    if (useNewMenu && !isMobile) {
+    // Desktop: activate content inside the menu (opens reader + collapsed bar)
+    if (!isMobile) {
       setExternalMenuContentId(id)
       setActiveTab('portfolio')
       return
     }
 
-    // Legacy: open content in its own tab
+    // Mobile: open content in its own tab
     if (!activeContents.find(c => c.id === id)) {
       setActiveContents(prev => [...prev, { id, title }])
     }
@@ -621,9 +597,14 @@ export default function Home() {
             savedSelectedCategoryId={savedPortfolioMenuState.categoryId}
             savedSelectedSubcategoryId={savedPortfolioMenuState.subcategoryId}
             onSaveMenuState={(state) => {
-              console.log('[DEBUG] Parent received save request:', state)
               setSavedPortfolioMenuState(state)
             }}
+            portfolioToggleTrigger={portfolioToggleTrigger}
+            portfolioExpandTrigger={portfolioExpandTrigger}
+            externalMenuCardSelect={externalMenuCardSelect}
+            onExternalMenuCardSelectConsumed={() => setExternalMenuCardSelect(null)}
+            onExternalContentConsumed={() => setExternalMenuContentId(null)}
+            onExternalCollectionConsumed={() => setExternalMenuCollectionSlug(null)}
           />
         )
     }
@@ -640,8 +621,9 @@ export default function Home() {
         onHeightChange={setProfileHeight}
         onOpenCollection={handleOpenCollection}
         condensedMode={shouldCondenseProfile}
-        onSwitchToPortfolio={() => handleTabChange('portfolio')}
+        onSwitchToPortfolio={handleSwitchToPortfolio}
         onSwitchToResume={(entryId?: string) => { setResumeFocusEntryId(entryId ?? null); handleTabChange('resume') }}
+        onCardSelect={!isMobile ? (id, type) => { setActiveTab('portfolio'); setExternalMenuCardSelect({ id, type }) } : undefined}
       />
 
       {isPortfolioOrCollection ? (

@@ -185,7 +185,7 @@ function AssetCard({
   )
 }
 
-function ResumeAssetGroup({ assets }: { assets: ResumeAssetItem[] }) {
+function ResumeAssetGroup({ assets, isMobile = false }: { assets: ResumeAssetItem[], isMobile?: boolean }) {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
   const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -195,6 +195,40 @@ function ResumeAssetGroup({ assets }: { assets: ResumeAssetItem[] }) {
   }
   const handleLeave = () => {
     leaveTimer.current = setTimeout(() => setHoveredIdx(null), 150)
+  }
+
+  if (isMobile) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, width: '100%' }}>
+        {assets.map(asset => (
+          <div
+            key={asset.id}
+            onClick={asset.onClick}
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 8,
+              background: '#c7c7c2',
+              border: '0.5px solid #1c1818',
+              borderRadius: 3,
+              padding: '8px 10px',
+              cursor: 'pointer',
+              width: '100%',
+            }}
+          >
+            {asset.iconUrl ? (
+              <img src={asset.iconUrl} alt="" style={{ width: 20, height: 20, objectFit: 'contain', flexShrink: 0 }} />
+            ) : (
+              <div style={{ width: 20, height: 20, flexShrink: 0 }} />
+            )}
+            <span style={{ fontSize: 13, fontWeight: 500, color: '#1a1a1a', flex: 1 }}>
+              {asset.shortTitle || asset.caption}
+            </span>
+          </div>
+        ))}
+      </div>
+    )
   }
 
   return (
@@ -2098,7 +2132,7 @@ function EntryCard({
           for (let i = 0; i < items.length; i += 3) triads.push(items.slice(i, i + 3))
           return (
             <div className="flex flex-col gap-1 mb-3">
-              {triads.map((triad, i) => <ResumeAssetGroup key={i} assets={triad} />)}
+              {triads.map((triad, i) => <ResumeAssetGroup key={i} assets={triad} isMobile={isMobile} />)}
             </div>
           )
         })()}
@@ -2180,7 +2214,7 @@ function EntryCard({
           for (let i = 0; i < items.length; i += 3) triads.push(items.slice(i, i + 3))
           return (
             <div className="flex flex-col gap-1 mb-3 items-end">
-              {triads.map((triad, i) => <ResumeAssetGroup key={i} assets={triad} />)}
+              {triads.map((triad, i) => <ResumeAssetGroup key={i} assets={triad} isMobile={isMobile} />)}
             </div>
           )
         })()}
@@ -2277,7 +2311,7 @@ function EntryCard({
           for (let i = 0; i < items.length; i += 3) triads.push(items.slice(i, i + 3))
           return (
             <div className="flex flex-col gap-1 mb-3">
-              {triads.map((triad, i) => <ResumeAssetGroup key={i} assets={triad} />)}
+              {triads.map((triad, i) => <ResumeAssetGroup key={i} assets={triad} isMobile={isMobile} />)}
             </div>
           )
         })()}

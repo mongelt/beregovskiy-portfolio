@@ -69,7 +69,7 @@ interface ContentItemRaw {
   source_link: string | null
   featured: boolean
   order_index: number
-  subcategory_id: string | null
+  subcategory_id: string
   byline_style: string | null
   link_style: string | null
   short_title?: string | null
@@ -88,7 +88,7 @@ interface ContentItem {
   id: string
   type: string
   category_id: string
-  subcategory_id: string | null
+  subcategory_id: string
   title: string
   subtitle: string | null
   sidebar_title: string | null
@@ -149,6 +149,15 @@ interface PortfolioContentProps {
   savedSelectedCategoryId?: string | null // Saved category ID from previous visit
   savedSelectedSubcategoryId?: string | null // Saved subcategory ID from previous visit
   onSaveMenuState?: (state: { pageState: PageState | null; contentId: string | null; categoryId: string | null; subcategoryId: string | null }) => void // Callback to save menu state
+  /** Increments each time the PORTFOLIO bottom nav button is pressed while already on the portfolio tab. */
+  portfolioToggleTrigger?: number
+  /** Increments each time the profile portfolio plane is clicked (always expand, never collapse). */
+  portfolioExpandTrigger?: number
+  /** Triggers a reset + pre-selection from a profile plane card (Scenario 3). */
+  externalMenuCardSelect?: { id: string; type: 'category' | 'subcategory' | 'collection' } | null
+  onExternalMenuCardSelectConsumed?: () => void
+  onExternalContentConsumed?: () => void
+  onExternalCollectionConsumed?: () => void
 }
 
 
@@ -168,7 +177,13 @@ export default function PortfolioContent({
   savedSelectedContentId = null,
   savedSelectedCategoryId = null,
   savedSelectedSubcategoryId = null,
-  onSaveMenuState
+  onSaveMenuState,
+  portfolioToggleTrigger = 0,
+  portfolioExpandTrigger = 0,
+  externalMenuCardSelect = null,
+  onExternalMenuCardSelectConsumed,
+  onExternalContentConsumed,
+  onExternalCollectionConsumed,
 }: PortfolioContentProps) {
   const { isMobile } = useMobileState()
   const [pageState, setPageState] = useState<PageState>('expanded-empty')
@@ -220,11 +235,6 @@ export default function PortfolioContent({
   useEffect(() => {
     selectedSubcategoryRef.current = selectedSubcategory
   }, [selectedSubcategory])
-
-  const [useNewMenu, setUseNewMenu] = useState(true)
-  useEffect(() => {
-    setUseNewMenu(localStorage.getItem('dm_new_grid') !== 'false')
-  }, [])
 
   const [titleInView, setTitleInView] = useState<boolean>(true)
   const [subtitleInView, setSubtitleInView] = useState<boolean>(true)
@@ -338,6 +348,36 @@ export default function PortfolioContent({
     onMenuExpandedChange(pageState !== 'collapsed-reader')
   }, [pageState, onMenuExpandedChange])
 
+  // Scenario 1: PORTFOLIO bottom nav toggle (desktop only).
+  useEffect(() => {
+    if (!portfolioToggleTrigger || isMobile) return
+    if (pageState === 'collapsed-reader') {
+      setPageState('expanded-empty')
+    } else if (selectedContent) {
+      setPageState('collapsed-reader')
+    }
+    // if expanded with no content: do nothing
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [portfolioToggleTrigger])
+
+  // Scenario 2: profile portfolio plane click — always expand, never collapse (desktop only).
+  useEffect(() => {
+    if (!portfolioExpandTrigger || isMobile) return
+    if (pageState === 'collapsed-reader') {
+      setPageState('expanded-empty')
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [portfolioExpandTrigger])
+
+  // Scenario 3: profile plane card click — expand + clear local content selection.
+  // DynamicMenu handles resetAll + pre-selection via its own effect.
+  useEffect(() => {
+    if (!externalMenuCardSelect || isMobile) return
+    setSelectedContent(null)
+    setPageState('expanded-empty')
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalMenuCardSelect])
+
   
   async function loadCategories(): Promise<Category[]> {
     const { data, error } = await supabase
@@ -393,9 +433,6 @@ export default function PortfolioContent({
         link_options(id, option_text),
         content_collections(collection_id, collections(slug, name))
       `)
-    if (!useNewMenu) {
-      query = query.eq('featured', true)
-    }
     const { data, error } = await query.order('order_index', { ascending: true })
     
     if (error) {
@@ -1566,11 +1603,9 @@ export default function PortfolioContent({
         />
       )}
 
-      {/* Location 2 — Desktop menu bar (and mobile collapsed mode).
-          When useNewMenu is active on desktop, DynamicMenu replaces the entire
-          menu bar including its outer container. Old menu is used on mobile always. */}
+      {/* Location 2 — Desktop uses DynamicMenu; mobile uses legacy menu bar in collapsed mode. */}
       {(!isMobile || !isExpanded) && (
-        useNewMenu && !isMobile ? (
+        !isMobile ? (
           <DynamicMenu
             categories={categories}
             subcategories={subcategories}
@@ -1584,11 +1619,15 @@ export default function PortfolioContent({
             externalActiveCollectionSlug={externalActiveCollectionSlug}
             onCollectionSelect={handleCollectionSelect}
             onCollectionDismiss={handleCollectionDismiss}
+            onExternalContentConsumed={onExternalContentConsumed}
+            onExternalCollectionConsumed={onExternalCollectionConsumed}
+            externalMenuCardSelect={externalMenuCardSelect}
+            onExternalMenuCardSelectConsumed={onExternalMenuCardSelectConsumed}
           />
         ) : (
           <div
             ref={menuBarRef}
-            className={`portfolio-menu-bar fixed z-30 bg-bg-menu-bar border-t-2 border-accent-light flex justify-between items-start min-h-16 px-[60px] ${pageState === 'collapsed-reader' ? 'collapsed' : ''}`}
+            className={`portfolio-menu-bar fixed z-30 bg-bg-menu-bar border-t-2 border-accent-light flex justify-between items-start min-h-16 ${isMobile ? 'px-0' : 'px-[60px]'} ${pageState === 'collapsed-reader' ? 'collapsed' : ''}`}
             style={{
               top: profileHeight ? `${profileHeight}px` : '200px',
               left: '0',

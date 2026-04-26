@@ -9,6 +9,7 @@ export type ProfileNavCard = {
   shortDesc: string | null
   desc: string | null
   thumbnails: string[]
+  type: 'category' | 'subcategory' | 'collection'
 }
 
 export type ProfileResumeCard = {
@@ -28,16 +29,19 @@ interface ProfilePlanesProps {
   jhuEntryId: string | null
   onSwitchToPortfolio: () => void
   onSwitchToResume: (entryId?: string) => void
+  onCardSelect?: (id: string, type: 'category' | 'subcategory' | 'collection') => void
 }
 
 function PlaneNavCard({
   card,
   index,
   planeHovered,
+  onClick,
 }: {
   card: ProfileNavCard
   index: number
   planeHovered: boolean
+  onClick?: () => void
 }) {
   const [cardHovered, setCardHovered] = useState(false)
   const parallaxY = planeHovered ? ([-3, -5, -7][index] ?? -3) : 0
@@ -46,6 +50,7 @@ function PlaneNavCard({
     <div
       onMouseEnter={() => setCardHovered(true)}
       onMouseLeave={() => setCardHovered(false)}
+      onClick={onClick ? (e) => { e.stopPropagation(); onClick() } : undefined}
       style={{
         display: 'flex',
         flexDirection: 'row',
@@ -219,7 +224,7 @@ export function PlaneResumeCard({
   )
 }
 
-export function ProfilePlanes({ portfolioCards, resumeCards, education, jhuEntryId, onSwitchToPortfolio, onSwitchToResume }: ProfilePlanesProps) {
+export function ProfilePlanes({ portfolioCards, resumeCards, education, jhuEntryId, onSwitchToPortfolio, onSwitchToResume, onCardSelect }: ProfilePlanesProps) {
   const [portfolioHovered, setPortfolioHovered] = useState(false)
   const [resumeHovered, setResumeHovered] = useState(false)
   const portfolioPlaneRef = useRef<HTMLDivElement>(null)
@@ -353,7 +358,13 @@ export function ProfilePlanes({ portfolioCards, resumeCards, education, jhuEntry
           zIndex: 2,
         }}>
           {portfolioCards.map((card, i) => (
-            <PlaneNavCard key={card.id} card={card} index={i} planeHovered={portfolioHovered} />
+            <PlaneNavCard
+              key={card.id}
+              card={card}
+              index={i}
+              planeHovered={portfolioHovered}
+              onClick={onCardSelect ? () => onCardSelect(card.id, card.type) : undefined}
+            />
           ))}
         </div>
 

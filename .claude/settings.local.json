@@ -61,7 +61,10 @@
       "mcp__claude_ai_Supabase__list_projects",
       "WebFetch(domain:uiverse.io)",
       "mcp__plugin_playwright_playwright__browser_network_requests",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "mcp__plugin_playwright_playwright__browser_resize",
+      "mcp__plugin_playwright_playwright__browser_wait_for",
+      "mcp__claude_ai_Supabase__list_tables"
     ]
   }
 }

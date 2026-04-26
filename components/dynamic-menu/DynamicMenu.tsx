@@ -7,9 +7,7 @@
  * Manages its own navigation state via useMenuState.
  * Calls onContentSelect when a content item is selected (triggers the reader).
  *
- * Feature-flag gated: DynamicMenu is only rendered when
- *   localStorage('dm_new_grid') === 'true' && !isMobile
- * The swap in PortfolioContent.tsx controls that condition.
+ * Rendered on desktop only. PortfolioContent.tsx controls that condition.
  *
  * Layout:
  *   Fixed container (same footprint as old portfolio-menu-bar)
@@ -81,7 +79,7 @@ export interface DmSubcategory {
 export interface DmContent {
   id: string
   category_id: string
-  subcategory_id: string | null
+  subcategory_id: string
   title: string
   sidebar_title: string | null
   publication_name?: string
@@ -145,6 +143,17 @@ export interface DynamicMenuProps {
   onCollectionSelect?: (collection: DmCollection, thumbnails: string[]) => void
   /** Called when the active collection is dismissed. */
   onCollectionDismiss?: () => void
+  /** Called after external content ID is consumed so parent can clear it. */
+  onExternalContentConsumed?: () => void
+  /** Called after external collection slug is consumed so parent can clear it. */
+  onExternalCollectionConsumed?: () => void
+  /**
+   * Triggers a full reset + pre-selection from the profile plane cards (Scenario 3).
+   * Resets all active IDs then selects the card's category / subcategory / collection.
+   */
+  externalMenuCardSelect?: { id: string; type: 'category' | 'subcategory' | 'collection' } | null
+  /** Called after externalMenuCardSelect is consumed so parent can clear it. */
+  onExternalMenuCardSelectConsumed?: () => void
 }
 
 // ---------------------------------------------------------------------------
@@ -164,6 +173,10 @@ export function DynamicMenu({
   externalActiveCollectionSlug,
   onCollectionSelect,
   onCollectionDismiss,
+  onExternalContentConsumed,
+  onExternalCollectionConsumed,
+  externalMenuCardSelect,
+  onExternalMenuCardSelectConsumed,
 }: DynamicMenuProps) {
   // -------------------------------------------------------------------------
   // Stable ID arrays (for useMenuState validation)
@@ -181,6 +194,8 @@ export function DynamicMenu({
   // Tracks which external content ID has already been activated, so the effect
   // doesn't double-fire when content data loads after the prop is set.
   const externalContentTriggeredRef = useRef<string | null>(null)
+  // Tracks which card select key has already been processed.
+  const externalCardSelectRef = useRef<string | null>(null)
 
   const {
     state: menuState,
@@ -191,6 +206,7 @@ export function DynamicMenu({
     dismissCollection,
     selectContent,
     clearContent,
+    resetAll,
   } = useMenuState({
     allCategoryIds,
     allSubcategoryIds,
@@ -532,7 +548,7 @@ export function DynamicMenu({
       if (!item) return
       // Always anchor to the item's subcategory+category so the menu opens
       // in the correct state when expanded after content selection (State 3 anchor).
-      if (item.subcategory_id) selectSubcategory(item.subcategory_id)
+      selectSubcategory(item.subcategory_id)
       selectContent(id)
       onContentSelect(item)
     },
@@ -553,16 +569,20 @@ export function DynamicMenu({
   // -------------------------------------------------------------------------
 
   useEffect(() => {
-    if (!externalActiveContentId) return
+    if (!externalActiveContentId) {
+      externalContentTriggeredRef.current = null
+      return
+    }
     // Guard: if we already activated this ID, don't re-fire when content array re-renders
     if (externalContentTriggeredRef.current === externalActiveContentId) return
     const item = content.find(c => c.id === externalActiveContentId)
     // Content data may not be loaded yet — the effect will re-run when content changes
     if (!item) return
     externalContentTriggeredRef.current = externalActiveContentId
-    if (item.subcategory_id) selectSubcategory(item.subcategory_id)
+    selectSubcategory(item.subcategory_id)
     selectContent(externalActiveContentId)
     onContentSelect(item)
+    onExternalContentConsumed?.()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [externalActiveContentId, content])
 
@@ -572,8 +592,29 @@ export function DynamicMenu({
     if (!col) return
     triggerSelectCollection(col.id)
     onExpand?.()
+    onExternalCollectionConsumed?.()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [externalActiveCollectionSlug, collections])
+
+  useEffect(() => {
+    if (!externalMenuCardSelect) {
+      externalCardSelectRef.current = null
+      return
+    }
+    const key = `${externalMenuCardSelect.type}:${externalMenuCardSelect.id}`
+    if (externalCardSelectRef.current === key) return
+    externalCardSelectRef.current = key
+    resetAll()
+    if (externalMenuCardSelect.type === 'category') {
+      selectCategory(externalMenuCardSelect.id)
+    } else if (externalMenuCardSelect.type === 'subcategory') {
+      selectSubcategory(externalMenuCardSelect.id)
+    } else if (externalMenuCardSelect.type === 'collection') {
+      triggerSelectCollection(externalMenuCardSelect.id)
+    }
+    onExternalMenuCardSelectConsumed?.()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalMenuCardSelect])
 
   // -------------------------------------------------------------------------
   // Collapsed bar data (Stage 13)

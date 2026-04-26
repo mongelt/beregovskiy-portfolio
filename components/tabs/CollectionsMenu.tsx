@@ -18,7 +18,7 @@ interface ContentItem {
   id: string
   type: string
   category_id: string
-  subcategory_id: string | null
+  subcategory_id: string
   title: string
   subtitle: string | null
   sidebar_title: string | null

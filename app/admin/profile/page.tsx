@@ -11,17 +11,6 @@ const BlockNoteEditor = dynamic(() => import('@/components/editor/BlockNoteEdito
   ssr: false,
 })
 
-type SkillRow = {
-  id?: string
-  skillName: string
-  collectionId: string | null
-}
-
-type CollectionOption = {
-  id: string
-  name: string
-}
-
 type NavCardOption = {
   type: 'category' | 'subcategory' | 'collection'
   id: string
@@ -39,7 +28,6 @@ type ResumeEntryOption = {
 export default function ProfileManagement() {
   const supabase = createClient()
   const [loading, setLoading] = useState(true)
-  const [uploading, setUploading] = useState(false)
   const [profileId, setProfileId] = useState('')
   
   const [fullName, setFullName] = useState('')
@@ -48,7 +36,6 @@ export default function ProfileManagement() {
   const [jobTitle2, setJobTitle2] = useState('')
   const [jobTitle3, setJobTitle3] = useState('')
   const [jobTitle4, setJobTitle4] = useState('')
-  const [profileImage, setProfileImage] = useState('')
   const [shortBioData, setShortBioData] = useState<PartialBlock[] | undefined>()
   const [fullBioData, setFullBioData] = useState<PartialBlock[] | undefined>()
   const [collapsedProfileHeight, setCollapsedProfileHeight] = useState<string>('') // pixels
@@ -58,9 +45,6 @@ export default function ProfileManagement() {
   const [showEmail, setShowEmail] = useState(false)
   const [showPhone, setShowPhone] = useState(false)
   const [showSocialMedia, setShowSocialMedia] = useState(false)
-  const [skills, setSkills] = useState<SkillRow[]>([])
-  const [collections, setCollections] = useState<CollectionOption[]>([])
-  const [languages, setLanguages] = useState('')
   const [education, setEducation] = useState('')
   const [navCardOptions, setNavCardOptions] = useState<NavCardOption[]>([])
   const [resumeEntryOptions, setResumeEntryOptions] = useState<ResumeEntryOption[]>([])
@@ -98,7 +82,6 @@ export default function ProfileManagement() {
       setJobTitle2(profileData.job_title_2 || '')
       setJobTitle3(profileData.job_title_3 || '')
       setJobTitle4(profileData.job_title_4 || '')
-      setProfileImage(profileData.profile_image || '')
       setShortBioData(profileData.short_bio)
       setFullBioData(profileData.full_bio)
       setCollapsedProfileHeight(
@@ -112,43 +95,19 @@ export default function ProfileManagement() {
       setShowEmail(profileData.show_email || false)
       setShowPhone(profileData.show_phone || false)
       setShowSocialMedia(profileData.show_social_media || false)
-      setLanguages(profileData.languages?.join(', ') || '')
       setEducation(profileData.education || '')
 
       const [
-        { data: skillsData },
         { data: collectionsData },
         { data: categoriesData },
         { data: subcategoriesData },
         { data: resumeEntriesData },
       ] = await Promise.all([
-        supabase
-          .from('profile_skills')
-          .select('id, skill_name, collection_id, order_index')
-          .eq('profile_id', profileData.id)
-          .order('order_index', { ascending: true }),
         supabase.from('collections').select('id, name').order('name'),
         supabase.from('categories').select('id, name').order('order_index'),
         supabase.from('subcategories').select('id, name').order('order_index'),
         supabase.from('resume_entries').select('id, title, subtitle, date_start, date_end').order('date_start', { ascending: false }),
       ])
-
-      if (skillsData) {
-        const mapped = skillsData.map((row) => ({
-          id: row.id,
-          skillName: row.skill_name ?? '',
-          collectionId: row.collection_id ?? null
-        }))
-        setSkills(mapped)
-      } else {
-        setSkills([])
-      }
-
-      if (collectionsData) {
-        setCollections(collectionsData)
-      } else {
-        setCollections([])
-      }
 
       const navOptions: NavCardOption[] = [
         ...(categoriesData || []).map((r: any) => ({ type: 'category' as const, id: r.id, name: r.name })),
@@ -180,27 +139,6 @@ export default function ProfileManagement() {
       alert('Error loading profile data')
     } finally {
       setLoading(false)
-    }
-  }
-
-  async function handleImageUpload(file: File) {
-    setUploading(true)
-    try {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!)
-      
-      const response = await fetch(
-        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
-        { method: 'POST', body: formData }
-      )
-      
-      const data = await response.json()
-      setProfileImage(data.secure_url)
-    } catch (error) {
-      alert('Upload failed')
-    } finally {
-      setUploading(false)
     }
   }
 
@@ -275,7 +213,6 @@ export default function ProfileManagement() {
       job_title_2: jobTitle2,
       job_title_3: jobTitle3,
       job_title_4: jobTitle4,
-      profile_image: profileImage,
       short_bio: shortBioData,
       full_bio: fullBioData,
       full_bio_image_sizes: fullBioImageSizes,
@@ -286,7 +223,6 @@ export default function ProfileManagement() {
       show_email: showEmail,
       show_phone: showPhone,
       show_social_media: showSocialMedia,
-      languages: languages.split(',').map(l => l.trim()).filter(Boolean),
       education: education,
       portfolio_plane_cards: portfolioPlaneCards.length > 0 ? portfolioPlaneCards : null,
       resume_plane_cards: resumePlaneCards.length > 0 ? resumePlaneCards : null,
@@ -303,56 +239,7 @@ export default function ProfileManagement() {
       return
     }
 
-    const rowsToSave = skills
-      .map((row, idx) => ({
-        profile_id: profileId,
-        skill_name: row.skillName.trim(),
-        collection_id: row.collectionId || null,
-        order_index: idx
-      }))
-      .filter(row => row.skill_name.length > 0)
-
-    const { error: deleteError } = await supabase
-      .from('profile_skills')
-      .delete()
-      .eq('profile_id', profileId)
-
-    if (deleteError) {
-      alert('Error updating skills: ' + deleteError.message)
-      return
-    }
-
-    if (rowsToSave.length > 0) {
-      const { error: insertError } = await supabase
-        .from('profile_skills')
-        .insert(rowsToSave)
-
-      if (insertError) {
-        alert('Error saving skills: ' + insertError.message)
-        return
-      }
-    }
-
     alert('Profile updated successfully!')
-  }
-
-  const handleAddSkill = () => {
-    setSkills(prev => [...prev, { skillName: '', collectionId: null }])
-  }
-
-  const handleSkillChange = (index: number, field: 'skillName' | 'collectionId', value: string) => {
-    setSkills(prev =>
-      prev.map((row, i) => {
-        if (i !== index) return row
-        return field === 'skillName'
-          ? { ...row, skillName: value }
-          : { ...row, collectionId: value || null }
-      })
-    )
-  }
-
-  const handleRemoveSkill = (index: number) => {
-    setSkills(prev => prev.filter((_, i) => i !== index))
   }
 
   if (loading) return <div className="text-white">Loading...</div>
@@ -446,24 +333,6 @@ export default function ProfileManagement() {
               onChange={(e) => setJobTitle4(e.target.value)}
               placeholder="Additional title"
             />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Profile Image URL (Optional)
-            </label>
-            <Input
-              type="url"
-              value={profileImage}
-              onChange={(e) => setProfileImage(e.target.value)}
-              placeholder="https://example.com/your-photo.jpg"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Upload your photo to Cloudinary or another host, then paste the URL here
-            </p>
-            {profileImage && (
-              <img src={profileImage} alt="Profile" className="mt-4 w-32 h-32 object-cover rounded-full" />
-            )}
           </div>
 
           <div>
@@ -566,80 +435,6 @@ export default function ProfileManagement() {
 
           <div className="border-t border-gray-800 pt-6">
             <h2 className="text-xl font-semibold text-white mb-4">Professional Details</h2>
-          </div>
-
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Skills
-                </label>
-                <p className="text-xs text-gray-500">Add skills one by one and optionally link a collection.</p>
-              </div>
-              <Button type="button" variant="outline" onClick={handleAddSkill}>
-                + Add skill
-              </Button>
-            </div>
-
-            {skills.length === 0 && (
-              <p className="text-sm text-gray-400">No skills yet. Click “Add skill” to start.</p>
-            )}
-
-            <div className="space-y-3">
-              {skills.map((row, idx) => (
-                <div
-                  key={row.id ?? idx}
-                  className="border border-gray-800 rounded-lg p-3 space-y-2 bg-gray-950"
-                >
-                  <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
-                    <div className="flex-1">
-                      <label className="block text-xs font-medium text-gray-400 mb-1">Skill name</label>
-                      <Input
-                        value={row.skillName}
-                        onChange={(e) => handleSkillChange(idx, 'skillName', e.target.value)}
-                        placeholder="e.g., JavaScript"
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <label className="block text-xs font-medium text-gray-400 mb-1">Linked collection (optional)</label>
-                      <select
-                        value={row.collectionId ?? ''}
-                        onChange={(e) => handleSkillChange(idx, 'collectionId', e.target.value)}
-                        className="w-full rounded-md border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
-                      >
-                        <option value="">No collection link</option>
-                        {collections.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  <div className="flex justify-end">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => handleRemoveSkill(idx)}
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Languages
-            </label>
-            <Input
-              value={languages}
-              onChange={(e) => setLanguages(e.target.value)}
-              placeholder="English, Spanish, French (comma-separated)"
-            />
-            <p className="text-xs text-gray-500 mt-1">Separate languages with commas</p>
           </div>
 
           <div>

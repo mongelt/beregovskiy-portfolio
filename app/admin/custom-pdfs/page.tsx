@@ -12,7 +12,6 @@ type CustomPDF = {
   description: string | null
   file_url: string
   file_name: string
-  category: string
   order_index: number
   is_featured: boolean
   created_at: string
@@ -33,7 +32,6 @@ export default function CustomPDFsManagement() {
   const [pdfs, setPdfs] = useState<CustomPDF[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
-  const [uploadCategory, setUploadCategory] = useState('general')
   const [collections, setCollections] = useState<CollectionOption[]>([])
   const [pdfLinks, setPdfLinks] = useState<Record<string, PdfLinkState>>({})
   const supabase = createClient()
@@ -164,7 +162,6 @@ export default function CustomPDFsManagement() {
               title: file.name.replace('.pdf', ''),
               file_url: dataUrl,
               file_name: file.name,
-              category: uploadCategory,
               order_index: pdfs.length
             })
 
@@ -229,16 +226,6 @@ export default function CustomPDFsManagement() {
     }
   }
 
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case 'resume': return '📄'
-      case 'portfolio': return '📁'
-      case 'certificates': return '🏆'
-      case 'reports': return '📊'
-      default: return '📋'
-    }
-  }
-
   if (loading) {
     return <div className="text-white">Loading...</div>
   }
@@ -274,25 +261,6 @@ export default function CustomPDFsManagement() {
             )}
           </div>
           
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Category
-            </label>
-            <select
-              value={uploadCategory}
-              onChange={(e) => setUploadCategory(e.target.value)}
-              className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500"
-            >
-              <option value="general">General</option>
-              <option value="resume">Resume</option>
-              <option value="portfolio">Portfolio</option>
-              <option value="certificates">Certificates</option>
-              <option value="reports">Reports</option>
-            </select>
-            <p className="text-xs text-gray-500 mt-1">
-              Resume category PDFs will appear as download buttons on the Resume page.
-            </p>
-          </div>
         </div>
         <p className="text-xs text-gray-500 mt-2">
           Upload PDF files that will appear on the Downloads page and can be linked from the Resume page.
@@ -310,7 +278,6 @@ export default function CustomPDFsManagement() {
             <thead className="bg-gray-800">
               <tr>
                 <th className="text-left px-6 py-3 text-sm font-semibold text-gray-300">Title</th>
-                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-300">Category</th>
                 <th className="text-left px-6 py-3 text-sm font-semibold text-gray-300">File</th>
                 <th className="text-left px-6 py-3 text-sm font-semibold text-gray-300">Link Target</th>
                 <th className="text-left px-6 py-3 text-sm font-semibold text-gray-300">Featured</th>
@@ -333,12 +300,7 @@ export default function CustomPDFsManagement() {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-900/50 text-blue-300">
-                      {getCategoryIcon(pdf.category)} {pdf.category}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <a 
+                    <a
                       href={pdf.file_url} 
                       target="_blank" 
                       rel="noopener noreferrer"

@@ -25,7 +25,7 @@ interface ContentItem {
   id: string
   type: string
   category_id: string
-  subcategory_id: string | null
+  subcategory_id: string
   title: string
   subtitle: string | null
   sidebar_title: string | null
@@ -51,6 +51,7 @@ interface ContentItem {
   subcategory_name?: string
   collection_slugs?: string[]
   collection_names?: string[]
+  desc?: string | null
 }
 
 
@@ -233,12 +234,12 @@ export default function MainMenu({ categories, subcategories, content, pageState
     }
     
     return (
-      <div 
-        onClick={onMenuClick} 
-        className="cursor-pointer px-[15px] border-b border-border-gray-800 flex items-center"
+      <div
+        onClick={onMenuClick}
+        className="cursor-pointer border-b border-border-gray-800 flex items-center justify-center w-full"
         style={{ minHeight: '50px' }}
       >
-        <div className="text-accent-dark text-base font-medium">
+        <div className="text-accent-dark text-base font-medium text-center w-full">
           {selectedContent.sidebar_title || selectedContent.title}
         </div>
       </div>
@@ -395,11 +396,14 @@ export default function MainMenu({ categories, subcategories, content, pageState
                     <div>{item.sidebar_title || item.title}</div>
                     {(item.sidebar_subtitle || item.publication_year) && (
                       <div className="main-menu-content-subtitle text-text-on-dark-inactive text-sm mt-1">
-                        {item.sidebar_subtitle && item.publication_year 
+                        {item.sidebar_subtitle && item.publication_year
                           ? `${item.sidebar_subtitle} / ${item.publication_year}`
                           : item.publication_year || ''
                         }
                       </div>
+                    )}
+                    {item.desc && (
+                      <div className="text-text-on-dark-inactive text-base mt-1">{item.desc}</div>
                     )}
                   </div>
                 )

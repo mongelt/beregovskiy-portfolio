@@ -15,7 +15,6 @@ type ProfileData = {
   job_title_2: string | null
   job_title_3: string | null
   job_title_4: string | null
-  profile_image: string | null
   short_bio: any
   full_bio: any
   full_bio_image_sizes?: Record<string, { width?: number; height?: number }>
@@ -26,19 +25,11 @@ type ProfileData = {
   show_phone: boolean
   show_social_media: boolean
   skills: string[] | null
-  languages: string[] | null
   education: string | null
   jhu_entry_id: string | null
   collapsed_profile_height: number | null
   portfolio_plane_cards: Array<{ type: string; id: string }> | null
   resume_plane_cards: string[] | null
-}
-
-type ProfileSkill = {
-  id: string
-  skillName: string
-  collectionSlug: string | null
-  collectionName: string | null
 }
 
 interface ProfileProps {
@@ -47,6 +38,7 @@ interface ProfileProps {
   condensedMode?: boolean
   onSwitchToPortfolio?: () => void
   onSwitchToResume?: (entryId?: string) => void
+  onCardSelect?: (id: string, type: 'category' | 'subcategory' | 'collection') => void
 }
 
 export interface ProfileRef {
@@ -154,10 +146,10 @@ const Profile = forwardRef<ProfileRef, ProfileProps>(({
   condensedMode = false,
   onSwitchToPortfolio,
   onSwitchToResume,
+  onCardSelect,
 }, ref) => {
   const [isExpanded, setIsExpanded] = useState(true) // CRITICAL: Redesign - expanded by default
   const [profile, setProfile] = useState<ProfileData | null>(null)
-  const [skills, setSkills] = useState<ProfileSkill[]>([])
   const [headerHovered, setHeaderHovered] = useState(false)
   const [portfolioCardData, setPortfolioCardData] = useState<ProfileNavCard[]>([])
   const [resumeCardData, setResumeCardData] = useState<ProfileResumeCard[]>([])
@@ -248,23 +240,6 @@ const Profile = forwardRef<ProfileRef, ProfileProps>(({
 
     if (data) {
       setProfile(data)
-      const { data: skillRows } = await supabase
-        .from('profile_skills')
-        .select('id, skill_name, collection_id, collections:collection_id (slug, name)')
-        .eq('profile_id', data.id)
-        .order('order_index', { ascending: true })
-
-      if (skillRows) {
-        const mapped: ProfileSkill[] = skillRows.map((row: any) => ({
-          id: row.id,
-          skillName: row.skill_name ?? '',
-          collectionSlug: row.collections?.slug ?? null,
-          collectionName: row.collections?.name ?? null
-        }))
-        setSkills(mapped)
-      } else {
-        setSkills([])
-      }
       return data
     }
     return null
@@ -281,13 +256,13 @@ const Profile = forwardRef<ProfileRef, ProfileProps>(({
           const { data } = await supabase.from('categories').select('id, name, short_desc, desc').eq('id', card.id).single()
           if (data) {
             const { data: imgs } = await supabase.from('content').select('menu_thumbnail_url, image_url').eq('category_id', card.id).order('order_index', { ascending: true }).limit(5)
-            pCards.push({ id: data.id, name: data.name, shortDesc: (data as any).short_desc ?? null, desc: (data as any).desc ?? null, thumbnails: imgs?.map((c: any) => c.menu_thumbnail_url ?? c.image_url).filter(Boolean) ?? [] })
+            pCards.push({ id: data.id, name: data.name, shortDesc: (data as any).short_desc ?? null, desc: (data as any).desc ?? null, thumbnails: imgs?.map((c: any) => c.menu_thumbnail_url ?? c.image_url).filter(Boolean) ?? [], type: 'category' })
           }
         } else if (card.type === 'subcategory') {
           const { data } = await supabase.from('subcategories').select('id, name, short_desc, desc').eq('id', card.id).single()
           if (data) {
             const { data: imgs } = await supabase.from('content').select('menu_thumbnail_url, image_url').eq('subcategory_id', card.id).order('order_index', { ascending: true }).limit(5)
-            pCards.push({ id: data.id, name: data.name, shortDesc: (data as any).short_desc ?? null, desc: (data as any).desc ?? null, thumbnails: imgs?.map((c: any) => c.menu_thumbnail_url ?? c.image_url).filter(Boolean) ?? [] })
+            pCards.push({ id: data.id, name: data.name, shortDesc: (data as any).short_desc ?? null, desc: (data as any).desc ?? null, thumbnails: imgs?.map((c: any) => c.menu_thumbnail_url ?? c.image_url).filter(Boolean) ?? [], type: 'subcategory' })
           }
         } else if (card.type === 'collection') {
           const { data } = await supabase.from('collections').select('id, name, short_desc, desc').eq('id', card.id).single()
@@ -299,7 +274,7 @@ const Profile = forwardRef<ProfileRef, ProfileProps>(({
               const { data: imgs } = await supabase.from('content').select('menu_thumbnail_url, image_url').in('id', ids).limit(5)
               thumbnails = imgs?.map((c: any) => c.menu_thumbnail_url ?? c.image_url).filter(Boolean) ?? []
             }
-            pCards.push({ id: data.id, name: data.name, shortDesc: (data as any).short_desc ?? null, desc: (data as any).desc ?? null, thumbnails })
+            pCards.push({ id: data.id, name: data.name, shortDesc: (data as any).short_desc ?? null, desc: (data as any).desc ?? null, thumbnails, type: 'collection' })
           }
         }
       }
@@ -349,10 +324,18 @@ const Profile = forwardRef<ProfileRef, ProfileProps>(({
       {isMobile && !isExpanded && !isCondensed ? (
         <div className="px-[15px] py-4">
           <div className="flex justify-between items-start w-full mb-2">
-            {/* Name upper-left */}
-            <h1 className="font-display text-[1.35rem] font-bold uppercase text-text-on-dark tracking-[-0.012em] leading-none mb-1 w-[40%]">
-              {profile.full_name?.toUpperCase() || 'YOUR NAME'}
-            </h1>
+            {/* Name + location upper-left */}
+            <div className="w-[40%]">
+              <h1 className="font-display text-[1.35rem] font-bold uppercase text-text-on-dark tracking-[-0.012em] leading-none mb-1">
+                {profile.full_name?.toUpperCase() || 'YOUR NAME'}
+              </h1>
+              {profile.location && (
+                <div className="flex items-center gap-1 font-body text-sm text-text-on-dark-secondary whitespace-nowrap">
+                  <img src="/dc-outline.png" alt="location" style={{ width: 14, height: 14, objectFit: 'contain' }} />
+                  <p>{profile.location}</p>
+                </div>
+              )}
+            </div>
 
             {/* Job titles upper-right */}
             <div className="flex flex-col gap-0.5 text-xs text-text-on-dark-secondary text-right w-[60%]">
@@ -405,7 +388,7 @@ const Profile = forwardRef<ProfileRef, ProfileProps>(({
                 </h1>
 
                 {profile.location && (
-                  <div className="flex items-center gap-1 font-body text-sm text-text-on-dark-secondary mb-3">
+                  <div className="flex items-center gap-1 font-body text-sm text-text-on-dark-secondary whitespace-nowrap mb-3">
                     <img src="/dc-outline.png" alt="location" style={{ width: 14, height: 14, objectFit: 'contain' }} />
                     <p>{profile.location}</p>
                   </div>
@@ -479,12 +462,14 @@ const Profile = forwardRef<ProfileRef, ProfileProps>(({
             style={{
               position: 'fixed',
               top: 0,
-              bottom: `${BOTTOM_NAV_HEIGHT_PX}px`,
+              bottom: 0,
               left: 0,
               right: 0,
-              overflow: 'auto',
-              zIndex: 45,
-              backgroundColor: '#121212'
+              zIndex: 55,
+              backgroundColor: '#121212',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden'
             }}
           >
             {/* Dual-column header: Name 30%, Titles 70% + Collapse button */}
@@ -495,6 +480,12 @@ const Profile = forwardRef<ProfileRef, ProfileProps>(({
                     <h1 className="font-display text-[1.35rem] font-bold uppercase text-text-on-dark tracking-[-0.012em] leading-tight mb-1">
                       {profile.full_name?.toUpperCase() || 'YOUR NAME'}
                     </h1>
+                    {profile.location && (
+                      <div className="flex items-center gap-1 font-body text-sm text-text-on-dark-secondary whitespace-nowrap">
+                        <img src="/dc-outline.png" alt="location" style={{ width: 14, height: 14, objectFit: 'contain' }} />
+                        <p>{profile.location}</p>
+                      </div>
+                    )}
                   </div>
                   <div className="w-[70%] pl-4">
                     <div className="flex flex-col gap-0.5 font-body text-xs text-text-on-dark-secondary text-right">
@@ -508,121 +499,39 @@ const Profile = forwardRef<ProfileRef, ProfileProps>(({
               </div>
             </div>
 
-            {/* Single-column content: Full bio → Education → Skills → Languages */}
-            <div className="px-[15px] py-4 space-y-6">
-              {/* Short bio with simple cutoff */}
-              <div>
-                <h3 className="font-ui text-sm font-semibold text-text-on-dark-inactive uppercase tracking-[0.06em] mb-2">About</h3>
-                <div
-                  className="font-body text-sm text-text-on-dark-secondary leading-relaxed"
-                  style={{
-                    maxHeight: '400px',
-                    overflow: 'hidden'
-                  }}
-                >
-                  {profile.short_bio ? (
-                    isBlockNoteFormat(profile.short_bio) || isEditorJSFormat(profile.short_bio) ? (
-                      <ShortBioRenderer data={profile.short_bio} />
-                    ) : (
-                      <p>{profile.short_bio}</p>
-                    )
+            {/* Bio section — fills remaining space */}
+            <div className="flex-1 overflow-hidden px-[15px] pb-4" style={{ paddingTop: '10%' }}>
+              <div className="font-body text-sm text-text-on-dark-secondary leading-relaxed h-full overflow-hidden">
+                {profile.short_bio ? (
+                  isBlockNoteFormat(profile.short_bio) || isEditorJSFormat(profile.short_bio) ? (
+                    <ShortBioRenderer data={profile.short_bio} />
                   ) : (
-                    <p>No bio available</p>
-                  )}
-                </div>
+                    <p>{profile.short_bio}</p>
+                  )
+                ) : (
+                  <p>No bio available</p>
+                )}
               </div>
-
-              {/* Education */}
-              {profile.education && (
-                <div>
-                  <h3 className="font-ui text-sm font-semibold text-text-on-dark-inactive uppercase tracking-[0.06em] mb-2">Education</h3>
-                  <p className="font-body text-sm text-text-on-dark-secondary">{profile.education}</p>
-                </div>
-              )}
-
-              {/* Skills */}
-              {skills.length > 0 && (
-                <div>
-                  <h3 className="font-ui text-sm font-semibold text-text-on-dark-inactive uppercase tracking-[0.06em] mb-2">Skills</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {skills.map((skill) => {
-                      const isLinked = !!skill.collectionSlug && !!skill.collectionName && !!onOpenCollection
-                      return (
-                        <button
-                          key={skill.id}
-                          onClick={() => {
-                            if (isLinked && skill.collectionSlug && skill.collectionName && onOpenCollection) {
-                              onOpenCollection(skill.collectionSlug, skill.collectionName)
-                            }
-                          }}
-                          className={`
-                            py-1 px-3 rounded-full text-sm transition-colors text-white
-                            ${isLinked
-                              ? 'bg-accent-emerald-700 hover:bg-accent-emerald-300'
-                              : 'bg-bg-unlinked-skills-pill cursor-default'}
-                          `}
-                          disabled={!isLinked}
-                        >
-                          {skill.skillName}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Languages */}
-              {profile.languages && profile.languages.length > 0 && (
-                <div>
-                  <h3 className="font-ui text-sm font-semibold text-text-on-dark-inactive uppercase tracking-[0.06em] mb-2">Languages</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {profile.languages.map((language, i) => (
-                      <span
-                        key={i}
-                        className="py-1 px-3 rounded-full text-sm bg-bg-unlinked-skills-pill text-white"
-                      >
-                        {language}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
 
-            {/* Contact row */}
-            {(profile.show_phone && profile.phone) ||
-             (profile.show_email && profile.email) ||
-             (profile.show_social_media && profile.linkedin) ? (
-              <div className="border-t border-border-gray-800 bg-bg-profile px-[15px] py-4 flex flex-wrap gap-4 items-center justify-start">
-                {profile.show_phone && profile.phone && (
-                  <div className="flex items-center gap-2 font-body text-sm text-text-on-dark-secondary">
-                    <span>📞</span>
-                    <span>{profile.phone}</span>
-                  </div>
-                )}
-                {profile.show_email && profile.email && (
-                  <div className="flex items-center gap-2 font-body text-sm text-text-on-dark-secondary">
-                    <span>✉️</span>
-                    <a href={`mailto:${profile.email}`} className="text-text-on-dark-secondary hover:text-accent-light transition-colors">
-                      {profile.email}
-                    </a>
-                  </div>
-                )}
-                {profile.show_social_media && profile.linkedin && (
-                  <div className="flex items-center gap-2 font-body text-sm text-text-on-dark-secondary">
-                    <span>💼</span>
-                    <a
-                      href={profile.linkedin}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-text-on-dark-secondary hover:text-accent-light transition-colors"
-                    >
-                      LinkedIn
-                    </a>
-                  </div>
-                )}
-              </div>
-            ) : null}
+            {/* Navigation rectangles */}
+            <div style={{ height: 2, backgroundColor: '#6B2A2A', flexShrink: 0 }} />
+            <button
+              className="w-full flex items-center justify-center"
+              style={{ height: '25vh', backgroundColor: '#0B0A0A' }}
+              onClick={() => { setIsExpanded(false); onSwitchToPortfolio?.() }}
+            >
+              <span style={{ fontFamily: 'var(--font-ui, sans-serif)', fontSize: '2.25rem', fontWeight: 700, textTransform: 'uppercase', color: '#e0e0e0', letterSpacing: '0.02em' }}>Portfolio</span>
+            </button>
+            <div style={{ height: 3, backgroundColor: '#6B2A2A', flexShrink: 0 }} />
+            <button
+              className="w-full flex items-center justify-center"
+              style={{ height: '25vh', backgroundColor: '#c7c7c2' }}
+              onClick={() => { setIsExpanded(false); onSwitchToResume?.() }}
+            >
+              <span style={{ fontFamily: 'var(--font-ui, sans-serif)', fontSize: '2.25rem', fontWeight: 700, textTransform: 'uppercase', color: '#111111', letterSpacing: '0.02em' }}>Resume</span>
+            </button>
+            <div style={{ height: 10, backgroundColor: '#6B2A2A', flexShrink: 0 }} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -660,7 +569,7 @@ const Profile = forwardRef<ProfileRef, ProfileProps>(({
                     {profile.full_name?.toUpperCase() || 'YOUR NAME'}
                   </h1>
                   {profile.location && (
-                    <div className="flex items-center gap-1 font-body text-sm text-text-on-dark-secondary mb-3">
+                    <div className="flex items-center gap-1 font-body text-sm text-text-on-dark-secondary whitespace-nowrap mb-3">
                       <img src="/dc-outline.png" alt="location" style={{ width: 14, height: 14, objectFit: 'contain' }} />
                       <p>{profile.location}</p>
                     </div>
@@ -728,6 +637,7 @@ const Profile = forwardRef<ProfileRef, ProfileProps>(({
               jhuEntryId={profile.jhu_entry_id ?? null}
               onSwitchToPortfolio={() => { setIsExpanded(false); onSwitchToPortfolio?.() }}
               onSwitchToResume={(entryId?: string) => { setIsExpanded(false); onSwitchToResume?.(entryId) }}
+              onCardSelect={onCardSelect ? (id, type) => { setIsExpanded(false); onCardSelect(id, type) } : undefined}
             />
           </motion.div>
         )}
